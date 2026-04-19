@@ -1,5 +1,5 @@
-# MATLAB编译文件
-*.mat
+# MATLAB编译文件（注释掉，允许数据文件上传）
+# *.mat
 *.asv
 
 # Python缓存
