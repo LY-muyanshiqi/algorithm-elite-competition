@@ -17,7 +17,7 @@ warnings.filterwarnings('ignore')
 
 # 页面配置
 st.set_page_config(
-    page_title="火电调峰优化系统",
+    page_title="新型电力系统下抽水蓄能减碳效益优化核算系统",
     page_icon="⚡",
     layout="wide",
     initial_sidebar_state="expanded"
@@ -601,7 +601,7 @@ def main():
     data = get_all_data()
     
     # 标题区域
-    st.markdown('<h1 class="main-title">⚡ 火电深度调峰 + 抽水蓄能优化系统</h1>', unsafe_allow_html=True)
+    st.markdown('<h1 class="main-title">⚡ 新型电力系统下抽水蓄能减碳效益优化核算系统</h1>', unsafe_allow_html=True)
     st.markdown('<p class="sub-title">基于NSLDE多目标优化算法 | 全年8760小时调度策略可视化分析</p>', unsafe_allow_html=True)
     
     # 侧边栏
@@ -730,7 +730,7 @@ def main():
                 # 直接使用计算结果
                 ce_reduction = carbon_result['carbon_change']
                 st.markdown(f"""
-                ### 🌱 碳减排量明细
+                ### 🌱 碳减排量明细（有抽蓄vs未抽蓄）
                 
                 **计算公式：**
                 $$\\Delta CO_2 = |\\Delta N_t| \\times K_{{CO_2}}$$
@@ -750,7 +750,7 @@ def main():
                 - 新能源消纳贡献：消纳弃风弃光
                 """)
             st.markdown(create_metric_card(
-                "碳减排量", 
+                "碳减排量（有抽蓄vs未抽蓄）", 
                 f"{ce_reduction:.2f}",
                 "万吨CO2",
                 color="#9d4edd"
@@ -910,7 +910,7 @@ def main():
             st.markdown("""
             <div style="background: linear-gradient(135deg, rgba(157, 78, 221, 0.15) 0%, rgba(120, 50, 180, 0.08) 100%); 
                         border: 1px solid rgba(157, 78, 221, 0.3); border-radius: 12px; padding: 20px; margin: 10px 0;">
-                <h3 style="color: #9d4edd; margin: 0 0 10px 0;">🌱 指标3：碳减排量</h3>
+                <h3 style="color: #9d4edd; margin: 0 0 10px 0;">🌱 指标3：碳减排量（有抽蓄vs未抽蓄）</h3>
             </div>
             """, unsafe_allow_html=True)
             
@@ -1369,8 +1369,8 @@ def main():
         # 植树需求 (抵消增排)
         trees_needed = carbon_abs * 100  # 万棵
         
-        # 新能源渗透率
-        fh_total = data['fh'].sum() / 1e6  # 火电年发电量(亿kWh)
+        # 新能源渗透率 (使用与总览仪表盘一致的计算口径)
+        fh_total = carbon_result['Nt'].sum() / 1e6  # 有抽蓄时火电年发电量(亿kWh)
         renewable_ratio = total_renewable / (total_renewable + fh_total) * 100
         
         # ========== 雷达图 ==========
@@ -1495,7 +1495,7 @@ def main():
     st.markdown(
         """
         <div style="text-align: center; color: #8ba4c4; padding: 20px;">
-            <p>火电深度调峰 + 抽水蓄能减碳效益优化系统 | Powered by NSLDE</p>
+            <p>新型电力系统下抽水蓄能减碳效益优化核算系统 | Powered by NSLDE</p>
             <p style="font-size: 0.8rem;">数据周期: 全年8760小时 | 更新日期: 2024年</p>
         </div>
         """, 
