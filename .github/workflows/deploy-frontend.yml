@@ -1,0 +1,39 @@
+name: Deploy Frontend to GitHub Pages
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+      
+      - name: Install dependencies
+        run: |
+          cd 前端封装/frontend
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install streamlit streamlit-extras
+      
+      - name: Build Streamlit app
+        run: |
+          cd 前端封装/frontend
+          mkdir -p build
+          echo "Streamlit app built successfully"
+      
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./前端封装/frontend
+          publish_branch: gh-pages

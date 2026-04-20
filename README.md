@@ -126,6 +126,16 @@ streamlit run app.py
 - Pandas
 - Plotly
 
+## 部署与访问
+
+### Streamlit Cloud 部署
+- **应用链接**：通过Streamlit Cloud访问
+- **自动部署**：GitHub推送代码后自动更新
+
+### GitHub Pages 部署
+- **访问地址**：`https://LY-muyanshiqi.github.io/thermal-peak-shaving-pumped-storage/`
+- **部署方式**：GitHub Actions自动部署
+
 ## 许可证
 
 MIT License
@@ -136,4 +146,4 @@ MIT License
 
 ## 更新日期
 
-2026-04-18
+2026-04-20
