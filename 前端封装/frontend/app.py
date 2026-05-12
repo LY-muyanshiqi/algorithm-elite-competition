@@ -3,6 +3,10 @@
 专业级前端展示平台
 
 基于NSLDE多目标优化算法的结果可视化
+
+增强功能：
+- 新增高级可视化（桑基图、3D可视化、热力图等）
+- 新增高级分析（敏感性分析、情景模拟、决策建议等）
 """
 import streamlit as st
 import numpy as np
@@ -13,7 +17,18 @@ from plotly.subplots import make_subplots
 from datetime import datetime
 import data_loader as dl
 import warnings
+import os
+import sys
 warnings.filterwarnings('ignore')
+
+# 尝试导入增强模块（新增功能）
+try:
+    sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'v2_features'))
+    import visualization as vis
+    import analysis as ana
+    ADVANCED_FEATURES = True
+except ImportError:
+    ADVANCED_FEATURES = False
 
 # 页面配置
 st.set_page_config(
@@ -640,11 +655,20 @@ def main():
     
     # 页面选择
     st.sidebar.markdown("### 📑 页面导航")
+    
+    basic_pages = ["🏠 总览仪表盘", "📐 计算公式详解", "🌿 新能源发电", "💧 抽水蓄能调度",
+                   "🔥 火电调峰效果", "🎯 Pareto前沿分析", "🌱 碳减排效益",
+                   "📊 综合分析报告"]
+    
+    if ADVANCED_FEATURES:
+        advanced_pages = ["🎨 高级可视化", "🧠 高级分析"]
+        all_pages = basic_pages + advanced_pages
+    else:
+        all_pages = basic_pages
+    
     page = st.sidebar.radio(
         "选择展示页面",
-        ["🏠 总览仪表盘", "📐 计算公式详解", "🌿 新能源发电", "💧 抽水蓄能调度", 
-         "🔥 火电调峰效果", "🎯 Pareto前沿分析", "🌱 碳减排效益", 
-         "📊 综合分析报告"]
+        all_pages
     )
     
     st.sidebar.markdown("---")
@@ -1489,6 +1513,138 @@ def main():
         st.markdown("---")
         if st.button("📥 导出分析报告 (PDF)"):
             st.info("报告导出功能开发中...")
+    
+    # ========== 🎨 高级可视化页面 ==========
+    elif page == "🎨 高级可视化" and ADVANCED_FEATURES:
+        st.markdown("## 🎨 高级可视化")
+        
+        vis_options = vis.get_visualization_list()
+        selected_vis = st.selectbox("选择可视化功能", vis_options)
+        day_index = st.slider("选择日期", 0, 364, 0)
+        
+        if selected_vis == '桑基图 - 能量流向':
+            fig = vis.create_sankey_diagram(data, day_index)
+            st.plotly_chart(fig, use_container_width=True)
+        elif selected_vis == '3D水库可视化':
+            fig = vis.create_3d_reservoir_visualization(data, day_index)
+            st.plotly_chart(fig, use_container_width=True)
+        elif selected_vis == '能量平衡图':
+            fig = vis.create_energy_balance_chart(data, day_index)
+            st.plotly_chart(fig, use_container_width=True)
+        elif selected_vis == 'Pareto前沿3D图':
+            fig = vis.create_pareto_3d_scatter(data)
+            st.plotly_chart(fig, use_container_width=True)
+        elif selected_vis == '碳减排热力图':
+            fig = vis.create_carbon_reduction_heatmap(data)
+            st.plotly_chart(fig, use_container_width=True)
+        elif selected_vis == '月度对比图':
+            fig = vis.create_interactive_comparison_chart(data)
+            st.plotly_chart(fig, use_container_width=True)
+        elif selected_vis == '能源流动动画':
+            fig = vis.create_energy_flow_animation(data, day_index)
+            st.plotly_chart(fig, use_container_width=True)
+    
+    # ========== 🧠 高级分析页面 ==========
+    elif page == "🧠 高级分析" and ADVANCED_FEATURES:
+        st.markdown("## 🧠 高级分析")
+        
+        analysis_options = ana.get_analysis_list()
+        selected_analysis = st.selectbox("选择分析功能", analysis_options)
+        
+        if selected_analysis == '敏感性分析':
+            param_options = ['efficiency', 'capacity', 'carbon_factor', 'price']
+            param_labels = ['抽发效率', '装机容量', '碳排放系数', '电价']
+            selected_param = st.selectbox("选择分析参数", param_labels, index=0)
+            param_key = param_options[param_labels.index(selected_param)]
+            results = ana.sensitivity_analysis(data, param_key)
+            fig = ana.create_sensitivity_chart(results)
+            st.plotly_chart(fig, use_container_width=True)
+            st.subheader("📊 分析结果")
+            st.write(f"基准值: {results['base_value']}{results['unit']}")
+            st.write(f"分析范围: {results['test_values'][0]} - {results['test_values'][-1]}{results['unit']}")
+        
+        elif selected_analysis == '情景模拟':
+            st.subheader("⚙️ 设置情景参数")
+            col1, col2, col3 = st.columns(3)
+            with col1:
+                wind_scale = st.slider("风电增长比例", 0.5, 2.0, 1.0, 0.1)
+            with col2:
+                solar_scale = st.slider("光伏增长比例", 0.5, 2.0, 1.0, 0.1)
+            with col3:
+                demand_scale = st.slider("负荷增长比例", 0.8, 1.5, 1.0, 0.1)
+            
+            scenario_params = {'wind_scale': wind_scale, 'solar_scale': solar_scale, 'demand_scale': demand_scale}
+            scenario_result = ana.scenario_simulation(data, scenario_params)
+            base_stats = {
+                'total_wind': np.sum(data['wind']),
+                'total_solar': np.sum(data['solar']),
+                'total_hydro': np.sum(data['hydro']),
+                'total_pump_gen': np.sum(data['np_raw'][data['np_raw'] > 0]),
+                'total_pump_con': np.sum(np.abs(data['np_raw'][data['np_raw'] < 0])),
+                'total_thermal': np.sum(data['fh'])
+            }
+            fig = ana.create_scenario_comparison_chart(base_stats, scenario_result['stats'])
+            st.plotly_chart(fig, use_container_width=True)
+            st.subheader("📈 情景指标对比")
+            col1, col2 = st.columns(2)
+            with col1:
+                st.metric("碳减排量", f"{scenario_result['stats']['carbon_reduction']:.2f}万吨")
+            with col2:
+                st.metric("抽水小时数", f"{scenario_result['stats']['pumping_hours']}小时")
+        
+        elif selected_analysis == '决策建议':
+            recommendations = ana.generate_decision_recommendations(data)
+            st.subheader("💡 决策建议")
+            priority_order = {'high': 0, 'medium': 1, 'low': 2}
+            recommendations.sort(key=lambda x: priority_order[x['priority']])
+            for rec in recommendations:
+                priority_color = {'high': 'rgba(255, 102, 102, 0.2)', 'medium': 'rgba(255, 204, 102, 0.2)', 'low': 'rgba(51, 204, 102, 0.2)'}
+                priority_badge = {'high': '🔴 高优先级', 'medium': '🟡 中优先级', 'low': '🟢 低优先级'}
+                st.markdown(f"""
+                <div style='background: {priority_color[rec['priority']]}; border: 1px solid rgba(0, 212, 255, 0.3); border-radius: 12px; padding: 16px; margin: 8px 0;'>
+                    <h4>{rec['title']} <span style='font-size:14px; margin-left:8px;'>{priority_badge[rec['priority']]}</span></h4>
+                    <p><strong>现状分析:</strong> {rec['description']}</p>
+                    <p><strong>建议措施:</strong> {rec['suggestion']}</p>
+                    <p><strong>预期效果:</strong> {rec['impact']}</p>
+                </div>
+                """, unsafe_allow_html=True)
+        
+        elif selected_analysis == '统计分析':
+            stats = ana.statistical_analysis(data)
+            st.subheader("📊 年度统计")
+            col1, col2, col3, col4 = st.columns(4)
+            with col1:
+                st.metric("总风电(MWh)", f"{stats['annual_stats']['total_wind']:.1f}")
+            with col2:
+                st.metric("总光伏(MWh)", f"{stats['annual_stats']['total_solar']:.1f}")
+            with col3:
+                st.metric("总水电(MWh)", f"{stats['annual_stats']['total_hydro']:.1f}")
+            with col4:
+                st.metric("总火电(MWh)", f"{stats['annual_stats']['total_thermal']:.1f}")
+            st.subheader("📈 相关性分析")
+            corr_df = pd.DataFrame({'相关系数': [
+                stats['correlations']['wind_solar'],
+                stats['correlations']['wind_load'],
+                stats['correlations']['solar_load'],
+                stats['correlations']['pump_wind'],
+                stats['correlations']['pump_solar']
+            ]}, index=['风电-光伏', '风电-负荷', '光伏-负荷', '抽蓄-风电', '抽蓄-光伏'])
+            st.dataframe(corr_df)
+        
+        elif selected_analysis == '趋势分析':
+            metric_options = ['carbon_reduction', 'pumping_hours', 'renewable_ratio']
+            metric_labels = ['碳减排量', '抽水小时数', '新能源占比']
+            selected_metric = st.selectbox("选择分析指标", metric_labels, index=0)
+            metric_key = metric_options[metric_labels.index(selected_metric)]
+            trend_result = ana.trend_analysis(data, metric_key)
+            fig = go.Figure()
+            fig.add_trace(go.Scatter(x=trend_result['days'], y=trend_result['daily_values'], name='每日值', mode='lines', line=dict(width=1, color='rgba(0, 212, 255, 0.5)')))
+            fig.add_trace(go.Scatter(x=trend_result['days'], y=trend_result['moving_average'], name='7日移动平均', mode='lines', line=dict(width=2, color='rgba(0, 255, 128, 0.8)')))
+            fig.add_trace(go.Scatter(x=trend_result['days'], y=trend_result['trend_line'], name='趋势线', mode='lines', line=dict(width=2, color='rgba(255, 102, 102, 0.8)', dash='dash')))
+            fig.update_layout(title=f"{trend_result['metric_name']}趋势分析", xaxis_title='日期', yaxis_title=f"{trend_result['metric_name']}({trend_result['unit']})", width=900, height=500)
+            st.plotly_chart(fig, use_container_width=True)
+            trend_direction = "上升" if trend_result['trend_slope'] > 0 else "下降" if trend_result['trend_slope'] < 0 else "平稳"
+            st.write(f"📈 趋势方向: {trend_direction}，斜率: {trend_result['trend_slope']:.6f}")
     
     # 页脚
     st.markdown("---")
