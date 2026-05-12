@@ -45,7 +45,7 @@ def create_sankey_diagram(data: Dict[str, Any], day_index: int = 0) -> go.Figure
     wind_avg = np.mean(day_data['wind'])
     solar_avg = np.mean(day_data['solar'])
     hydro_avg = np.mean(day_data['hydro'])
-    npump_avg = np.mean(day_data['np_raw'])
+    npump_avg = np.mean(day_data['npump'])
     
     # 抽水蓄能分解
     pump_generation = np.max([0, npump_avg])  # 发电
