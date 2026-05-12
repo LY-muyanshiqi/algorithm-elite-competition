@@ -5,7 +5,7 @@ NH=load('hydro.txt');  %水电
 NW=load('wind.txt');   %风电
 NP=load('solar.txt');  %光伏
 FH=load('FH.txt');    %陕西负荷
-Zpump=140; %抽蓄规模
+Zpump=1400; %抽蓄规模
 h=4;        %抽蓄满发小时
 %%  有抽蓄减碳计算
 i=3; % 第几天

@@ -4,7 +4,7 @@ NW=load('wind.txt');   %风电
 NP=load('solar.txt');  %光伏
 FH=load('FH.txt');    %陕西负荷
 N=length(NH(:,1));
-Zpump=140; %抽蓄规模
+Zpump=1400; %抽蓄规模
 h=4;        %抽蓄满发小时
 
 core_number= 8;   %并行计算

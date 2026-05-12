@@ -1,25 +1,25 @@
 function [number_of_objectives, number_of_decision_variables, min_range_of_decesion_variable, max_range_of_decesion_variable] = objective_description_function()
-%Ä¿ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ß±ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ß±ï¿½ï¿½ï¿½ï¿½ï¿½Ð¡Öµï¿½ï¿½ï¿½ï¿½ï¿½Öµ
+%Ä¿±ê¸öÊý£¬¾ö²ß±äÁ¿¸öÊý£¬¾ö²ß±äÁ¿×îÐ¡Öµ¡¢×î´óÖµ
 %% function [number_of_objectives, number_of_decision_variables, min_range_of_decesion_variable, max_range_of_decesion_variable] = objective_description_function()
-% This function is used to completely describe the objective functions and ï¿½Ë¹ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½È«ï¿½ï¿½ï¿½ï¿½Ä¿ï¿½êº¯ï¿½ï¿½ï¿½Í¾ï¿½ï¿½ß±ï¿½ï¿½ï¿½ï¿½Õ¼ï¿½ÈµÄ·ï¿½Î§ï¿½ï¿½
-% the range for the decision variable space etc. The user is prompted for  ï¿½Ã»ï¿½ï¿½ï¿½ï¿½ï¿½Ê¾ï¿½ï¿½ï¿½ï¿½Ä¿ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ß±ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ã¿ï¿½ï¿½ï¿½ï¿½ï¿½ß±ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ð¡ï¿½ï¿½Î§ï¿½ï¿½
-% inputing the number of objectives, numebr of decision variables, the     ï¿½ï¿½ï¿½ï¿½ÜµÈ´ï¿½ ï¿½ï¿½ï¿½Ã»ï¿½ï¿½Þ¸ï¿½evaluate_objectiveï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Òªï¿½ï¿½
+% This function is used to completely describe the objective functions and ´Ë¹¦ÄÜÓÃÓÚÍêÈ«ÃèÊöÄ¿±êº¯ÊýºÍ¾ö²ß±äÁ¿¿Õ¼äµÈµÄ·¶Î§¡£
+% the range for the decision variable space etc. The user is prompted for  ÓÃ»§±»ÌáÊ¾ÊäÈëÄ¿±êÊýÁ¿£¬¾ö²ß±äÁ¿µÄÊýÁ¿£¬Ã¿¸ö¾ö²ß±äÁ¿µÄ×î´óºÍ×îÐ¡·¶Î§£¬
+% inputing the number of objectives, numebr of decision variables, the     ×îºó¹¦ÄÜµÈ´ý ¹©ÓÃ»§ÐÞ¸Äevaluate_objective¹¦ÄÜÒÔÂú×ãÐèÒª¡£
 % maximum and minimum range for each decision variable and finally the
 % function waits for the user to modify the evaluate_objective function to
 % suit their need.
 
-number_of_objectives = 3;
+number_of_objectives = 2;
 if number_of_objectives < 2
-    error('This is a multi-objective optimization function hence the minimum number of objectives is two');%ï¿½ï¿½ï¿½ï¿½Ò»ï¿½ï¿½ï¿½ï¿½Ä¿ï¿½ï¿½ï¿½Å»ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ä¿ï¿½ï¿½ï¿½ï¿½ï¿½Ð¡ï¿½ï¿½Ä¿ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+    error('This is a multi-objective optimization function hence the minimum number of objectives is two');%ÕâÊÇÒ»¸ö¶àÄ¿±êÓÅ»¯º¯Êý£¬Òò´ËÄ¿±êµÄ×îÐ¡ÊýÄ¿ÊÇÁ½¸ö
 end
 number_of_decision_variables = 23;
 for i = 1 :21
     %clc
     %g = sprintf('\nInput the minimum value for decision variable %d : ', i);
-    % Obtain the minimum possible value for each decision variable   ï¿½ï¿½È¡Ã¿ï¿½ï¿½ï¿½ï¿½ï¿½ß±ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ð¡ï¿½ï¿½ï¿½ï¿½Öµ
+    % Obtain the minimum possible value for each decision variable   »ñÈ¡Ã¿¸ö¾ö²ß±äÁ¿µÄ×îÐ¡¿ÉÄÜÖµ
     min_range_of_decesion_variable(i) = 0;
     g = sprintf('\nInput the maximum value for decision variable %d : ', i);
-    % Obtain the maximum possible value for each decision variable   ï¿½ï¿½È¡Ã¿ï¿½ï¿½ï¿½ï¿½ï¿½ß±ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Öµ
+    % Obtain the maximum possible value for each decision variable   »ñÈ¡Ã¿¸ö¾ö²ß±äÁ¿µÄ×î´ó¿ÉÄÜÖµ
     max_range_of_decesion_variable(i) = 1;
     %clc
 end
