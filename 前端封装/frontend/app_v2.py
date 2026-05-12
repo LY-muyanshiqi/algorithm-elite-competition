@@ -15,15 +15,25 @@ from plotly.subplots import make_subplots
 import base64
 import os
 from typing import Dict, Any
+import sys
+
+# 页面配置 - 必须是第一个Streamlit命令
+st.set_page_config(
+    page_title="火电深度调峰+抽水蓄能优化系统",
+    page_icon="⚡",
+    layout="wide",
+    initial_sidebar_state="expanded"
+)
 
 # 导入自定义模块
+use_optimized_module = True
 try:
     import data_loader_optimized as dl
     import visualization as vis
     import analysis as ana
 except ImportError:
+    use_optimized_module = False
     import data_loader as dl
-    st.warning("使用原始数据加载模块")
 
 # 增强的CSS样式
 st.markdown("""
@@ -117,14 +127,6 @@ st.markdown("""
     }
 </style>
 """, unsafe_allow_html=True)
-
-# 页面配置
-st.set_page_config(
-    page_title="火电深度调峰+抽水蓄能优化系统",
-    page_icon="⚡",
-    layout="wide",
-    initial_sidebar_state="expanded"
-)
 
 # 数据加载缓存
 @st.cache_data(ttl=3600, show_spinner="正在加载数据...")
@@ -562,6 +564,11 @@ def main():
     try:
         # 加载数据
         data = get_all_data()
+        
+        # 检查模块加载状态
+        global use_optimized_module
+        if not use_optimized_module:
+            st.warning("⚠️ 使用原始数据加载模块，部分高级功能可能不可用")
         
         # 侧边栏导航
         st.sidebar.title("⚡ 系统导航")
