@@ -252,7 +252,7 @@ def create_3d_reservoir_visualization(data: Dict[str, Any], day_index: int = 0) 
         scene=dict(
             xaxis=dict(title='', showticklabels=False, showgrid=False, zeroline=False, backgroundcolor='rgba(0,0,0,0)'),
             yaxis=dict(title='', showticklabels=False, showgrid=False, zeroline=False, backgroundcolor='rgba(0,0,0,0)'),
-            zaxis=dict(title='水位', titlefont=dict(size=14, color='white'), tickformat='.0%', tickfont=dict(color='white')),
+            zaxis=dict(title=dict(text='水位', font=dict(size=14, color='white')), tickformat='.0%', tickfont=dict(color='white')),
             camera=dict(eye=dict(x=1.8, y=1.8, z=0.8), up=dict(x=0, y=0, z=1)),
             aspectmode='cube',
             bgcolor='rgba(0, 0, 0, 1)'
@@ -265,10 +265,9 @@ def create_3d_reservoir_visualization(data: Dict[str, Any], day_index: int = 0) 
         xaxis2=dict(
             domain=[0.08, 0.45],
             anchor='y2',
-            title='时间(小时)',
+            title=dict(text='时间(小时)', font=dict(color='white')),
             tickvals=list(range(0, 24, 3)),
             dtick=3,
-            titlefont=dict(color='white'),
             tickfont=dict(color='white'),
             gridcolor='rgba(100, 100, 100, 0.3)',
             linecolor='rgba(100, 100, 100, 0.5)'
@@ -276,8 +275,7 @@ def create_3d_reservoir_visualization(data: Dict[str, Any], day_index: int = 0) 
         yaxis2=dict(
             domain=[0.55, 0.95],
             anchor='x2',
-            title='功率(MW)',
-            titlefont=dict(size=12, color='white'),
+            title=dict(text='功率(MW)', font=dict(size=12, color='white')),
             tickfont=dict(color='white'),
             gridcolor='rgba(100, 100, 100, 0.3)',
             linecolor='rgba(100, 100, 100, 0.5)'
@@ -285,19 +283,17 @@ def create_3d_reservoir_visualization(data: Dict[str, Any], day_index: int = 0) 
         xaxis3=dict(
             domain=[0.55, 0.92],
             anchor='y3',
-            title='时间(小时)',
+            title=dict(text='时间(小时)', font=dict(color='white')),
             tickvals=list(range(0, 24, 3)),
             dtick=3,
             showticklabels=False,
-            titlefont=dict(color='white'),
             gridcolor='rgba(100, 100, 100, 0.3)',
             linecolor='rgba(100, 100, 100, 0.5)'
         ),
         yaxis3=dict(
             domain=[0.55, 0.95],
             anchor='x3',
-            title='水位(%)',
-            titlefont=dict(size=12, color='white'),
+            title=dict(text='水位(%)', font=dict(size=12, color='white')),
             tickfont=dict(color='white'),
             range=[0, 100],
             gridcolor='rgba(100, 100, 100, 0.3)',

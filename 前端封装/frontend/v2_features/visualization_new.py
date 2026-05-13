@@ -260,8 +260,7 @@ def create_3d_reservoir_visualization(data: Dict[str, Any], day_index: int = 0) 
                 showbackground=False
             ),
             zaxis=dict(
-                title='水位高度',
-                titlefont=dict(size=14, color='white'),
+                title=dict(text='水位高度', font=dict(size=14, color='white')),
                 tickformat='.0%',
                 tickfont=dict(color='white'),
                 range=[-1.5, 1.5],
@@ -307,10 +306,9 @@ def create_3d_reservoir_visualization(data: Dict[str, Any], day_index: int = 0) 
         xaxis2=dict(
             domain=[0.05, 0.48],
             anchor='y2',
-            title='时间(小时)',
+            title=dict(text='时间(小时)', font=dict(color='white', size=12)),
             tickvals=list(range(0, 24, 3)),
             dtick=3,
-            titlefont=dict(color='white', size=12),
             tickfont=dict(color='white', size=10),
             gridcolor='rgba(50, 50, 50, 0.3)',
             linecolor='rgba(100, 100, 100, 0.5)'
@@ -318,8 +316,7 @@ def create_3d_reservoir_visualization(data: Dict[str, Any], day_index: int = 0) 
         yaxis2=dict(
             domain=[0.58, 0.95],
             anchor='x2',
-            title='功率(MW)',
-            titlefont=dict(size=12, color='white'),
+            title=dict(text='功率(MW)', font=dict(size=12, color='white')),
             tickfont=dict(color='white', size=10),
             gridcolor='rgba(50, 50, 50, 0.3)',
             linecolor='rgba(100, 100, 100, 0.5)',
@@ -328,10 +325,9 @@ def create_3d_reservoir_visualization(data: Dict[str, Any], day_index: int = 0) 
         xaxis3=dict(
             domain=[0.52, 0.95],
             anchor='y3',
-            title='时间(小时)',
+            title=dict(text='时间(小时)', font=dict(color='white', size=12)),
             tickvals=list(range(0, 24, 3)),
             dtick=3,
-            titlefont=dict(color='white', size=12),
             tickfont=dict(color='white', size=10),
             gridcolor='rgba(50, 50, 50, 0.3)',
             linecolor='rgba(100, 100, 100, 0.5)'
@@ -339,8 +335,7 @@ def create_3d_reservoir_visualization(data: Dict[str, Any], day_index: int = 0) 
         yaxis3=dict(
             domain=[0.58, 0.95],
             anchor='x3',
-            title='水位(%)',
-            titlefont=dict(size=12, color='white'),
+            title=dict(text='水位(%)', font=dict(size=12, color='white')),
             tickfont=dict(color='white', size=10),
             range=[0, 100],
             gridcolor='rgba(50, 50, 50, 0.3)',
@@ -350,10 +345,9 @@ def create_3d_reservoir_visualization(data: Dict[str, Any], day_index: int = 0) 
         xaxis4=dict(
             domain=[0.05, 0.95],
             anchor='y4',
-            title='时间(小时)',
+            title=dict(text='时间(小时)', font=dict(color='white', size=12)),
             tickvals=list(range(0, 24, 3)),
             dtick=3,
-            titlefont=dict(color='white', size=12),
             tickfont=dict(color='white', size=10),
             gridcolor='rgba(50, 50, 50, 0.3)',
             linecolor='rgba(100, 100, 100, 0.5)'
@@ -361,8 +355,7 @@ def create_3d_reservoir_visualization(data: Dict[str, Any], day_index: int = 0) 
         yaxis4=dict(
             domain=[0.05, 0.18],
             anchor='x4',
-            title='运行状态',
-            titlefont=dict(size=12, color='white'),
+            title=dict(text='运行状态', font=dict(size=12, color='white')),
             tickfont=dict(color='white', size=10),
             range=[-15, 15],
             tickvals=[-10, 0, 10],
