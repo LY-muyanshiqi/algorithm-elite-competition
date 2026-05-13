@@ -842,6 +842,130 @@ def show_analysis(data):
         st.write(f"📈 趋势方向: {trend_direction}，斜率: {trend_result['trend_slope']:.6f}")
 
 
+def show_parameter_adjustment(data, Zpump, h, efficiency, min_power_ratio, 
+                            carbon_factor, coal_high, coal_mid, coal_low, apply_params):
+    """显示参数调整页面（调参即算功能）"""
+    st.title("⚙️ 参数调整")
+    st.markdown("### 实时调整参数，即时查看计算结果")
+    
+    # 参数展示卡片
+    col1, col2, col3, col4 = st.columns(4)
+    with col1:
+        st.markdown('<div class="metric-card">', unsafe_allow_html=True)
+        st.markdown(f"<div style='color: #8ba4c4;'>抽蓄额定功率</div>", unsafe_allow_html=True)
+        st.markdown(f"<div style='font-size: 1.5rem; color: #00d4ff;'>{Zpump} MW</div>", unsafe_allow_html=True)
+        st.markdown('</div>', unsafe_allow_html=True)
+    with col2:
+        st.markdown('<div class="metric-card">', unsafe_allow_html=True)
+        st.markdown(f"<div style='color: #8ba4c4;'>蓄能时长</div>", unsafe_allow_html=True)
+        st.markdown(f"<div style='font-size: 1.5rem; color: #00d4ff;'>{h} h</div>", unsafe_allow_html=True)
+        st.markdown(f"<div style='color: #8ba4c4; font-size: 0.8rem;'>容量: {Zpump * h} MWh</div>", unsafe_allow_html=True)
+        st.markdown('</div>', unsafe_allow_html=True)
+    with col3:
+        st.markdown('<div class="metric-card">', unsafe_allow_html=True)
+        st.markdown(f"<div style='color: #8ba4c4;'>抽水效率</div>", unsafe_allow_html=True)
+        st.markdown(f"<div style='font-size: 1.5rem; color: #00ff88;'>{efficiency * 100:.0f}%</div>", unsafe_allow_html=True)
+        st.markdown('</div>', unsafe_allow_html=True)
+    with col4:
+        st.markdown('<div class="metric-card">', unsafe_allow_html=True)
+        st.markdown(f"<div style='color: #8ba4c4;'>碳排放系数</div>", unsafe_allow_html=True)
+        st.markdown(f"<div style='font-size: 1.5rem; color: #ffcc00;'>{carbon_factor}</div>", unsafe_allow_html=True)
+        st.markdown('</div>', unsafe_allow_html=True)
+    
+    st.markdown("---")
+    
+    # 计算按钮和结果展示
+    if apply_params:
+        with st.spinner("🔄 正在重新计算..."):
+            params = {
+                'Zpump': Zpump,
+                'h': h,
+                'efficiency': efficiency,
+                'min_power_ratio': min_power_ratio,
+                'carbon_factor': carbon_factor,
+                'coal_consumption_high': coal_high,
+                'coal_consumption_mid': coal_mid,
+                'coal_consumption_low': coal_low
+            }
+            result = dl.recalculate_with_parameters(data, params)
+            
+            st.success("✅ 计算完成！")
+            
+            # 显示计算结果
+            st.subheader("📊 计算结果对比")
+            
+            col1, col2, col3 = st.columns(3)
+            with col1:
+                st.markdown('<div class="metric-card">', unsafe_allow_html=True)
+                st.markdown(f"<div style='color: #8ba4c4;'>碳减排量</div>", unsafe_allow_html=True)
+                st.markdown(f"<div style='font-size: 1.5rem; color: #00ff88;'>{result['carbon_result']['carbon_change']:.2f} 万吨</div>", unsafe_allow_html=True)
+                st.markdown('</div>', unsafe_allow_html=True)
+            with col2:
+                st.markdown('<div class="metric-card">', unsafe_allow_html=True)
+                st.markdown(f"<div style='color: #8ba4c4;'>发电小时数</div>", unsafe_allow_html=True)
+                st.markdown(f"<div style='font-size: 1.5rem; color: #00d4ff;'>{result['ps_stats']['generating_hours']} 小时</div>", unsafe_allow_html=True)
+                st.markdown('</div>', unsafe_allow_html=True)
+            with col3:
+                st.markdown('<div class="metric-card">', unsafe_allow_html=True)
+                st.markdown(f"<div style='color: #8ba4c4;'>抽发效率</div>", unsafe_allow_html=True)
+                st.markdown(f"<div style='font-size: 1.5rem; color: #ffcc00;'>{result['ps_stats']['efficiency']:.2f}%</div>", unsafe_allow_html=True)
+                st.markdown('</div>', unsafe_allow_html=True)
+            
+            # 抽蓄功率曲线对比
+            st.subheader("📈 抽水蓄能功率曲线")
+            sample_day = 100
+            hours = np.arange(24)
+            fig = go.Figure()
+            fig.add_trace(go.Bar(
+                x=hours,
+                y=result['np_raw'][sample_day],
+                name=f'参数调整后 (第{sample_day+1}天)',
+                marker_color=np.where(result['np_raw'][sample_day] >= 0, 'rgba(0, 255, 128, 0.8)', 'rgba(255, 100, 100, 0.8)')
+            ))
+            fig.update_layout(
+                title=f'抽水蓄能功率曲线 (第{sample_day+1}天)',
+                xaxis_title='时段',
+                yaxis_title='功率(MW)',
+                height=400,
+                template='plotly_dark',
+                paper_bgcolor='rgba(0,0,0,0)',
+                plot_bgcolor='rgba(0,0,0,0)'
+            )
+            st.plotly_chart(fig, use_container_width=True)
+            
+            # 保存到session状态
+            st.session_state['custom_params'] = params
+            st.session_state['recalculated_result'] = result
+    
+    else:
+        st.info("💡 调整左侧参数后，点击「应用参数并重新计算」按钮查看结果")
+        
+        # 显示默认结果
+        st.subheader("📊 默认参数结果")
+        try:
+            carbon_result = dl.calculate_carbon_reduction(data)
+            ps_stats = dl.calculate_pumped_storage_schedule(data['np_raw'])
+            
+            col1, col2, col3 = st.columns(3)
+            with col1:
+                st.markdown('<div class="metric-card">', unsafe_allow_html=True)
+                st.markdown(f"<div style='color: #8ba4c4;'>碳减排量</div>", unsafe_allow_html=True)
+                st.markdown(f"<div style='font-size: 1.5rem; color: #00ff88;'>{carbon_result['carbon_change']:.2f} 万吨</div>", unsafe_allow_html=True)
+                st.markdown('</div>', unsafe_allow_html=True)
+            with col2:
+                st.markdown('<div class="metric-card">', unsafe_allow_html=True)
+                st.markdown(f"<div style='color: #8ba4c4;'>发电小时数</div>", unsafe_allow_html=True)
+                st.markdown(f"<div style='font-size: 1.5rem; color: #00d4ff;'>{ps_stats['generating_hours']} 小时</div>", unsafe_allow_html=True)
+                st.markdown('</div>', unsafe_allow_html=True)
+            with col3:
+                st.markdown('<div class="metric-card">', unsafe_allow_html=True)
+                st.markdown(f"<div style='color: #8ba4c4;'>抽发效率</div>", unsafe_allow_html=True)
+                st.markdown(f"<div style='font-size: 1.5rem; color: #ffcc00;'>{ps_stats['efficiency']:.2f}%</div>", unsafe_allow_html=True)
+                st.markdown('</div>', unsafe_allow_html=True)
+        except Exception as e:
+            st.warning(f"加载默认结果失败: {e}")
+
+
 def main():
     """主应用入口"""
     try:
@@ -888,6 +1012,30 @@ def main():
             }
             selected_days = season_days[season]
         
+        # 参数配置区域（调参即算）
+        st.sidebar.markdown("### ⚙️ 参数配置")
+        with st.sidebar.expander("点击展开参数配置", expanded=False):
+            # 抽蓄参数
+            st.markdown("**💧 抽水蓄能参数**")
+            Zpump = st.slider("抽蓄额定功率 (MW)", 500, 3000, 1400, 100, key='zpump')
+            h = st.slider("蓄能时长 (h)", 2, 8, 4, 1, key='h')
+            efficiency = st.slider("抽水效率", 0.6, 0.9, 0.75, 0.05, key='efficiency')
+            min_power_ratio = st.slider("最小出力比例", 0.1, 0.5, 0.2, 0.05, key='min_power')
+            
+            st.markdown("**🔥 火电机组参数**")
+            carbon_factor = st.slider("碳排放系数", 0.3, 0.8, 0.5, 0.05, key='carbon_factor')
+            coal_high = st.slider("高负荷煤耗 (g/kWh)", 280, 320, 300, 5, key='coal_high')
+            coal_mid = st.slider("中度调峰煤耗 (g/kWh)", 310, 350, 330, 5, key='coal_mid')
+            coal_low = st.slider("深度调峰煤耗 (g/kWh)", 350, 400, 370, 5, key='coal_low')
+            
+            # 应用按钮
+            apply_params = st.button("✅ 应用参数并重新计算", key='apply_params')
+            
+            # 重置按钮
+            if st.button("🔄 重置为默认参数", key='reset_params'):
+                st.session_state['custom_params'] = None
+                st.experimental_rerun()
+        
         # 页面选择（整合原有和新增页面）
         st.sidebar.markdown("### 📑 页面导航")
         page = st.sidebar.radio(
@@ -895,6 +1043,7 @@ def main():
             [
                 "🏠 总览仪表盘",
                 "📊 系统总览",
+                "⚙️ 参数调整",
                 "📐 计算公式详解",
                 "🌿 新能源发电",
                 "☀️ 新能源数据",
@@ -944,6 +1093,10 @@ def main():
         
         elif page == "📊 系统总览":
             show_overview_v2(data)
+        
+        elif page == "⚙️ 参数调整":
+            show_parameter_adjustment(data, Zpump, h, efficiency, min_power_ratio, 
+                                    carbon_factor, coal_high, coal_mid, coal_low, apply_params)
         
         elif page == "📐 计算公式详解":
             st.markdown("## 📐 计算公式详解")

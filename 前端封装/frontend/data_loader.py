@@ -42,13 +42,17 @@ def load_mat_data():
     return data
 
 
-def calculate_npump(data):
+def calculate_npump(data, Zpump=1400, h=4, efficiency=0.75, min_power_ratio=0.2):
     """
     计算抽水蓄能功率 (仿照process.m)
     决策变量 x: 23个值，代表每个时刻结束时水库状态比例 [0,1]
+    
+    参数:
+    - Zpump: 抽水蓄能装机容量 (MW)，默认1400
+    - h: 蓄能时长 (小时)，默认4
+    - efficiency: 抽水效率，默认0.75
+    - min_power_ratio: 最小出力比例，默认0.2
     """
-    Zpump = 1400  # 抽水蓄能装机容量 (MW)，与MATLAB源代码保持一致
-    h = 4  # 时间步长 (小时)
     V = Zpump * h  # 蓄能容量 (MWh)
     
     solution = data['solution']  # (365, 23)
@@ -66,7 +70,7 @@ def calculate_npump(data):
         for i in range(1, 25):
             if C[i] <= C[i-1]:  # 发电状态
                 np_power = (C[i-1] - C[i]) * V
-                if np_power < Zpump * 0.2:
+                if np_power < Zpump * min_power_ratio:
                     np_power = 0
                     C[i] = C[i-1]
                 elif np_power > Zpump:
@@ -74,13 +78,13 @@ def calculate_npump(data):
                     C[i] = C[i-1] - np_power / V
                 Npump[d, i-1] = np_power
             else:  # 抽水状态
-                np_power = (C[i-1] - C[i]) * V / 0.75
-                if np_power > -Zpump * 0.2:
+                np_power = (C[i-1] - C[i]) * V / efficiency
+                if np_power > -Zpump * min_power_ratio:
                     np_power = 0
                     C[i] = C[i-1]
                 elif np_power < -Zpump:
                     np_power = -Zpump
-                    C[i] = C[i-1] - np_power * 0.75 / V
+                    C[i] = C[i-1] - np_power * efficiency / V
                 Npump[d, i-1] = np_power
     
     return Npump
@@ -153,17 +157,23 @@ def calculate_pumped_storage_schedule(np_power):
     }
 
 
-def calculate_carbon_reduction(data):
+def calculate_carbon_reduction(data, carbon_factor=0.5, coal_consumption_high=300, coal_consumption_mid=330, coal_consumption_low=370):
     """
     计算碳减排
     碳排放变化 = |有抽蓄火电负荷 - 无抽蓄火电负荷| × 碳排放系数
     注意：不使用绝对值，正确反映碳排放增减方向
+    
+    参数:
+    - carbon_factor: 碳排放系数 (吨CO2/万kWh)，默认0.5
+    - coal_consumption_high: 高负荷煤耗 (g/kWh)，默认300
+    - coal_consumption_mid: 中度调峰煤耗 (g/kWh)，默认330
+    - coal_consumption_low: 深度调峰煤耗 (g/kWh)，默认370
     """
     fh = data['fh']  # 火电负荷
     hydro = data['hydro']  # 水电
     wind = data['wind']  #风电
     solar = data['solar']  # 光伏
-    npump = data['np_raw']  # 抽水蓄能功率
+    npump = data.get('np_raw', np.zeros_like(fh))  # 抽水蓄能功率
     
     N = hydro + wind + solar  # 新能源总功率
     
@@ -172,12 +182,20 @@ def calculate_carbon_reduction(data):
     # 无抽蓄时的火电负荷
     Nt2 = fh - N
     
+    # 计算分段碳排放强度
+    def calculate_emission_intensity(power, max_power=1000):
+        """根据负荷率计算碳排放强度"""
+        load_rate = power / max_power
+        if load_rate > 0.5:
+            return coal_consumption_high * 3.67 / 1000  # kg/kWh -> t/MWh
+        elif load_rate > 0.3:
+            return coal_consumption_mid * 3.67 / 1000
+        else:
+            return coal_consumption_low * 3.67 / 1000
+    
     # 火电负荷变化量 (亿kWh)
     # 正值表示火电增发，负值表示火电减少
     power_change = (Nt.sum() - Nt2.sum()) / 1e6
-    
-    # 碳排放系数 (吨CO2/万kWh)
-    carbon_factor = 0.5
     
     # 碳排放变化量 (万吨)
     # 正值表示碳排放增加，负值表示碳减排
@@ -192,5 +210,60 @@ def calculate_carbon_reduction(data):
         'daily_carbon_change': daily_carbon_change,  # 每天碳排放变化
         'Nt': Nt,  # 有抽蓄火电负荷
         'Nt2': Nt2,  # 无抽蓄火电负荷
-        'carbon_factor': carbon_factor  # 碳排放系数
+        'carbon_factor': carbon_factor,  # 碳排放系数
+        'coal_consumption': {'high': coal_consumption_high, 'mid': coal_consumption_mid, 'low': coal_consumption_low}
+    }
+
+
+def recalculate_with_parameters(data, params):
+    """
+    使用自定义参数重新计算所有指标
+    params字典包含:
+    - Zpump: 抽蓄额定功率 (MW)
+    - h: 蓄能时长 (h)
+    - efficiency: 抽水效率
+    - min_power_ratio: 最小出力比例
+    - carbon_factor: 碳排放系数
+    - coal_consumption_high: 高负荷煤耗
+    - coal_consumption_mid: 中度调峰煤耗
+    - coal_consumption_low: 深度调峰煤耗
+    """
+    # 重新计算抽蓄功率
+    np_raw = calculate_npump(
+        data,
+        Zpump=params.get('Zpump', 1400),
+        h=params.get('h', 4),
+        efficiency=params.get('efficiency', 0.75),
+        min_power_ratio=params.get('min_power_ratio', 0.2)
+    )
+    
+    # 重新计算火电功率
+    fh = data['fh']
+    hydro = data['hydro']
+    wind = data['wind']
+    solar = data['solar']
+    N = hydro + wind + solar
+    
+    Nt = fh - (N + np_raw)  # 有抽蓄
+    Nt2 = fh - N  # 无抽蓄
+    
+    # 重新计算碳减排
+    carbon_result = calculate_carbon_reduction(
+        {**data, 'np_raw': np_raw},
+        carbon_factor=params.get('carbon_factor', 0.5),
+        coal_consumption_high=params.get('coal_consumption_high', 300),
+        coal_consumption_mid=params.get('coal_consumption_mid', 330),
+        coal_consumption_low=params.get('coal_consumption_low', 370)
+    )
+    
+    # 计算抽水蓄能调度统计
+    ps_stats = calculate_pumped_storage_schedule(np_raw)
+    
+    return {
+        'np_raw': np_raw,
+        'Nt': Nt,
+        'Nt2': Nt2,
+        'carbon_result': carbon_result,
+        'ps_stats': ps_stats,
+        'params': params
     }
