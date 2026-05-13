@@ -138,32 +138,34 @@ def create_3d_reservoir_visualization(data: Dict[str, Any], day_index: int = 0) 
         plotly.graph_objects.Figure: 3D可视化对象
     """
     solution = data['solution']
-    x = solution[day_index, :23]  # 23个决策变量代表水库状态
+    x = solution[day_index, :23]
     
-    # 创建时间序列（24小时）
     hours = np.arange(24)
     
-    # 水库状态（0-1归一化）
     reservoir_level = np.zeros(25)
-    reservoir_level[0] = 0.5  # 初始状态
+    reservoir_level[0] = 0.5
     reservoir_level[1:24] = x
-    reservoir_level[24] = 0.5  # 周期约束
+    reservoir_level[24] = 0.5
     
-    # 抽水蓄能功率
     npump = data['np_raw'][day_index]
     
-    # 创建3D曲面数据
-    theta = np.linspace(0, 2 * np.pi, 30)
-    phi = np.linspace(0, np.pi, 15)
+    theta = np.linspace(0, 2 * np.pi, 36)
+    phi = np.linspace(0, np.pi, 18)
     theta, phi = np.meshgrid(theta, phi)
     
-    # 3D水库形状
     fig = go.Figure()
     
-    # 添加水库曲面（随时间变化）
+    colorscale = [
+        [0, 'rgba(50, 50, 50, 0.6)'],
+        [0.3, 'rgba(70, 70, 70, 0.7)'],
+        [0.5, 'rgba(90, 90, 90, 0.75)'],
+        [0.7, 'rgba(110, 110, 110, 0.8)'],
+        [1, 'rgba(130, 130, 130, 0.85)']
+    ]
+    
     for hour in range(24):
         level = reservoir_level[hour]
-        radius = 1 + level * 0.3  # 半径随水位变化
+        radius = 1.2 + level * 0.5
         x_surface = radius * np.sin(phi) * np.cos(theta)
         y_surface = radius * np.sin(phi) * np.sin(theta)
         z_surface = (level * 2 - 1) * np.cos(phi)
@@ -172,65 +174,138 @@ def create_3d_reservoir_visualization(data: Dict[str, Any], day_index: int = 0) 
             x=x_surface,
             y=y_surface,
             z=z_surface,
-            opacity=0.1 + level * 0.3,
-            name=f'{hour}时',
+            colorscale=colorscale,
+            opacity=0.85,
+            name=f'{hour}:00',
             showscale=False,
-            visible=False
+            visible=False,
+            contours=go.surface.Contours(
+                z=dict(show=True, usecolormap=True, highlightcolor="#00ff00", project_z=True)
+            ),
+            lighting=go.surface.Lighting(
+                ambient=0.4,
+                diffuse=0.9,
+                specular=0.4,
+                roughness=0.4
+            ),
+            lightposition=dict(x=0, y=0, z=1.5)
         ))
     
-    # 设置第0小时可见
     fig.data[0].visible = True
     
-    # 创建滑块
     steps = []
     for i in range(24):
+        level = reservoir_level[i]
+        status = "抽水" if npump[i] < 0 else ("发电" if npump[i] > 0 else "空闲")
+        color = "#ff6b6b" if npump[i] < 0 else ("#51cf66" if npump[i] > 0 else "#ffd43b")
+        
         step = dict(
             method='restyle',
             args=['visible', [False] * 24],
             label=f'{i}:00'
         )
         step['args'][1][i] = True
+        
+        annotation_text = f"⏰ {i}:00 | 水位: {level*100:.1f}% | 状态: {status} | 功率: {npump[i]:.2f}MW"
+        step['args'][1].append(annotation_text)
         steps.append(step)
     
     sliders = [dict(
         active=0,
-        currentvalue={'prefix': '时间: '},
-        pad={'t': 50},
-        steps=steps
+        currentvalue={'prefix': '时间: ', 'font': dict(size=14)},
+        pad={'t': 60, 'b': 10},
+        len=0.9,
+        steps=steps,
+        ticklen=5,
+        minorticklen=3
     )]
     
-    # 添加功率柱状图
     fig.add_trace(go.Bar(
         x=hours,
         y=npump,
         name='抽水蓄能功率',
-        marker_color=np.where(npump >= 0, 'rgba(51, 204, 102, 0.8)', 'rgba(255, 102, 102, 0.8)'),
+        marker_color=['#51cf66' if v < 0 else '#ff6b6b' if v > 0 else '#ffd43b' for v in npump],
+        opacity=0.8,
         xaxis='x2',
-        yaxis='y2'
+        yaxis='y2',
+        hovertemplate='时间: %{x}时<br>功率: %{y:.2f}MW<extra></extra>'
+    ))
+    
+    fig.add_trace(go.Scatter(
+        x=hours,
+        y=reservoir_level[0:24] * 100,
+        name='水位百分比',
+        line=dict(color='#339af0', width=3),
+        fill='tozeroy',
+        fillcolor='rgba(51, 154, 240, 0.2)',
+        xaxis='x3',
+        yaxis='y3',
+        hovertemplate='时间: %{x}时<br>水位: %{y:.1f}%<extra></extra>'
     ))
     
     fig.update_layout(
-        title=f"🏭 第{day_index+1}天抽水蓄能水库状态（3D可视化）",
+        title=dict(
+            text=f'🏊 第{day_index+1}天抽水蓄能水库状态3D动态可视化<br><sub style="color: gray; font-size: 12px;">🟢绿色=抽水(储水) | 🔴红色=发电 | 🟡黄色=空闲</sub>',
+            x=0.5,
+            font=dict(size=18)
+        ),
         scene=dict(
-            xaxis_title='X',
-            yaxis_title='Y',
-            zaxis_title='水位',
-            camera=dict(eye=dict(x=1.5, y=1.5, z=0.5))
+            xaxis=dict(title='', showticklabels=False, showgrid=False, zeroline=False, backgroundcolor='rgba(0,0,0,0)'),
+            yaxis=dict(title='', showticklabels=False, showgrid=False, zeroline=False, backgroundcolor='rgba(0,0,0,0)'),
+            zaxis=dict(title='水位', titlefont=dict(size=14, color='white'), tickformat='.0%', tickfont=dict(color='white')),
+            camera=dict(eye=dict(x=1.8, y=1.8, z=0.8), up=dict(x=0, y=0, z=1)),
+            aspectmode='cube',
+            bgcolor='rgba(0, 0, 0, 1)'
         ),
         sliders=sliders,
-        width=900,
-        height=600,
-        title_x=0.5,
+        width=1000,
+        height=700,
+        showlegend=True,
+        legend=dict(x=0.02, y=0.98, bgcolor='rgba(30, 30, 30, 0.9)', font=dict(color='white')),
         xaxis2=dict(
-            domain=[0.1, 0.9],
+            domain=[0.08, 0.45],
             anchor='y2',
-            title='时间(小时)'
+            title='时间(小时)',
+            tickvals=list(range(0, 24, 3)),
+            dtick=3,
+            titlefont=dict(color='white'),
+            tickfont=dict(color='white'),
+            gridcolor='rgba(100, 100, 100, 0.3)',
+            linecolor='rgba(100, 100, 100, 0.5)'
         ),
         yaxis2=dict(
-            domain=[0.05, 0.2],
+            domain=[0.55, 0.95],
             anchor='x2',
-            title='功率(MW)'
-        )
+            title='功率(MW)',
+            titlefont=dict(size=12, color='white'),
+            tickfont=dict(color='white'),
+            gridcolor='rgba(100, 100, 100, 0.3)',
+            linecolor='rgba(100, 100, 100, 0.5)'
+        ),
+        xaxis3=dict(
+            domain=[0.55, 0.92],
+            anchor='y3',
+            title='时间(小时)',
+            tickvals=list(range(0, 24, 3)),
+            dtick=3,
+            showticklabels=False,
+            titlefont=dict(color='white'),
+            gridcolor='rgba(100, 100, 100, 0.3)',
+            linecolor='rgba(100, 100, 100, 0.5)'
+        ),
+        yaxis3=dict(
+            domain=[0.55, 0.95],
+            anchor='x3',
+            title='水位(%)',
+            titlefont=dict(size=12, color='white'),
+            tickfont=dict(color='white'),
+            range=[0, 100],
+            gridcolor='rgba(100, 100, 100, 0.3)',
+            linecolor='rgba(100, 100, 100, 0.5)'
+        ),
+        margin=dict(l=50, r=50, t=100, b=150),
+        paper_bgcolor='rgba(10, 10, 10, 1)',
+        plot_bgcolor='rgba(20, 20, 20, 1)'
     )
     
     return fig

@@ -462,16 +462,16 @@ def create_scenario_comparison_chart(base_stats: Dict[str, float], scenario_stat
         base_stats['total_wind'],
         base_stats['total_solar'],
         base_stats['total_hydro'],
-        base_stats['total_pump_gen'],
-        base_stats['total_pump_con'],
+        base_stats.get('total_pump_gen', base_stats.get('total_pump_generation', 0)),
+        base_stats.get('total_pump_con', base_stats.get('total_pump_consumption', 0)),
         base_stats['total_thermal']
     ]
     scenario_values = [
         scenario_stats['total_wind'],
         scenario_stats['total_solar'],
         scenario_stats['total_hydro'],
-        scenario_stats['total_pump_gen'],
-        scenario_stats['total_pump_consumption'],
+        scenario_stats.get('total_pump_gen', scenario_stats.get('total_pump_generation', 0)),
+        scenario_stats.get('total_pump_con', scenario_stats.get('total_pump_consumption', 0)),
         scenario_stats['total_thermal']
     ]
     
