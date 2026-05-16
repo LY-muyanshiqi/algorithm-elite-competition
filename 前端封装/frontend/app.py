@@ -50,95 +50,40 @@ def get_all_data():
     return dl.load_all_data()
 
 
-# ==================== 新增页面函数（来自app_v2.py） ====================
-
-def show_overview_v2(data):
-    """显示系统总览v2页面"""
-    st.title("📊 系统总览")
-    
-    col1, col2, col3, col4 = st.columns(4)
-    
-    np_raw = data['np_raw']
-    pump_hours = int((np_raw < 0).sum())
-    gen_hours = int((np_raw > 0).sum())
-    
-    try:
-        efficiency = dl.calculate_pumped_storage_schedule(np_raw)['efficiency']
-    except Exception:
-        efficiency = 0
-    
-    try:
-        carbon_result = dl.calculate_carbon_reduction(data)
-        carbon_change = carbon_result['carbon_change']
-    except Exception:
-        carbon_change = 0
-    
-    with col1:
-        st.markdown('<div class="metric-card">', unsafe_allow_html=True)
-        st.metric("🌍 碳减排量", f"{carbon_change:.2f}万吨")
-        st.markdown('</div>', unsafe_allow_html=True)
-    
-    with col2:
-        st.markdown('<div class="metric-card">', unsafe_allow_html=True)
-        st.metric("💧 抽水小时数", f"{pump_hours}小时")
-        st.markdown('</div>', unsafe_allow_html=True)
-    
-    with col3:
-        st.markdown('<div class="metric-card">', unsafe_allow_html=True)
-        st.metric("⚡ 发电小时数", f"{gen_hours}小时")
-        st.markdown('</div>', unsafe_allow_html=True)
-    
-    with col4:
-        st.markdown('<div class="metric-card">', unsafe_allow_html=True)
-        st.metric("🔄 抽发效率", f"{efficiency:.2f}%")
-        st.markdown('</div>', unsafe_allow_html=True)
-    
-    st.subheader("📈 月度能源产出趋势")
-    if ADVANCED_FEATURES:
-        fig = vis.create_interactive_comparison_chart(data)
-        st.plotly_chart(fig, use_container_width=True)
-    
-    if st.button("📥 导出总览数据"):
-        overview_data = {
-            '碳减排量(万吨)': carbon_change,
-            '抽水小时数': pump_hours,
-            '发电小时数': gen_hours,
-            '抽发效率(%)': efficiency
-        }
-        st.markdown(charts.export_to_csv(overview_data, "系统总览数据.csv"), unsafe_allow_html=True)
+# 会话状态初始化
+def init_session_state():
+    """初始化默认参数到会话状态"""
+    defaults = {
+        'zpump': 1400, 'h_val': 4, 'efficiency_val': 0.75, 'min_power': 0.2,
+        'carbon_factor': 0.5, 'coal_high': 300, 'coal_mid': 330, 'coal_low': 370,
+        'custom_params': None, 'recalculated_result': None, 'view_mode': '全年总览'
+    }
+    for k, v in defaults.items():
+        if k not in st.session_state:
+            st.session_state[k] = v
 
 
-def show_new_energy_v2(data):
-    """显示新能源数据v2页面"""
-    st.title("☀️ 新能源数据")
-    
-    day_index = st.slider("选择日期", 0, 364, 0)
-    
-    col1, col2, col3 = st.columns(3)
-    
-    with col1:
-        st.metric("🌬️ 当日风电", f"{data['wind'][day_index].sum():.1f} MWh")
-    
-    with col2:
-        st.metric("☀️ 当日光伏", f"{data['solar'][day_index].sum():.1f} MWh")
-    
-    with col3:
-        st.metric("💧 当日水电", f"{data['hydro'][day_index].sum():.1f} MWh")
-    
-    st.subheader("⚡ 当日能量平衡")
-    if ADVANCED_FEATURES:
-        fig = vis.create_energy_balance_chart(data, day_index)
-        st.plotly_chart(fig, use_container_width=True)
-    
-    if st.button("📥 导出新能源数据"):
-        day_data = pd.DataFrame({
-            '时间': np.arange(24),
-            '风电(MW)': data['wind'][day_index],
-            '光伏(MW)': data['solar'][day_index],
-            '水电(MW)': data['hydro'][day_index]
-        })
-        st.markdown(charts.export_to_csv(day_data, f"新能源数据_第{day_index+1}天.csv"), unsafe_allow_html=True)
+# 缓存派生数据，避免重复计算
+@st.cache_data(ttl=3600, show_spinner=False)
+def get_derived_data(_data):
+    """预计算碳减排和抽蓄调度等派生数据"""
+    carbon_result = dl.calculate_carbon_reduction(_data)
+    ps_stats = dl.calculate_pumped_storage_schedule(_data['np_raw'])
+    totals = {
+        'total_wind': np.sum(_data['wind']) / 10000,
+        'total_solar': np.sum(_data['solar']) / 10000,
+        'total_hydro': np.sum(_data['hydro']) / 10000,
+        'total_fh': np.sum(_data['fh']) / 10000,
+        'total_renewable': (np.sum(_data['wind']) + np.sum(_data['solar']) + np.sum(_data['hydro'])) / 10000,
+        'renewable_ratio': (np.sum(_data['wind']) + np.sum(_data['solar']) + np.sum(_data['hydro'])) /
+                          (np.sum(_data['wind']) + np.sum(_data['solar']) + np.sum(_data['hydro']) + np.sum(_data['fh'])) * 100,
+        'pump_hours': int((_data['np_raw'] < 0).sum()),
+        'gen_hours': int((_data['np_raw'] > 0).sum()),
+    }
+    return {'carbon': carbon_result, 'ps_stats': ps_stats, 'totals': totals}
 
+
+# ==================== v2页面函数 ====================
 
 def show_pareto_v2(data):
     """显示Pareto解集v2页面"""
@@ -154,7 +99,7 @@ def show_pareto_v2(data):
     fig2 = make_subplots(rows=1, cols=2, subplot_titles=('目标函数1', '目标函数2'))
     fig2.add_trace(go.Histogram(x=z_gain[:, 0], name='目标1', marker_color='rgba(0, 212, 255, 0.8)'), row=1, col=1)
     fig2.add_trace(go.Histogram(x=z_gain[:, 1], name='目标2', marker_color='rgba(0, 255, 128, 0.8)'), row=1, col=2)
-    fig2.update_layout(height=400)
+    fig2.update_layout(height=400, **charts.CHART_LAYOUT)
     st.plotly_chart(fig2, use_container_width=True)
 
 
@@ -195,114 +140,42 @@ def show_pumped_storage_v2(data):
         st.info("调度统计数据不可用")
 
 
-def show_carbon_v2(data):
-    """显示碳减排分析v2页面"""
-    st.title("🌍 碳减排分析")
-    
-    try:
-        carbon_result = dl.calculate_carbon_reduction(data)
-
-        st.subheader("📊 碳减排统计")
-        col1, col2 = st.columns(2)
-
-        with col1:
-            st.metric("🌱 年碳减排量", f"{carbon_result['carbon_change']:.2f}万吨")
-
-        with col2:
-            st.metric("📈 火电变化", f"{carbon_result['power_change']:.2f}亿kWh")
-
-        st.subheader("📈 全年日碳减排分布（365天）")
-        days = np.arange(1, 366)
-        colors = ['rgba(0, 255, 128, 0.8)' if v < 0 else 'rgba(255, 100, 100, 0.8)' for v in carbon_result['daily_carbon_change']]
-        fig_daily = go.Figure(data=[go.Bar(
-            x=days,
-            y=carbon_result['daily_carbon_change'],
-            marker_color=colors,
-            name='日碳减排'
-        )])
-        fig_daily.update_layout(
-            title='全年日碳减排柱状图（绿色=减排，红色=增排）',
-            xaxis_title='日期',
-            yaxis_title='碳减排(万吨)',
-            height=400,
-            template='plotly_dark',
-            paper_bgcolor='rgba(0,0,0,0)',
-            plot_bgcolor='rgba(0,0,0,0)'
-        )
-        st.plotly_chart(fig_daily, use_container_width=True)
-
-        st.subheader("📈 月度碳减排趋势")
-        monthly_carbon = np.array_split(carbon_result['daily_carbon_change'], 12)
-        monthly_avg = [np.mean(m) for m in monthly_carbon]
-
-        fig_monthly = go.Figure(data=[go.Bar(
-            x=['1月', '2月', '3月', '4月', '5月', '6月', '7月', '8月', '9月', '10月', '11月', '12月'],
-            y=monthly_avg,
-            marker_color='rgba(0, 212, 255, 0.8)'
-        )])
-        fig_monthly.update_layout(
-            title='月度碳减排量',
-            xaxis_title='月份',
-            yaxis_title='碳减排(万吨)',
-            template='plotly_dark',
-            paper_bgcolor='rgba(0,0,0,0)',
-            plot_bgcolor='rgba(0,0,0,0)'
-        )
-        st.plotly_chart(fig_monthly, use_container_width=True)
-    except Exception as e:
-        st.info(f"碳减排数据不可用: {e}")
-
-
 def show_visualization(data):
     """显示高级可视化页面"""
     st.title("🎨 高级可视化")
-    
+
     if not ADVANCED_FEATURES:
         st.warning("⚠️ 高级可视化功能不可用，请确保v2_features模块已正确安装")
         return
-    
+
     vis_options = vis.get_visualization_list()
     selected_vis = st.selectbox("选择可视化功能", vis_options)
-    
-    day_index = st.slider("选择日期", 0, 364, 0)
-    
-    if selected_vis == '桑基图 - 能量流向':
-        fig = vis.create_sankey_diagram(data, day_index)
+
+    # 仅需要日期索引的图表显示日期滑块
+    needs_day = {'桑基图 - 能量流向', '3D水库可视化', '能量平衡图', '能源流动动画'}
+    day_index = st.slider("选择日期", 0, 364, 0) if selected_vis in needs_day else 0
+
+    vis_map = {
+        '桑基图 - 能量流向': lambda: vis.create_sankey_diagram(data, day_index),
+        '3D水库可视化': lambda: vis.create_3d_reservoir_visualization(data, day_index),
+        '能量平衡图': lambda: vis.create_energy_balance_chart(data, day_index),
+        'Pareto前沿3D图': lambda: vis.create_pareto_3d_scatter(data),
+        '碳减排热力图': lambda: vis.create_carbon_reduction_heatmap(data),
+        '月度对比图': lambda: vis.create_interactive_comparison_chart(data),
+        '能源流动动画': lambda: vis.create_energy_flow_animation(data, day_index),
+    }
+
+    fig = vis_map.get(selected_vis, lambda: None)()
+    if fig is not None:
         st.plotly_chart(fig, use_container_width=True)
-    
-    elif selected_vis == '3D水库可视化':
-        fig = vis.create_3d_reservoir_visualization(data, day_index)
-        st.plotly_chart(fig, use_container_width=True)
-    
-    elif selected_vis == '能量平衡图':
-        fig = vis.create_energy_balance_chart(data, day_index)
-        st.plotly_chart(fig, use_container_width=True)
-    
-    elif selected_vis == 'Pareto前沿3D图':
-        fig = vis.create_pareto_3d_scatter(data)
-        st.plotly_chart(fig, use_container_width=True)
-    
-    elif selected_vis == '碳减排热力图':
-        fig = vis.create_carbon_reduction_heatmap(data)
-        st.plotly_chart(fig, use_container_width=True)
-    
-    elif selected_vis == '月度对比图':
-        fig = vis.create_interactive_comparison_chart(data)
-        st.plotly_chart(fig, use_container_width=True)
-    
-    elif selected_vis == '能源流动动画':
-        fig = vis.create_energy_flow_animation(data, day_index)
-        st.plotly_chart(fig, use_container_width=True)
-    
-    # 下载图表（仅在成功获取图片数据时显示）
-    plot_data = charts.download_plotly_figure(fig, f"{selected_vis}.png")
-    if plot_data is not None:
-        st.download_button(
-            label="📥 下载图表",
-            data=plot_data,
-            file_name=f"{selected_vis}.png",
-            mime="image/png"
-        )
+        plot_data = charts.download_plotly_figure(fig, f"{selected_vis}.png")
+        if plot_data is not None:
+            st.download_button(
+                label="📥 下载图表",
+                data=plot_data,
+                file_name=f"{selected_vis}.png",
+                mime="image/png"
+            )
 
 
 def show_analysis(data):
@@ -602,24 +475,28 @@ def show_parameter_adjustment(data, Zpump, h, efficiency, min_power_ratio,
 
 def main():
     """主应用入口"""
+    init_session_state()
+
     try:
         data = get_all_data()
-        
+        derived = get_derived_data(data)
+
         if not ADVANCED_FEATURES:
             st.warning("⚠️ 使用原始数据加载模块，部分高级功能可能不可用")
-        
+
         # 标题区域
         st.markdown('<h1 class="main-title">⚡ 新型电力系统下抽水蓄能减碳效益优化核算系统</h1>', unsafe_allow_html=True)
         st.markdown('<p class="sub-title">基于NSLDE多目标优化算法 | 全年8760小时调度策略可视化分析</p>', unsafe_allow_html=True)
-        
+
         # 侧边栏
         st.sidebar.title("⚡ 系统导航")
-        
+
         # 时间范围选择
         st.sidebar.markdown("### 🕐 时间范围")
         view_mode = st.sidebar.selectbox(
             "视图模式",
-            ["全年总览", "按月查看", "按季节查看", "典型日分析"]
+            ["全年总览", "按月查看", "按季节查看", "典型日分析"],
+            key='view_mode'
         )
         
         selected_days = None
@@ -654,29 +531,41 @@ def main():
         with st.sidebar.expander("点击展开参数配置", expanded=False):
             # 抽蓄参数
             st.markdown("**💧 抽水蓄能参数**")
-            Zpump = st.slider("抽蓄额定功率 (MW)", 500, 3000, 1400, 100, key='zpump')
-            h = st.slider("蓄能时长 (h)", 2, 8, 4, 1, key='h')
-            efficiency = st.slider("抽水效率", 0.6, 0.9, 0.75, 0.05, key='efficiency')
-            min_power_ratio = st.slider("最小出力比例", 0.1, 0.5, 0.2, 0.05, key='min_power')
-            
+            Zpump = st.slider("抽蓄额定功率 (MW)", 500, 3000,
+                              st.session_state.get('zpump', 1400), 100, key='zpump')
+            h = st.slider("蓄能时长 (h)", 2, 8,
+                          st.session_state.get('h_val', 4), 1, key='h_val')
+            efficiency = st.slider("抽水效率", 0.6, 0.9,
+                                   st.session_state.get('efficiency_val', 0.75), 0.05, key='efficiency_val')
+            min_power_ratio = st.slider("最小出力比例", 0.1, 0.5,
+                                        st.session_state.get('min_power', 0.2), 0.05, key='min_power')
+
             st.markdown("**🔥 火电机组参数**")
-            carbon_factor = st.slider("碳排放系数 (吨CO2/万kWh)", 0.3, 0.8, 0.5, 0.05, key='carbon_factor',
+            carbon_factor = st.slider("碳排放系数 (吨CO2/万kWh)", 0.3, 0.8,
+                                      st.session_state.get('carbon_factor', 0.5), 0.05, key='carbon_factor',
                                       help="火电机组单位发电量的CO2排放量。参考国家发改委《企业温室气体排放核算方法与报告指南 发电设施》(2022年修订版)，"
                                            "中国火电机组碳排放系数约为0.45-0.55吨CO2/万kWh，此处默认值取0.5。"
                                            "该系数乘以火电发电量即得碳排放总量。")
-            coal_high = st.slider("高负荷煤耗 (g/kWh)", 280, 320, 300, 5, key='coal_high',
+            coal_high = st.slider("常规调峰煤耗 (g/kWh)", 280, 320,
+                                  st.session_state.get('coal_high', 300), 5, key='coal_high',
                                    help='火电机组在高负荷率(>50%)运行时的煤耗率，反映机组高效运行状态。数据参考《电力发展"十三五"规划》火电机组煤耗标准。')
-            coal_mid = st.slider("中度调峰煤耗 (g/kWh)", 310, 350, 330, 5, key='coal_mid',
+            coal_mid = st.slider("深度不助燃调峰煤耗 (g/kWh)", 310, 350,
+                                  st.session_state.get('coal_mid', 330), 5, key='coal_mid',
                                   help="火电机组在中等负荷率(30%-50%)参与调峰时的煤耗率，调峰运行时效率有所下降。")
-            coal_low = st.slider("深度调峰煤耗 (g/kWh)", 350, 400, 370, 5, key='coal_low',
+            coal_low = st.slider("深度助燃调峰煤耗 (g/kWh)", 350, 400,
+                                  st.session_state.get('coal_low', 370), 5, key='coal_low',
                                  help="火电机组在低负荷率(<30%)深度调峰时的煤耗率，深度调峰时煤耗显著增加。数据参考火电灵活性改造相关研究。")
-            
+
             # 应用按钮
             apply_params = st.button("✅ 应用参数并重新计算", key='apply_params')
-            
+
             # 重置按钮
             if st.button("🔄 重置为默认参数", key='reset_params'):
-                st.session_state['custom_params'] = None
+                defaults = {'zpump': 1400, 'h_val': 4, 'efficiency_val': 0.75, 'min_power': 0.2,
+                            'carbon_factor': 0.5, 'coal_high': 300, 'coal_mid': 330, 'coal_low': 370,
+                            'custom_params': None, 'recalculated_result': None}
+                for k, v in defaults.items():
+                    st.session_state[k] = v
                 st.rerun()
         
         # 页面选择（整合原有和新增页面）
@@ -684,16 +573,13 @@ def main():
         page = st.sidebar.selectbox(
             "选择展示页面",
             [
-                "🏠 总览仪表盘",
-                "📊 系统总览",
-                "⚙️ 参数调整",
+                "🏠 系统总览",
                 "📐 计算公式详解",
-                "🌿 新能源发电",
-                "☀️ 新能源数据",
+                "⚙️ 参数调整",
+                "🌿 新能源分析",
                 "💧 抽水蓄能调度",
-                "🔥 火电调峰效果",
+                "🔥 火电调峰与碳减排",
                 "🎯 Pareto前沿分析",
-                "🌱 碳减排效益",
                 "📈 综合分析报告",
                 "🎨 高级可视化",
                 "🧠 高级分析"
@@ -711,31 +597,61 @@ def main():
         """)
         
         # 页面渲染
-        if page == "🏠 总览仪表盘":
-            # 原有总览页面内容
-            st.markdown("## 🏠 总览仪表盘")
-            
+        if page == "🏠 系统总览":
+            st.markdown("## 🏠 系统总览")
+
+            # 关键指标卡片
             col1, col2, col3, col4 = st.columns(4)
-            
-            total_wind = np.sum(data['wind']) / 10000  # 亿kWh
-            total_solar = np.sum(data['solar']) / 10000
-            total_hydro = np.sum(data['hydro']) / 10000
-            total_fh = np.sum(data['fh']) / 10000
-            
+
             with col1:
-                st.markdown(charts.create_metric_card("🌬️ 风电", f"{total_wind:.2f}", "亿kWh"), unsafe_allow_html=True)
+                st.markdown(charts.create_metric_card("🌬️ 风电", f"{derived['totals']['total_wind']:.2f}", "亿kWh"), unsafe_allow_html=True)
             with col2:
-                st.markdown(charts.create_metric_card("☀️ 光伏", f"{total_solar:.2f}", "亿kWh"), unsafe_allow_html=True)
+                st.markdown(charts.create_metric_card("☀️ 光伏", f"{derived['totals']['total_solar']:.2f}", "亿kWh"), unsafe_allow_html=True)
             with col3:
-                st.markdown(charts.create_metric_card("💧 水电", f"{total_hydro:.2f}", "亿kWh"), unsafe_allow_html=True)
+                st.markdown(charts.create_metric_card("💧 水电", f"{derived['totals']['total_hydro']:.2f}", "亿kWh"), unsafe_allow_html=True)
             with col4:
-                st.markdown(charts.create_metric_card("🔥 火电", f"{total_fh:.2f}", "亿kWh"), unsafe_allow_html=True)
-            
+                st.markdown(charts.create_metric_card("🔥 火电", f"{derived['totals']['total_fh']:.2f}", "亿kWh"), unsafe_allow_html=True)
+
+            # 全年发电曲线
             fig = charts.plot_renewable_power(data, selected_days)
             st.plotly_chart(fig, use_container_width=True)
-        
-        elif page == "📊 系统总览":
-            show_overview_v2(data)
+
+            # 碳减排与抽蓄统计
+            st.markdown("---")
+            col1, col2, col3, col4 = st.columns(4)
+            with col1:
+                st.markdown(charts.create_metric_card("🌍 碳减排量", f"{derived['carbon']['carbon_change']:.2f}", "万吨",
+                                                       color="#00ff88"), unsafe_allow_html=True)
+            with col2:
+                st.markdown(charts.create_metric_card("💧 抽水小时数", f"{derived['totals']['pump_hours']}", "小时",
+                                                       color="#00d4ff"), unsafe_allow_html=True)
+            with col3:
+                st.markdown(charts.create_metric_card("⚡ 发电小时数", f"{derived['totals']['gen_hours']}", "小时",
+                                                       color="#ffcc00"), unsafe_allow_html=True)
+            with col4:
+                eff = derived['ps_stats']['efficiency']
+                st.markdown(charts.create_metric_card("🔄 抽发效率", f"{eff:.2f}", "%",
+                                                       color="#ff6b9d"), unsafe_allow_html=True)
+
+            # 月度能源产出趋势
+            st.markdown("---")
+            if ADVANCED_FEATURES:
+                fig2 = vis.create_interactive_comparison_chart(data)
+                st.plotly_chart(fig2, use_container_width=True)
+
+            # 导出按钮
+            if st.button("📥 导出总览数据"):
+                overview_data = {
+                    '风电(亿kWh)': derived['totals']['total_wind'],
+                    '光伏(亿kWh)': derived['totals']['total_solar'],
+                    '水电(亿kWh)': derived['totals']['total_hydro'],
+                    '火电(亿kWh)': derived['totals']['total_fh'],
+                    '碳减排量(万吨)': derived['carbon']['carbon_change'],
+                    '抽水小时数': derived['totals']['pump_hours'],
+                    '发电小时数': derived['totals']['gen_hours'],
+                    '抽发效率(%)': derived['ps_stats']['efficiency']
+                }
+                st.markdown(charts.export_to_csv(overview_data, "系统总览数据.csv"), unsafe_allow_html=True)
         
         elif page == "⚙️ 参数调整":
             show_parameter_adjustment(data, Zpump, h, efficiency, min_power_ratio, 
@@ -904,82 +820,136 @@ def main():
             )
             st.plotly_chart(fig_nslde, use_container_width=True)
         
-        elif page == "🌿 新能源发电":
-            st.markdown("## 🌿 新能源发电")
+        elif page == "🌿 新能源分析":
+            st.markdown("## 🌿 新能源分析")
+            day_index = st.slider("选择日期", 0, 364, 0)
+
+            col1, col2, col3 = st.columns(3)
+            with col1:
+                st.markdown(charts.create_metric_card("🌬️ 当日风电", f"{data['wind'][day_index].sum():.1f}", "MWh"), unsafe_allow_html=True)
+            with col2:
+                st.markdown(charts.create_metric_card("☀️ 当日光伏", f"{data['solar'][day_index].sum():.1f}", "MWh"), unsafe_allow_html=True)
+            with col3:
+                st.markdown(charts.create_metric_card("💧 当日水电", f"{data['hydro'][day_index].sum():.1f}", "MWh"), unsafe_allow_html=True)
+
             fig = charts.plot_renewable_power(data, selected_days)
             st.plotly_chart(fig, use_container_width=True)
-            
+
+            st.markdown("---")
             day_type = st.selectbox("选择典型日类型", ["all", "weekday", "weekend", "spring", "summer", "autumn", "winter"])
             fig2 = charts.plot_hourly_pattern(data, day_type)
             st.plotly_chart(fig2, use_container_width=True)
-        
-        elif page == "☀️ 新能源数据":
-            show_new_energy_v2(data)
-        
+
+            # 当日能量平衡
+            if ADVANCED_FEATURES:
+                st.markdown("---")
+                st.subheader("⚡ 当日能量平衡")
+                fig3 = vis.create_energy_balance_chart(data, day_index)
+                st.plotly_chart(fig3, use_container_width=True)
+
+            if st.button("📥 导出新能源数据"):
+                day_data = pd.DataFrame({
+                    '时间': np.arange(24),
+                    '风电(MW)': data['wind'][day_index],
+                    '光伏(MW)': data['solar'][day_index],
+                    '水电(MW)': data['hydro'][day_index]
+                })
+                st.markdown(charts.export_to_csv(day_data, f"新能源数据_第{day_index+1}天.csv"), unsafe_allow_html=True)
+
         elif page == "💧 抽水蓄能调度":
             show_pumped_storage_v2(data)
-        
-        elif page == "🔥 火电调峰效果":
-            st.markdown("## 🔥 火电调峰效果")
+
+        elif page == "🔥 火电调峰与碳减排":
+            st.markdown("## 🔥 火电调峰与碳减排")
+
+            st.subheader("⚡ 火电功率对比")
             fig = charts.plot_thermal_power(data, selected_days)
             st.plotly_chart(fig, use_container_width=True)
-        
+
+            st.markdown("---")
+
+            # 碳减排统计
+            st.subheader("🌍 碳减排分析")
+            col1, col2 = st.columns(2)
+            with col1:
+                st.markdown(charts.create_metric_card("🌱 年碳减排量", f"{derived['carbon']['carbon_change']:.2f}", "万吨",
+                                                       color="#00ff88"), unsafe_allow_html=True)
+            with col2:
+                st.markdown(charts.create_metric_card("📈 火电变化", f"{derived['carbon']['power_change']:.2f}", "亿kWh",
+                                                       color="#00d4ff"), unsafe_allow_html=True)
+
+            # 365天碳减排柱状图
+            st.subheader("📈 全年日碳减排分布（365天）")
+            days_arr = np.arange(1, 366)
+            colors_carbon = ['rgba(0, 255, 128, 0.8)' if v < 0 else 'rgba(255, 100, 100, 0.8)' for v in derived['carbon']['daily_carbon_change']]
+            fig_carbon = go.Figure(data=[go.Bar(
+                x=days_arr,
+                y=derived['carbon']['daily_carbon_change'],
+                marker_color=colors_carbon,
+                name='日碳减排'
+            )])
+            fig_carbon.update_layout(
+                title='全年日碳减排柱状图（绿色=减排，红色=增排）',
+                xaxis_title='日期', yaxis_title='碳减排(万吨)',
+                height=400, template='plotly_dark',
+                paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)'
+            )
+            st.plotly_chart(fig_carbon, use_container_width=True)
+
+            # 月度碳减排趋势
+            st.subheader("📊 月度碳减排趋势")
+            monthly_carbon = np.array_split(derived['carbon']['daily_carbon_change'], 12)
+            monthly_avg = [np.mean(m) for m in monthly_carbon]
+            fig_monthly = go.Figure(data=[go.Bar(
+                x=['1月', '2月', '3月', '4月', '5月', '6月', '7月', '8月', '9月', '10月', '11月', '12月'],
+                y=monthly_avg,
+                marker_color='rgba(0, 212, 255, 0.8)'
+            )])
+            fig_monthly.update_layout(
+                title='月度碳减排量', xaxis_title='月份', yaxis_title='碳减排(万吨)',
+                template='plotly_dark', paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)'
+            )
+            st.plotly_chart(fig_monthly, use_container_width=True)
+
         elif page == "🎯 Pareto前沿分析":
             show_pareto_v2(data)
         
-        elif page == "🌱 碳减排效益":
-            show_carbon_v2(data)
-        
         elif page == "📈 综合分析报告":
             st.markdown("## 📊 综合分析报告")
-            
-            total_renewable = (np.sum(data['wind']) + np.sum(data['solar']) + np.sum(data['hydro'])) / 10000
-            renewable_ratio = total_renewable / (total_renewable + np.sum(data['fh']) / 10000) * 100
-            
+
+            t = derived['totals']
+            renewable_ratio = t['renewable_ratio']
+            carbon_change = derived['carbon']['carbon_change']
+
             # 关键指标卡片
             col1, col2, col3, col4 = st.columns(4)
             with col1:
-                st.markdown('<div class="metric-card">', unsafe_allow_html=True)
-                st.metric("🌿 新能源渗透率", f"{renewable_ratio:.1f}%", "+12.5%")
-                st.markdown('</div>', unsafe_allow_html=True)
+                st.markdown(charts.create_metric_card("🌿 新能源渗透率", f"{renewable_ratio:.1f}", "%",
+                                                       color="#00ff88"), unsafe_allow_html=True)
             with col2:
-                st.markdown('<div class="metric-card">', unsafe_allow_html=True)
-                st.metric("⚡ 总新能源发电量", f"{total_renewable:.2f}亿kWh", "+8.3%")
-                st.markdown('</div>', unsafe_allow_html=True)
+                st.markdown(charts.create_metric_card("⚡ 新能源发电量", f"{t['total_renewable']:.2f}", "亿kWh",
+                                                       color="#00d4ff"), unsafe_allow_html=True)
             with col3:
-                try:
-                    carbon_result = dl.calculate_carbon_reduction(data)
-                    st.markdown('<div class="metric-card">', unsafe_allow_html=True)
-                    st.metric("🌍 碳减排量", f"{carbon_result['carbon_change']:.2f}万吨", "+15.3%")
-                    st.markdown('</div>', unsafe_allow_html=True)
-                except Exception:
-                    pass
+                st.markdown(charts.create_metric_card("🌍 碳减排量", f"{carbon_change:.2f}", "万吨",
+                                                       color="#00ff88"), unsafe_allow_html=True)
             with col4:
-                pump_hours = int((data['np_raw'] < 0).sum())
-                st.markdown('<div class="metric-card">', unsafe_allow_html=True)
-                st.metric("💧 抽水小时数", f"{pump_hours}小时", "+220小时")
-                st.markdown('</div>', unsafe_allow_html=True)
-            
+                st.markdown(charts.create_metric_card("💧 抽水小时数", f"{t['pump_hours']}", "小时",
+                                                       color="#ffcc00"), unsafe_allow_html=True)
+
             st.markdown("---")
-            
-            # 计算实际指标用于雷达图
-            try:
-                carbon_result = dl.calculate_carbon_reduction(data)
-                carbon_reduction_val = carbon_result.get('carbon_change', 0)
-            except Exception:
-                carbon_reduction_val = 0
-            
-            # 实际数据计算得分（0-100）
+
+            # 优化前后综合评价雷达图
+            pump_hours = t['pump_hours']
             after_scores = [
                 min(renewable_ratio, 100),
-                min(np.sum(data['fh'] > 0) / 365, 100) * 100 / 24,
-                min(pump_hours / 2000, 100),
-                min(carbon_reduction_val / 100, 100),
-                min(total_renewable / 100, 100),
+                min(np.sum(data['fh'] > 0) / 365 * 100 / 24, 100),
+                min(pump_hours / 2000 * 100, 100),
+                min(abs(carbon_change) / 100 * 100, 100),
+                min(t['total_renewable'] / 100 * 100, 100),
                 85
             ]
-            
-            # 优化前估算值（假设优化提升约15-20%）
+
+            # 优化前估算值
             before_scores = [
                 max(after_scores[0] - 15, 0),
                 max(after_scores[1] - 10, 0),

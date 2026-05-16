@@ -10,6 +10,14 @@ from plotly.subplots import make_subplots
 import base64
 import streamlit as st
 
+# 统一图表主题配置
+CHART_LAYOUT = dict(
+    template="plotly_dark",
+    paper_bgcolor="rgba(0,0,0,0)",
+    plot_bgcolor="rgba(0,0,0,0)",
+    font=dict(color="#e0e6ed"),
+)
+
 
 def export_to_csv(data, filename="data_export.csv"):
     try:
