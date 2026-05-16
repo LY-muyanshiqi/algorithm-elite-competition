@@ -13,22 +13,20 @@
 import streamlit as st
 import numpy as np
 import pandas as pd
-import plotly.express as px
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
-from datetime import datetime
 import data_loader as dl
 import warnings
 import os
-import base64
 import sys
+import styles
+import charts
 warnings.filterwarnings('ignore')
 
 # 尝试导入增强模块（新增功能）
 try:
     sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'v2_features'))
     import visualization as vis
-    from visualization_new import create_3d_reservoir_visualization
     import analysis as ana
     ADVANCED_FEATURES = True
 except ImportError:
@@ -42,135 +40,7 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# 增强的CSS样式
-st.markdown("""
-<style>
-    /* 主背景 - 渐变效果 */
-    .main {
-        background: linear-gradient(135deg, #0a1628 0%, #1a2f4b 50%, #0d1f3c 100%);
-        min-height: 100vh;
-    }
-    
-    /* 卡片样式 - 增强阴影和动画 */
-    .metric-card {
-        background: linear-gradient(135deg, rgba(0, 212, 255, 0.15) 0%, rgba(0, 150, 255, 0.08) 100%);
-        border: 1px solid rgba(0, 212, 255, 0.3);
-        border-radius: 12px;
-        padding: 20px;
-        margin: 10px 0;
-        backdrop-filter: blur(10px);
-        box-shadow: 0 4px 15px rgba(0, 212, 255, 0.1);
-        transition: all 0.3s ease;
-    }
-    
-    .metric-card:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 6px 20px rgba(0, 212, 255, 0.2);
-        border-color: rgba(0, 212, 255, 0.5);
-    }
-    
-    /* 标题样式 */
-    .main-title {
-        background: linear-gradient(90deg, #00d4ff, #0096ff, #00d4ff);
-        background-size: 200% auto;
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        animation: shine 3s linear infinite;
-    }
-    
-    @keyframes shine {
-        0% { background-position: 0% center; }
-        100% { background-position: 200% center; }
-    }
-    
-    /* 按钮样式 */
-    .stButton>button {
-        background: linear-gradient(135deg, #00d4ff 0%, #0096ff 100%);
-        border: none;
-        border-radius: 8px;
-        padding: 10px 24px;
-        color: white;
-        font-weight: 600;
-        transition: all 0.3s ease;
-    }
-    
-    .stButton>button:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 4px 15px rgba(0, 212, 255, 0.4);
-    }
-    
-    /* 侧边栏样式 */
-    .sidebar .sidebar-content {
-        background: linear-gradient(180deg, rgba(0, 212, 255, 0.1) 0%, rgba(0, 150, 255, 0.05) 100%);
-    }
-    
-    /* 滚动条样式 */
-    ::-webkit-scrollbar {
-        width: 8px;
-    }
-    
-    ::-webkit-scrollbar-track {
-        background: rgba(0, 212, 255, 0.1);
-    }
-    
-    ::-webkit-scrollbar-thumb {
-        background: rgba(0, 212, 255, 0.5);
-        border-radius: 4px;
-    }
-    
-    /* 进度条样式 */
-    .stProgress > div > div {
-        background: linear-gradient(90deg, #00d4ff, #0096ff);
-    }
-    
-    /* 动画容器 */
-    .animated-container {
-        animation: fadeIn 0.5s ease-in-out;
-    }
-    
-    @keyframes fadeIn {
-        from { opacity: 0; transform: translateY(10px); }
-        to { opacity: 1; transform: translateY(0); }
-    }
-    
-    /* 暗色卡片 */
-    .dark-card {
-        background: rgba(20, 35, 60, 0.8);
-        border: 1px solid rgba(0, 212, 255, 0.2);
-        border-radius: 12px;
-        padding: 20px;
-        margin: 10px 0;
-    }
-    
-    /* Section标题 */
-    .section-header {
-        background: linear-gradient(90deg, rgba(0, 212, 255, 0.2) 0%, transparent 100%);
-        padding: 15px 20px;
-        border-left: 4px solid #00d4ff;
-        margin: 20px 0 15px 0;
-        border-radius: 0 8px 8px 0;
-    }
-    
-    /* 指标数值 */
-    .metric-value {
-        font-size: 2rem;
-        font-weight: 700;
-        color: #00d4ff;
-    }
-    
-    .metric-label {
-        font-size: 0.9rem;
-        color: #8ba4c4;
-        text-transform: uppercase;
-        letter-spacing: 1px;
-    }
-    
-    /* Plotly图表背景 */
-    .js-plotly-plot .plotly, .js-plotly-plot .plotly div {
-        background: transparent !important;
-    }
-</style>
-""", unsafe_allow_html=True)
+styles.apply(st)
 
 
 # 数据加载缓存
@@ -178,267 +48,6 @@ st.markdown("""
 def get_all_data():
     """加载所有数据（带缓存）"""
     return dl.load_all_data()
-
-
-# 数据导出功能
-def export_to_csv(data, filename="data_export.csv"):
-    try:
-        if isinstance(data, dict):
-            df = pd.DataFrame(data)
-        else:
-            df = data
-        csv = df.to_csv(index=False, encoding='utf-8-sig')
-        b64 = base64.b64encode(csv.encode()).decode()
-        href = f'<a href="data:file/csv;base64,{b64}" download="{filename}" class="stButton">📥 下载CSV文件</a>'
-        return href
-    except Exception as e:
-        st.error(f"导出失败: {str(e)}")
-        return None
-
-
-# 图表下载功能
-def download_plotly_figure(fig, filename="chart.png", width=1200, height=600):
-    try:
-        img_bytes = fig.to_image(format="png", width=width, height=height)
-        return img_bytes
-    except Exception:
-        return None
-
-
-# ==================== 原有页面函数 ====================
-
-def create_metric_card(label, value, unit="", delta=None, color="#00d4ff"):
-    """创建自定义指标卡片"""
-    delta_html = f'<span style="color: {"#00ff88" if delta and delta > 0 else "#ff6b6b" if delta and delta < 0 else "#8ba4c4"}; font-size: 0.9rem;">{"▲" if delta and delta > 0 else "▼" if delta and delta < 0 else ""} {abs(delta) if delta else ""}</span>' if delta is not None else ""
-    
-    html = f"""
-    <div class="metric-card">
-        <div class="metric-label">{label}</div>
-        <div class="metric-value" style="color: {color};">{value}</div>
-        <div style="color: #8ba4c4; font-size: 0.9rem;">{unit} {delta_html}</div>
-    </div>
-    """
-    return html
-
-
-def plot_renewable_power(data, selected_days=None):
-    """绘制新能源发电曲线（风光水）"""
-    wind = data['wind']
-    solar = data['solar']
-    hydro = data['hydro']
-    
-    if selected_days:
-        wind = wind[selected_days[0]-1:selected_days[1]]
-        solar = solar[selected_days[0]-1:selected_days[1]]
-        hydro = hydro[selected_days[0]-1:selected_days[1]]
-    
-    hours = np.arange(8760 if not selected_days else (selected_days[1]-selected_days[0]+1)*24)
-    wind_flat = wind.flatten()[:len(hours)]
-    solar_flat = solar.flatten()[:len(hours)]
-    hydro_flat = hydro.flatten()[:len(hours)]
-    
-    df = pd.DataFrame({
-        '小时': hours,
-        '风电 (MW)': wind_flat,
-        '光伏 (MW)': solar_flat,
-        '水电 (MW)': hydro_flat,
-        '总新能源': wind_flat + solar_flat + hydro_flat
-    })
-    
-    fig = make_subplots(rows=2, cols=1, 
-                       shared_xaxes=True,
-                       vertical_spacing=0.08,
-                       row_heights=[0.6, 0.4],
-                       subplot_titles=('📊 分类型发电功率', '📈 总新能源发电量'))
-    
-    fig.add_trace(go.Scatter(x=hours, y=wind_flat, name='风电', 
-                             fill='tozeroy', fillcolor='rgba(0, 200, 255, 0.3)',
-                             line=dict(color='#00c8ff', width=1)), row=1, col=1)
-    fig.add_trace(go.Scatter(x=hours, y=solar_flat, name='光伏', 
-                             fill='tozeroy', fillcolor='rgba(255, 180, 0, 0.3)',
-                             line=dict(color='#ffb400', width=1)), row=1, col=1)
-    fig.add_trace(go.Scatter(x=hours, y=hydro_flat, name='水电', 
-                             fill='tozeroy', fillcolor='rgba(0, 255, 136, 0.3)',
-                             line=dict(color='#00ff88', width=1)), row=1, col=1)
-    fig.add_trace(go.Scatter(x=hours, y=wind_flat + solar_flat + hydro_flat, 
-                             name='总发电量', 
-                             line=dict(color='#ff6b9d', width=2),
-                             fill='tonexty', fillcolor='rgba(255, 107, 157, 0.2)'), row=2, col=1)
-    
-    fig.update_layout(
-        height=500,
-        showlegend=True,
-        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="center", x=0.5),
-        template="plotly_dark",
-        paper_bgcolor='rgba(0,0,0,0)',
-        plot_bgcolor='rgba(0,0,0,0)',
-        font=dict(color='#e0e6ed'),
-        xaxis=dict(showgrid=True, gridcolor='rgba(255,255,255,0.1)'),
-        yaxis=dict(showgrid=True, gridcolor='rgba(255,255,255,0.1)'),
-        xaxis2=dict(showgrid=True, gridcolor='rgba(255,255,255,0.1)'),
-        yaxis2=dict(showgrid=True, gridcolor='rgba(255,255,255,0.1)')
-    )
-    
-    return fig
-
-
-def plot_hourly_pattern(data, day_type='all'):
-    """绘制典型日负荷曲线"""
-    wind = data['wind']
-    solar = data['solar']
-    hydro = data['hydro']
-    fh = data['fh']
-    
-    if day_type == 'weekday':
-        indices = [i for i in range(365) if (i % 7) < 5]
-    elif day_type == 'weekend':
-        indices = [i for i in range(365) if (i % 7) >= 5]
-    elif day_type == 'spring':
-        indices = list(range(0, 90))
-    elif day_type == 'summer':
-        indices = list(range(90, 182))
-    elif day_type == 'autumn':
-        indices = list(range(182, 274))
-    elif day_type == 'winter':
-        indices = list(range(274, 365))
-    else:
-        indices = list(range(365))
-    
-    wind_mean = wind[indices].mean(axis=0)
-    solar_mean = solar[indices].mean(axis=0)
-    hydro_mean = hydro[indices].mean(axis=0)
-    fh_mean = fh[indices].mean(axis=0)
-    
-    hours = list(range(24))
-    fig = go.Figure()
-    
-    fig.add_trace(go.Scatter(x=hours, y=fh_mean, name='火电', 
-                             fill='tozeroy', fillcolor='rgba(255, 100, 100, 0.4)',
-                             line=dict(color='#ff6464', width=2)))
-    fig.add_trace(go.Scatter(x=hours, y=wind_mean, name='风电', 
-                             fill='tozeroy', fillcolor='rgba(0, 200, 255, 0.3)',
-                             line=dict(color='#00c8ff', width=1.5)))
-    fig.add_trace(go.Scatter(x=hours, y=solar_mean, name='光伏', 
-                             fill='tozeroy', fillcolor='rgba(255, 180, 0, 0.3)',
-                             line=dict(color='#ffb400', width=1.5)))
-    fig.add_trace(go.Scatter(x=hours, y=hydro_mean, name='水电', 
-                             fill='tozeroy', fillcolor='rgba(0, 255, 136, 0.3)',
-                             line=dict(color='#00ff88', width=1.5)))
-    
-    fig.update_layout(
-        title=f'典型{day_type}负荷曲线',
-        xaxis_title='小时',
-        yaxis_title='功率(MW)',
-        height=400,
-        template='plotly_dark',
-        paper_bgcolor='rgba(0,0,0,0)',
-        plot_bgcolor='rgba(0,0,0,0)'
-    )
-    
-    return fig
-
-
-def plot_pumped_storage_schedule(data, day_index):
-    """绘制抽水蓄能日调度曲线"""
-    np_raw = data['np_raw'][day_index]
-    hours = np.arange(24)
-    
-    fig = go.Figure()
-    
-    fig.add_trace(go.Bar(
-        x=hours,
-        y=np_raw,
-        name='抽水蓄能功率',
-        marker_color=np.where(np_raw >= 0, 'rgba(0, 255, 128, 0.8)', 'rgba(255, 100, 100, 0.8)')
-    ))
-    
-    fig.update_layout(
-        title=f'抽水蓄能日调度曲线 (第{day_index+1}天)',
-        xaxis_title='小时',
-        yaxis_title='功率(MW)',
-        height=400,
-        template='plotly_dark',
-        paper_bgcolor='rgba(0,0,0,0)',
-        plot_bgcolor='rgba(0,0,0,0)'
-    )
-    
-    return fig
-
-
-def plot_thermal_power(data, selected_days=None):
-    """绘制火电功率曲线"""
-    fh = data['fh']
-    Nt = data.get('Nt', fh)
-    Nt2 = data.get('Nt2', fh)
-    
-    if selected_days:
-        fh = fh[selected_days[0]-1:selected_days[1]]
-        Nt = Nt[selected_days[0]-1:selected_days[1]]
-        Nt2 = Nt2[selected_days[0]-1:selected_days[1]]
-    
-    hours = np.arange(8760 if not selected_days else (selected_days[1]-selected_days[0]+1)*24)
-    fh_flat = fh.flatten()[:len(hours)]
-    Nt_flat = Nt.flatten()[:len(hours)]
-    Nt2_flat = Nt2.flatten()[:len(hours)]
-    
-    fig = make_subplots(rows=2, cols=1, 
-                       shared_xaxes=True,
-                       vertical_spacing=0.08,
-                       row_heights=[0.6, 0.4],
-                       subplot_titles=('火电功率对比', '调峰深度'))
-    
-    fig.add_trace(go.Scatter(x=hours, y=Nt_flat, name='有抽蓄', 
-                             line=dict(color='#00d4ff', width=1)), row=1, col=1)
-    fig.add_trace(go.Scatter(x=hours, y=Nt2_flat, name='无抽蓄', 
-                             line=dict(color='#ff6464', width=1, dash='dash')), row=1, col=1)
-    
-    peak_shaving = Nt2_flat - Nt_flat
-    fig.add_trace(go.Scatter(x=hours, y=peak_shaving, name='调峰深度', 
-                             fill='tozeroy', fillcolor='rgba(0, 255, 128, 0.3)',
-                             line=dict(color='#00ff88', width=1)), row=2, col=1)
-    
-    fig.update_layout(
-        height=500,
-        showlegend=True,
-        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="center", x=0.5),
-        template="plotly_dark",
-        paper_bgcolor='rgba(0,0,0,0)',
-        plot_bgcolor='rgba(0,0,0,0)'
-    )
-    
-    return fig
-
-
-def plot_pareto_frontier(data):
-    """绘制Pareto前沿"""
-    z_gain = data['z_gain']
-    
-    fig = go.Figure()
-    
-    fig.add_trace(go.Scatter(
-        x=z_gain[:, 0],
-        y=z_gain[:, 1],
-        mode='markers',
-        marker=dict(
-            size=10,
-            color=np.arange(len(z_gain)),
-            colorscale='Viridis',
-            showscale=True
-        ),
-        name='Pareto解'
-    ))
-    
-    fig.update_layout(
-        title='Pareto最优前沿',
-        xaxis_title='目标函数1',
-        yaxis_title='目标函数2',
-        height=500,
-        template='plotly_dark',
-        paper_bgcolor='rgba(0,0,0,0)',
-        plot_bgcolor='rgba(0,0,0,0)'
-    )
-    
-    return fig
 
 
 # ==================== 新增页面函数（来自app_v2.py） ====================
@@ -455,13 +64,13 @@ def show_overview_v2(data):
     
     try:
         efficiency = dl.calculate_pumped_storage_schedule(np_raw)['efficiency']
-    except:
+    except Exception:
         efficiency = 0
     
     try:
         carbon_result = dl.calculate_carbon_reduction(data)
         carbon_change = carbon_result['carbon_change']
-    except:
+    except Exception:
         carbon_change = 0
     
     with col1:
@@ -496,7 +105,7 @@ def show_overview_v2(data):
             '发电小时数': gen_hours,
             '抽发效率(%)': efficiency
         }
-        st.markdown(export_to_csv(overview_data, "系统总览数据.csv"), unsafe_allow_html=True)
+        st.markdown(charts.export_to_csv(overview_data, "系统总览数据.csv"), unsafe_allow_html=True)
 
 
 def show_new_energy_v2(data):
@@ -528,21 +137,20 @@ def show_new_energy_v2(data):
             '光伏(MW)': data['solar'][day_index],
             '水电(MW)': data['hydro'][day_index]
         })
-        st.markdown(export_to_csv(day_data, f"新能源数据_第{day_index+1}天.csv"), unsafe_allow_html=True)
+        st.markdown(charts.export_to_csv(day_data, f"新能源数据_第{day_index+1}天.csv"), unsafe_allow_html=True)
 
 
 def show_pareto_v2(data):
     """显示Pareto解集v2页面"""
     st.title("📈 Pareto最优解集")
     
-    st.subheader("🎯 Pareto前沿三维分布")
-    if ADVANCED_FEATURES:
-        fig = vis.create_pareto_3d_scatter(data)
-        st.plotly_chart(fig, use_container_width=True)
-    
-    st.subheader("📊 目标函数值分布")
+    st.subheader("🎯 Pareto最优前沿")
     z_gain = data['z_gain']
-    
+
+    fig = charts.plot_pareto_frontier(data)
+    st.plotly_chart(fig, use_container_width=True)
+
+    st.subheader("📊 目标函数值分布")
     fig2 = make_subplots(rows=1, cols=2, subplot_titles=('目标函数1', '目标函数2'))
     fig2.add_trace(go.Histogram(x=z_gain[:, 0], name='目标1', marker_color='rgba(0, 212, 255, 0.8)'), row=1, col=1)
     fig2.add_trace(go.Histogram(x=z_gain[:, 1], name='目标2', marker_color='rgba(0, 255, 128, 0.8)'), row=1, col=2)
@@ -557,14 +165,18 @@ def show_pumped_storage_v2(data):
     day_index = st.slider("选择日期", 0, 364, 0)
     
     st.subheader("🔄 能量流向桑基图")
+    st.markdown("""
+    <div style='background: rgba(0, 212, 255, 0.1); border: 1px solid rgba(0, 212, 255, 0.3); border-radius: 8px; padding: 12px; margin: 10px 0; font-size: 0.9rem; color: #b0c4d8;'>
+    <strong>📖 图表说明：</strong>桑基图展示电力系统中各能源的<strong>能量流动路径和比例关系</strong>。
+    左侧为各类电源（风电、光伏、水电、抽蓄、火电），右侧为负荷端（电网负荷）。
+    <strong>线条宽度</strong>代表能量大小，越宽表示该通道输送的能量越多。
+    可以直观看出抽水蓄能如何在不同时段调节能量流向——抽水时吸收多余电能，
+    发电时补充电网缺口，从而实现电力系统的调峰填谷。
+    </div>
+    """, unsafe_allow_html=True)
     if ADVANCED_FEATURES:
         fig_sankey = vis.create_sankey_diagram(data, day_index)
         st.plotly_chart(fig_sankey, use_container_width=True)
-    
-    st.subheader("💧 水库状态3D可视化")
-    if ADVANCED_FEATURES:
-        fig_3d = create_3d_reservoir_visualization(data, day_index)
-        st.plotly_chart(fig_3d, use_container_width=True)
     
     st.subheader("📋 调度策略统计")
     try:
@@ -579,7 +191,7 @@ def show_pumped_storage_v2(data):
             st.metric("⏸️ 停机小时", f"{ps_schedule['idle_hours']}小时")
         with col4:
             st.metric("🔄 综合效率", f"{ps_schedule['efficiency']:.2f}%")
-    except:
+    except Exception:
         st.info("调度统计数据不可用")
 
 
@@ -587,36 +199,58 @@ def show_carbon_v2(data):
     """显示碳减排分析v2页面"""
     st.title("🌍 碳减排分析")
     
-    st.subheader("🔥 全年碳减排热力图")
-    if ADVANCED_FEATURES:
-        fig_heatmap = vis.create_carbon_reduction_heatmap(data)
-        st.plotly_chart(fig_heatmap, use_container_width=True)
-    
     try:
         carbon_result = dl.calculate_carbon_reduction(data)
-        
+
         st.subheader("📊 碳减排统计")
         col1, col2 = st.columns(2)
-        
+
         with col1:
             st.metric("🌱 年碳减排量", f"{carbon_result['carbon_change']:.2f}万吨")
-        
+
         with col2:
             st.metric("📈 火电变化", f"{carbon_result['power_change']:.2f}亿kWh")
-        
+
+        st.subheader("📈 全年日碳减排分布（365天）")
+        days = np.arange(1, 366)
+        colors = ['rgba(0, 255, 128, 0.8)' if v < 0 else 'rgba(255, 100, 100, 0.8)' for v in carbon_result['daily_carbon_change']]
+        fig_daily = go.Figure(data=[go.Bar(
+            x=days,
+            y=carbon_result['daily_carbon_change'],
+            marker_color=colors,
+            name='日碳减排'
+        )])
+        fig_daily.update_layout(
+            title='全年日碳减排柱状图（绿色=减排，红色=增排）',
+            xaxis_title='日期',
+            yaxis_title='碳减排(万吨)',
+            height=400,
+            template='plotly_dark',
+            paper_bgcolor='rgba(0,0,0,0)',
+            plot_bgcolor='rgba(0,0,0,0)'
+        )
+        st.plotly_chart(fig_daily, use_container_width=True)
+
         st.subheader("📈 月度碳减排趋势")
         monthly_carbon = np.array_split(carbon_result['daily_carbon_change'], 12)
         monthly_avg = [np.mean(m) for m in monthly_carbon]
-        
+
         fig_monthly = go.Figure(data=[go.Bar(
             x=['1月', '2月', '3月', '4月', '5月', '6月', '7月', '8月', '9月', '10月', '11月', '12月'],
             y=monthly_avg,
             marker_color='rgba(0, 212, 255, 0.8)'
         )])
-        fig_monthly.update_layout(title='月度碳减排量', xaxis_title='月份', yaxis_title='碳减排(万吨)')
+        fig_monthly.update_layout(
+            title='月度碳减排量',
+            xaxis_title='月份',
+            yaxis_title='碳减排(万吨)',
+            template='plotly_dark',
+            paper_bgcolor='rgba(0,0,0,0)',
+            plot_bgcolor='rgba(0,0,0,0)'
+        )
         st.plotly_chart(fig_monthly, use_container_width=True)
-    except:
-        st.info("碳减排数据不可用")
+    except Exception as e:
+        st.info(f"碳减排数据不可用: {e}")
 
 
 def show_visualization(data):
@@ -637,7 +271,7 @@ def show_visualization(data):
         st.plotly_chart(fig, use_container_width=True)
     
     elif selected_vis == '3D水库可视化':
-        fig = create_3d_reservoir_visualization(data, day_index)
+        fig = vis.create_3d_reservoir_visualization(data, day_index)
         st.plotly_chart(fig, use_container_width=True)
     
     elif selected_vis == '能量平衡图':
@@ -661,7 +295,7 @@ def show_visualization(data):
         st.plotly_chart(fig, use_container_width=True)
     
     # 下载图表（仅在成功获取图片数据时显示）
-    plot_data = download_plotly_figure(fig, f"{selected_vis}.png")
+    plot_data = charts.download_plotly_figure(fig, f"{selected_vis}.png")
     if plot_data is not None:
         st.download_button(
             label="📥 下载图表",
@@ -1011,7 +645,10 @@ def main():
                 "冬季 (10-12月)": (274, 365)
             }
             selected_days = season_days[season]
-        
+        elif view_mode == "典型日分析":
+            selected_day = st.sidebar.slider("选择日期", 1, 365, 180)
+            selected_days = (selected_day, selected_day)
+
         # 参数配置区域（调参即算）
         st.sidebar.markdown("### ⚙️ 参数配置")
         with st.sidebar.expander("点击展开参数配置", expanded=False):
@@ -1023,10 +660,16 @@ def main():
             min_power_ratio = st.slider("最小出力比例", 0.1, 0.5, 0.2, 0.05, key='min_power')
             
             st.markdown("**🔥 火电机组参数**")
-            carbon_factor = st.slider("碳排放系数", 0.3, 0.8, 0.5, 0.05, key='carbon_factor')
-            coal_high = st.slider("高负荷煤耗 (g/kWh)", 280, 320, 300, 5, key='coal_high')
-            coal_mid = st.slider("中度调峰煤耗 (g/kWh)", 310, 350, 330, 5, key='coal_mid')
-            coal_low = st.slider("深度调峰煤耗 (g/kWh)", 350, 400, 370, 5, key='coal_low')
+            carbon_factor = st.slider("碳排放系数 (吨CO2/万kWh)", 0.3, 0.8, 0.5, 0.05, key='carbon_factor',
+                                      help="火电机组单位发电量的CO2排放量。参考国家发改委《企业温室气体排放核算方法与报告指南 发电设施》(2022年修订版)，"
+                                           "中国火电机组碳排放系数约为0.45-0.55吨CO2/万kWh，此处默认值取0.5。"
+                                           "该系数乘以火电发电量即得碳排放总量。")
+            coal_high = st.slider("高负荷煤耗 (g/kWh)", 280, 320, 300, 5, key='coal_high',
+                                   help='火电机组在高负荷率(>50%)运行时的煤耗率，反映机组高效运行状态。数据参考《电力发展"十三五"规划》火电机组煤耗标准。')
+            coal_mid = st.slider("中度调峰煤耗 (g/kWh)", 310, 350, 330, 5, key='coal_mid',
+                                  help="火电机组在中等负荷率(30%-50%)参与调峰时的煤耗率，调峰运行时效率有所下降。")
+            coal_low = st.slider("深度调峰煤耗 (g/kWh)", 350, 400, 370, 5, key='coal_low',
+                                 help="火电机组在低负荷率(<30%)深度调峰时的煤耗率，深度调峰时煤耗显著增加。数据参考火电灵活性改造相关研究。")
             
             # 应用按钮
             apply_params = st.button("✅ 应用参数并重新计算", key='apply_params')
@@ -1034,11 +677,11 @@ def main():
             # 重置按钮
             if st.button("🔄 重置为默认参数", key='reset_params'):
                 st.session_state['custom_params'] = None
-                st.experimental_rerun()
+                st.rerun()
         
         # 页面选择（整合原有和新增页面）
         st.sidebar.markdown("### 📑 页面导航")
-        page = st.sidebar.radio(
+        page = st.sidebar.selectbox(
             "选择展示页面",
             [
                 "🏠 总览仪表盘",
@@ -1080,15 +723,15 @@ def main():
             total_fh = np.sum(data['fh']) / 10000
             
             with col1:
-                st.markdown(create_metric_card("🌬️ 风电", f"{total_wind:.2f}", "亿kWh"), unsafe_allow_html=True)
+                st.markdown(charts.create_metric_card("🌬️ 风电", f"{total_wind:.2f}", "亿kWh"), unsafe_allow_html=True)
             with col2:
-                st.markdown(create_metric_card("☀️ 光伏", f"{total_solar:.2f}", "亿kWh"), unsafe_allow_html=True)
+                st.markdown(charts.create_metric_card("☀️ 光伏", f"{total_solar:.2f}", "亿kWh"), unsafe_allow_html=True)
             with col3:
-                st.markdown(create_metric_card("💧 水电", f"{total_hydro:.2f}", "亿kWh"), unsafe_allow_html=True)
+                st.markdown(charts.create_metric_card("💧 水电", f"{total_hydro:.2f}", "亿kWh"), unsafe_allow_html=True)
             with col4:
-                st.markdown(create_metric_card("🔥 火电", f"{total_fh:.2f}", "亿kWh"), unsafe_allow_html=True)
+                st.markdown(charts.create_metric_card("🔥 火电", f"{total_fh:.2f}", "亿kWh"), unsafe_allow_html=True)
             
-            fig = plot_renewable_power(data, selected_days)
+            fig = charts.plot_renewable_power(data, selected_days)
             st.plotly_chart(fig, use_container_width=True)
         
         elif page == "📊 系统总览":
@@ -1106,21 +749,20 @@ def main():
             
             col1, col2 = st.columns(2)
             with col1:
-                st.markdown("""
-                **目标1：最大化新能源消纳**
-                
+                st.markdown(r"""
+                **目标1：火电参与调峰容量**
+
                 $$
-                f_1 = \max \sum_{t=1}^{T} (P_{wind,t} + P_{solar,t} + P_{hydro,t})
+                f_1 = \\min \\sum_{t=1}^{T} P_{thermal,t}
                 $$
-                
-                - $P_{wind,t}$：风电功率
-                - $P_{solar,t}$：光伏功率
-                - $P_{hydro,t}$：水电功率
+
+                - $P_{thermal,t}$：火电功率
+                - 目标为最小化火电出力，即最大化新能源消纳与抽水蓄能调峰效果
                 - $T$：时间周期（小时数）
                 """)
             
             with col2:
-                st.markdown("""
+                st.markdown(r"""
                 **目标2：最小化碳排放**
                 
                 $$
@@ -1195,28 +837,40 @@ def main():
             """)
             
             st.markdown("---")
-            st.markdown("### 🧮 5. 碳减排计算")
-            
+            st.markdown("### 🧮 5. 碳减排计算（有无抽蓄对比）")
+
             st.markdown("""
+            **有抽水蓄能时：**
+
             $$
-            \Delta C = C_{base} - C_{opt}
+            C_{pump} = \\sum_{t=1}^{T} C_{coal} \\cdot P_{thermal,t}^{pump}
             $$
-            
+
+            **无抽水蓄能时：**
+
             $$
-            C = \sum_{t=1}^{T} C_{coal} \cdot P_{thermal,t}
+            C_{base} = \\sum_{t=1}^{T} C_{coal} \\cdot P_{thermal,t}^{base}
             $$
-            
-            - $\Delta C$：碳减排量
-            - $C_{base}$：优化前碳排放量
-            - $C_{opt}$：优化后碳排放量
+
+            **碳减排量（无抽蓄 - 有抽蓄）：**
+
+            $$
+            \\Delta C = C_{base} - C_{pump}
+            $$
+
+            - $\\Delta C$：碳减排量（正值表示减排）
+            - $C_{coal}$：碳排放系数（默认0.5吨CO2/万kWh，参考国家发改委《企业温室气体排放核算方法与报告指南 发电设施》）
+            - $P_{thermal,t}^{pump}$：有抽水蓄能时火电功率
+            - $P_{thermal,t}^{base}$：无抽水蓄能时火电功率
+            - 通过对比有/无抽水蓄能两种情景下的火电碳排放差值得出减排效益
             """)
             
             st.markdown("---")
             st.markdown("### 🚀 6. NSLDE多目标优化算法")
-            
+
             st.markdown("""
             **NSLDE（Non-dominated Sorting Learning Differential Evolution）**
-            
+
             1. **初始化种群**：随机生成初始解
             2. **变异操作**：基于差分向量生成变异个体
             3. **交叉操作**：结合父代和变异个体
@@ -1225,14 +879,38 @@ def main():
             6. **选择操作**：选择下一代种群
             7. **终止判断**：达到最大迭代次数
             """)
+
+            # NSLDE算法流程图
+            fig_nslde = go.Figure()
+            fig_nslde.update_layout(
+                title="NSLDE多目标优化算法流程",
+                xaxis=dict(visible=False),
+                yaxis=dict(visible=False),
+                width=900,
+                height=450,
+                template="plotly_dark",
+                paper_bgcolor='rgba(0,0,0,0)',
+                plot_bgcolor='rgba(0,0,0,0)',
+                annotations=[
+                    dict(x=0.5, y=0.95, text="初始化种群", showarrow=False, font=dict(size=14, color="#00d4ff")),
+                    dict(x=0.5, y=0.80, text="↓", showarrow=False, font=dict(size=20, color="#8ba4c4")),
+                    dict(x=0.5, y=0.70, text="变异操作（差分向量）", showarrow=False, font=dict(size=14, color="#00ff88")),
+                    dict(x=0.5, y=0.55, text="↓", showarrow=False, font=dict(size=20, color="#8ba4c4")),
+                    dict(x=0.5, y=0.45, text="交叉操作（父代+变异个体）", showarrow=False, font=dict(size=14, color="#ffb400")),
+                    dict(x=0.5, y=0.30, text="↓", showarrow=False, font=dict(size=20, color="#8ba4c4")),
+                    dict(x=0.5, y=0.20, text="非支配排序 + 拥挤距离", showarrow=False, font=dict(size=14, color="#ff6464")),
+                    dict(x=0.5, y=0.05, text="选择 → 新一代种群 → 循环迭代", showarrow=False, font=dict(size=14, color="#00d4ff")),
+                ]
+            )
+            st.plotly_chart(fig_nslde, use_container_width=True)
         
         elif page == "🌿 新能源发电":
             st.markdown("## 🌿 新能源发电")
-            fig = plot_renewable_power(data, selected_days)
+            fig = charts.plot_renewable_power(data, selected_days)
             st.plotly_chart(fig, use_container_width=True)
             
             day_type = st.selectbox("选择典型日类型", ["all", "weekday", "weekend", "spring", "summer", "autumn", "winter"])
-            fig2 = plot_hourly_pattern(data, day_type)
+            fig2 = charts.plot_hourly_pattern(data, day_type)
             st.plotly_chart(fig2, use_container_width=True)
         
         elif page == "☀️ 新能源数据":
@@ -1243,7 +921,7 @@ def main():
         
         elif page == "🔥 火电调峰效果":
             st.markdown("## 🔥 火电调峰效果")
-            fig = plot_thermal_power(data, selected_days)
+            fig = charts.plot_thermal_power(data, selected_days)
             st.plotly_chart(fig, use_container_width=True)
         
         elif page == "🎯 Pareto前沿分析":
@@ -1274,7 +952,7 @@ def main():
                     st.markdown('<div class="metric-card">', unsafe_allow_html=True)
                     st.metric("🌍 碳减排量", f"{carbon_result['carbon_change']:.2f}万吨", "+15.3%")
                     st.markdown('</div>', unsafe_allow_html=True)
-                except:
+                except Exception:
                     pass
             with col4:
                 pump_hours = int((data['np_raw'] < 0).sum())
@@ -1288,7 +966,7 @@ def main():
             try:
                 carbon_result = dl.calculate_carbon_reduction(data)
                 carbon_reduction_val = carbon_result.get('carbon_change', 0)
-            except:
+            except Exception:
                 carbon_reduction_val = 0
             
             # 实际数据计算得分（0-100）
