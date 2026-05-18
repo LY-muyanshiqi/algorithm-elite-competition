@@ -1,0 +1,24 @@
+# Python
+__pycache__/
+*.pyc
+*.asv
+
+# Extracted document files
+doc_images/
+
+# Claude AI
+.claude/
+
+# MATLAB data
+*.mat
+
+# WordPress documents
+*.docx
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db

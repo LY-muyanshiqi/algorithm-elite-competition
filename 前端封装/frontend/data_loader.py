@@ -34,7 +34,9 @@ def load_mat_data():
     data['solution_txt'] = np.loadtxt(os.path.join(DATA_DIR, 'solution.txt'))  # (100, 27)
     
     # 计算抽水蓄能功率 (仿照process.m)
-    data['np_raw'] = calculate_npump(data)
+    data['np_raw'], C_all = calculate_npump(data)
+    # 构建水库状态向量CC（仿main.m）
+    data['cc'] = compute_cc_from_C(C_all)
     # 计算有/无抽蓄的火电功率
     data['Nt'] = calculate_Nt(data, with_pump=True)  # 有抽蓄
     data['Nt2'] = calculate_Nt(data, with_pump=False)  # 无抽蓄
@@ -57,7 +59,8 @@ def calculate_npump(data, Zpump=1400, h=4, efficiency=0.75, min_power_ratio=0.2)
     
     solution = data['solution']  # (365, 23)
     Npump = np.zeros((365, 24))
-    
+    C_all = np.zeros((365, 25))
+
     for d in range(365):
         x = solution[d, :23]  # 23个决策变量
         
@@ -86,8 +89,21 @@ def calculate_npump(data, Zpump=1400, h=4, efficiency=0.75, min_power_ratio=0.2)
                     np_power = -Zpump
                     C[i] = C[i-1] - np_power * efficiency / V
                 Npump[d, i-1] = np_power
-    
-    return Npump
+
+        C_all[d, :] = C
+
+    return Npump, C_all, C_all
+
+
+def compute_cc_from_C(C_all):
+    """根据水库状态矩阵构建CC向量（仿main.m）
+    C_all: (365, 25) - 每天25个水库状态值
+    CC[0] = 0.5 初始状态, CC[1:8761] = 8760小时水库状态
+    """
+    cc = np.zeros(8761)
+    cc[0] = 0.5
+    cc[1:8761] = C_all[:, 1:25].reshape(8760)
+    return cc
 
 
 def calculate_Nt(data, with_pump=True):
@@ -229,13 +245,14 @@ def recalculate_with_parameters(data, params):
     - coal_consumption_low: 深度调峰煤耗
     """
     # 重新计算抽蓄功率
-    np_raw = calculate_npump(
+    np_raw, C_all = calculate_npump(
         data,
         Zpump=params.get('Zpump', 1400),
         h=params.get('h', 4),
         efficiency=params.get('efficiency', 0.75),
         min_power_ratio=params.get('min_power_ratio', 0.2)
     )
+    cc = compute_cc_from_C(C_all)
     
     # 重新计算火电功率
     fh = data['fh']
@@ -263,6 +280,7 @@ def recalculate_with_parameters(data, params):
         'np_raw': np_raw,
         'Nt': Nt,
         'Nt2': Nt2,
+        'cc': cc,
         'carbon_result': carbon_result,
         'ps_stats': ps_stats,
         'params': params

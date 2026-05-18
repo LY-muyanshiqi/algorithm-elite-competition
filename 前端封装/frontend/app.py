@@ -88,14 +88,36 @@ def get_derived_data(_data):
 def show_pareto_v2(data):
     """显示Pareto解集v2页面"""
     st.title("📈 Pareto最优解集")
-    
-    st.subheader("🎯 Pareto最优前沿")
-    z_gain = data['z_gain']
 
-    fig = charts.plot_pareto_frontier(data)
-    st.plotly_chart(fig, use_container_width=True)
+    st.subheader("🎯 Pareto最优前沿")
+    st.markdown("""
+    <div style='background: rgba(0, 212, 255, 0.1); border: 1px solid rgba(0, 212, 255, 0.3); border-radius: 8px; padding: 12px; margin: 10px 0; font-size: 0.9rem; color: #b0c4d8;'>
+    <strong>📖 图表说明：</strong>以下Pareto最优解集图片来源于项目分析文档，展示不同季节典型日下抽水蓄能减碳优化模型的<strong>双目标Pareto前沿</strong>。
+    每个子图分别对应火电调峰容量最小化和碳排放最小化两个目标的非支配解分布。
+    </div>
+    """, unsafe_allow_html=True)
+
+    # 四季Pareto前沿图片（图8-11）
+    season_tabs = st.tabs(["🌸 春季 (图8)", "☀️ 夏季 (图9)", "🍂 秋季 (图10)", "❄️ 冬季 (图11)"])
+    season_images = {
+        0: ["static/images/pareto_112.png", "static/images/pareto_113.png", "static/images/pareto_114.png"],
+        1: ["static/images/pareto_115.png", "static/images/pareto_116.png", "static/images/pareto_117.png"],
+        2: ["static/images/pareto_118.png", "static/images/pareto_119.png", "static/images/pareto_120.png"],
+        3: ["static/images/pareto_121.png", "static/images/pareto_122.png", "static/images/pareto_123.png"],
+    }
+    season_labels = ["春季", "夏季", "秋季", "冬季"]
+
+    for idx, tab in enumerate(season_tabs):
+        with tab:
+            cols = st.columns(3)
+            for i, img_path in enumerate(season_images[idx]):
+                with cols[i]:
+                    st.image(img_path, caption=f"{season_labels[idx]} Pareto前沿 - 子图{i+1}", use_container_width=True)
+
+    st.markdown("---")
 
     st.subheader("📊 目标函数值分布")
+    z_gain = data['z_gain']
     fig2 = make_subplots(rows=1, cols=2, subplot_titles=('目标函数1', '目标函数2'))
     fig2.add_trace(go.Histogram(x=z_gain[:, 0], name='目标1', marker_color='rgba(0, 212, 255, 0.8)'), row=1, col=1)
     fig2.add_trace(go.Histogram(x=z_gain[:, 1], name='目标2', marker_color='rgba(0, 255, 128, 0.8)'), row=1, col=2)
@@ -787,38 +809,189 @@ def main():
             st.markdown("""
             **NSLDE（Non-dominated Sorting Learning Differential Evolution）**
 
-            1. **初始化种群**：随机生成初始解
+            1. **初始化种群**：基于混沌映射生成初始种群，增强种群多样性
             2. **变异操作**：基于差分向量生成变异个体
             3. **交叉操作**：结合父代和变异个体
             4. **非支配排序**：根据Pareto支配关系分级
             5. **拥挤距离计算**：保持种群多样性
-            6. **选择操作**：选择下一代种群
-            7. **终止判断**：达到最大迭代次数
+            6. **外部存档维护**：快速非支配排序 + 精英保留策略
+            7. **Lévy飞行扰动**：增强算法跳出局部最优的能力
+            8. **终止判断**：达到最大迭代次数
             """)
 
-            # NSLDE算法流程图
-            fig_nslde = go.Figure()
-            fig_nslde.update_layout(
-                title="NSLDE多目标优化算法流程",
-                xaxis=dict(visible=False),
-                yaxis=dict(visible=False),
-                width=900,
-                height=450,
-                template="plotly_dark",
-                paper_bgcolor='rgba(0,0,0,0)',
-                plot_bgcolor='rgba(0,0,0,0)',
-                annotations=[
-                    dict(x=0.5, y=0.95, text="初始化种群", showarrow=False, font=dict(size=14, color="#00d4ff")),
-                    dict(x=0.5, y=0.80, text="↓", showarrow=False, font=dict(size=20, color="#8ba4c4")),
-                    dict(x=0.5, y=0.70, text="变异操作（差分向量）", showarrow=False, font=dict(size=14, color="#00ff88")),
-                    dict(x=0.5, y=0.55, text="↓", showarrow=False, font=dict(size=20, color="#8ba4c4")),
-                    dict(x=0.5, y=0.45, text="交叉操作（父代+变异个体）", showarrow=False, font=dict(size=14, color="#ffb400")),
-                    dict(x=0.5, y=0.30, text="↓", showarrow=False, font=dict(size=20, color="#8ba4c4")),
-                    dict(x=0.5, y=0.20, text="非支配排序 + 拥挤距离", showarrow=False, font=dict(size=14, color="#ff6464")),
-                    dict(x=0.5, y=0.05, text="选择 → 新一代种群 → 循环迭代", showarrow=False, font=dict(size=14, color="#00d4ff")),
-                ]
-            )
-            st.plotly_chart(fig_nslde, use_container_width=True)
+            # NSLDE算法流程图 — 文档图3
+            st.markdown("#### NSLDE算法程序架构图（图3）")
+            st.image("static/images/nslde_flowchart.png",
+                     caption="抽水蓄能减碳优化核算模型程序架构图（来源：项目分析文档 图3）",
+                     use_container_width=True)
+
+            st.markdown("---")
+            st.markdown("### 📋 7. 模型公式体系总结")
+
+            st.markdown("""
+            <div style='background: rgba(0, 212, 255, 0.1); border: 1px solid rgba(0, 212, 255, 0.3); border-radius: 8px; padding: 12px; margin: 10px 0; font-size: 0.9rem; color: #b0c4d8;'>
+            <strong>📖 说明：</strong>以下公式总结来源于项目分析文档，涵盖<strong>分阶段碳排放强度计算、多目标优化模型、约束条件体系、NSLDE算法</strong>四大核心模块。
+            </div>
+            """, unsafe_allow_html=True)
+
+            st.markdown("---")
+            st.markdown("#### 7.1 分阶段碳排放强度计算模型（§3.2）")
+
+            st.markdown(r"""
+            **常规调峰阶段碳排放强度**（负荷率 > 50%，公式 3-1）：
+
+            $$
+            E_{coal} = \frac{b \cdot \eta_c \cdot C_{ar} \cdot M_{CO_2}}{M_C}
+            $$
+
+            - $E_{coal}$：常规调峰阶段碳排放强度
+            - $b$：火电机组供电煤耗 (g/kWh)
+            - $\eta_c$：煤炭燃烧的碳氧化率
+            - $C_{ar}$：燃煤的收到基碳百分比
+            - $M_{CO_2}$、$M_C$：CO₂和C的摩尔质量
+
+            **不投油深度调峰阶段碳排放强度**（30% < 负荷率 ≤ 50%，公式 3-2）：
+
+            $$
+            E_{deep} = E_{coal} + \Delta E_{ineff}
+            $$
+
+            $$
+            \Delta E_{ineff} = \frac{b \cdot \eta_r \cdot K_{CO_2} \cdot \alpha_{aux} \cdot (1 - \eta_b \cdot \eta_t)}{10^6}
+            $$
+
+            - $\Delta E_{ineff}$：汽轮机-锅炉效率下降及辅助设备导致的额外碳排放强度
+            - $\eta_r$：火电机组额定效率
+            - $\alpha_{aux}$：辅助设备综合能耗占比
+            - $\eta_b$、$\eta_t$：锅炉燃烧效率、汽轮机机械效率
+
+            **投油深度调峰阶段碳排放强度**（负荷率 ≤ 30%，公式 3-5）：
+
+            $$
+            E_{oil} = E_{coal} + \Delta E_{oil}
+            $$
+
+            $$
+            \Delta E_{oil} = \frac{b_{oil} \cdot \eta_{boil} \cdot \mu \cdot \beta_{sys} \cdot \gamma_{sys}}{10^6}
+            $$
+
+            - $\Delta E_{oil}$：投油助燃及系统不稳定导致的额外碳排放强度
+            - $b_{oil}$：投油量 (kg/h)
+            - $\eta_{boil}$：助燃油燃烧效率
+            - $\mu$：摩擦损耗系数
+            - $\beta_{sys}$、$\gamma_{sys}$：系统振动与不稳定能耗比例
+
+            **全工况碳排放强度**（公式 3-6）：
+
+            $$
+            S = E_{coal} \cdot \mathbb{I}_{high} + E_{deep} \cdot \mathbb{I}_{mid} + E_{oil} \cdot \mathbb{I}_{low}
+            $$
+
+            其中 $\mathbb{I}$ 为负荷率分段指示函数。
+            """)
+
+            st.markdown("---")
+            st.markdown("#### 7.2 多目标优化模型（§3.3）")
+
+            col_obj1, col_obj2 = st.columns(2)
+            with col_obj1:
+                st.markdown(r"""
+                **目标1：火电参与调峰容量最小化**（公式 3-7）
+
+                $$
+                \min f_1 = \sum_{t=1}^{T} P_{thermal,t}
+                $$
+
+                - $P_{thermal,t}$：$t$ 时段火电机组出力 (MW)
+                - 最小化火电出力 → 最大化新能源消纳与抽蓄调峰
+                """)
+            with col_obj2:
+                st.markdown(r"""
+                **目标2：系统碳排放量最小化**（公式 3-8）
+
+                $$
+                \min f_2 = \sum_{t=1}^{T} S(P_{thermal,t}) \cdot P_{thermal,t}
+                $$
+
+                - $S(P_{thermal,t})$：$t$ 时段火电碳排放强度
+                - 碳排放强度随负荷率分段变化（见 §7.1）
+                """)
+
+            st.markdown("---")
+            st.markdown("#### 7.3 约束条件体系（§3.4）")
+
+            st.markdown(r"""
+            | 约束编号 | 约束类型 | 核心公式 | 含义 |
+            |:---:|------|------|------|
+            | 3-9 | **水量平衡约束** | $V_{m,t+1} = V_{m,t} + I_{m,t} - Q_{m,t} \pm Q_{pump}^{m,t}$ | 水库$m$在$t$时段的水量平衡 |
+            | 3-10 | **水库水位约束** | $Z_{m}^{min} \leq Z_{m,t} \leq Z_{m}^{max}$ | 水库$m$的水位上下限 |
+            | 3-11 | **抽蓄电站出力约束** | $P_{pump,m}^{min} \leq P_{pump,m,t} \leq P_{pump,m}^{max}$ | 抽蓄电站$m$在各时段的出力范围 |
+            | 3-14 | **火电机组约束** | $P_{thermal}^{min} \leq P_{thermal,t} \leq P_{thermal}^{max}$ | 火电出力上下限及爬坡约束 |
+            | 3-15 | **抽蓄上库水位约束** | $Z_{pump}^{min} \leq Z_{pump,t} \leq Z_{pump}^{max}$ | 抽蓄上库运行水位范围 |
+            | 3-16 | **抽蓄发电流量约束** | $Q_{gen}^{min} \leq Q_{gen,t} \leq Q_{gen}^{max}$ | 抽蓄发电工况流量限制 |
+            | 3-17 | **抽蓄抽水流量约束** | $Q_{pump}^{min} \leq Q_{pump,t} \leq Q_{pump}^{max}$ | 抽蓄抽水工况流量限制 |
+            | 3-18 | **初末水位约束** | $|Z_T - Z_{target}| \leq \Delta Z$ | 调度周期初末水位偏差限制 |
+            | 3-19 | **抽蓄水流转续约束** | $Q_{min} \leq \Delta Q_t \leq Q_{max}$ | 相邻时段抽蓄流量变化限幅 |
+            | 3-20 | **抽蓄库容控制约束** | $V_{min}(Z) \leq V_t \leq V_{max}(Z)$ | 库容随水位动态变化范围 |
+            """)
+
+            st.markdown("---")
+            st.markdown("#### 7.4 NSLDE算法核心公式（§4.2）")
+
+            st.markdown(r"""
+            **混沌初始化**（公式 4-1 ~ 4-4）：
+
+            基于Logistic混沌映射生成初始种群，增强种群遍历性：
+
+            $$
+            y_{n+1} = \mu \cdot y_n \cdot (1 - y_n), \quad \mu = 4
+            $$
+
+            $$
+            x_{i,j} = x_{min,j} + y_{i,j} \cdot (x_{max,j} - x_{min,j})
+            $$
+
+            **Pareto支配关系**（公式 4-5 ~ 4-6）：
+
+            解 $x^{(1)}$ Pareto支配 $x^{(2)}$（记作 $x^{(1)} \prec x^{(2)}$）当且仅当：
+
+            $$
+            \forall i \in \{1,\ldots,M\}: f_i(x^{(1)}) \leq f_i(x^{(2)}) \;\land\; \exists j: f_j(x^{(1)}) < f_j(x^{(2)})
+            $$
+
+            **差分进化算子**（公式 4-7）：
+
+            $$
+            v_{i,j} = x_{r1,j} + F \cdot (x_{r2,j} - x_{r3,j})
+            $$
+
+            - $F$：缩放因子（推荐 $F = 0.65$）
+            - $r1, r2, r3$：随机选中的不同个体索引
+
+            **Lévy飞行扰动**（公式 4-8 ~ 4-14）：
+
+            $$
+            x_i^{new} = x_i + \alpha \oplus \text{Lévy}(\lambda)
+            $$
+
+            采用Mantegna算法生成Lévy随机步长：
+
+            $$
+            s = \frac{\mu}{|\nu|^{1/\beta}}, \quad \mu \sim \mathcal{N}(0, \sigma_\mu^2), \quad \nu \sim \mathcal{N}(0, \sigma_\nu^2)
+            $$
+
+            $$
+            \sigma_\mu = \left[\frac{\Gamma(1+\beta) \sin(\pi\beta/2)}{\Gamma((1+\beta)/2) \cdot \beta \cdot 2^{(\beta-1)/2}}\right]^{1/\beta}, \quad \sigma_\nu = 1
+            $$
+
+            - $\beta$：Lévy指数参数，通常取1.5
+            - 扰动概率 $k = 0.3$，帮助个体跳出局部最优
+
+            **算法整体流程**：
+
+            混沌初始化 → 快速非支配排序 → 差分进化（变异+交叉） → Lévy飞行扰动 →
+            外部存档更新 → 拥挤距离选择 → 新一代种群 → 循环至最大迭代次数
+            """)
         
         elif page == "🌿 新能源分析":
             st.markdown("## 🌿 新能源分析")

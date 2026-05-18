@@ -208,21 +208,30 @@ def plot_thermal_power(data, selected_days=None):
     Nt_flat = Nt.flatten()[:len(hours)]
     Nt2_flat = Nt2.flatten()[:len(hours)]
 
+    # CC水库状态数据
+    cc = data.get('cc', None)
+    if cc is not None and len(cc) >= 8761:
+        cc_daily = cc[1:8761].reshape(365, 24)
+        if selected_days:
+            cc_daily = cc_daily[selected_days[0]-1:selected_days[1]]
+        cc_flat = cc_daily.flatten()[:len(hours)]
+    else:
+        cc_flat = np.zeros(len(hours))
+
     fig = make_subplots(rows=2, cols=1,
                        shared_xaxes=True,
                        vertical_spacing=0.08,
                        row_heights=[0.6, 0.4],
-                       subplot_titles=('火电功率对比', '调峰深度'))
+                       subplot_titles=('火电功率对比', '抽水蓄能水库状态'))
 
     fig.add_trace(go.Scatter(x=hours, y=Nt_flat, name='有抽蓄',
                              line=dict(color='#00d4ff', width=1)), row=1, col=1)
     fig.add_trace(go.Scatter(x=hours, y=Nt2_flat, name='无抽蓄',
                              line=dict(color='#ff6464', width=1, dash='dash')), row=1, col=1)
 
-    peak_shaving = Nt2_flat - Nt_flat
-    fig.add_trace(go.Scatter(x=hours, y=peak_shaving, name='调峰深度',
-                             fill='tozeroy', fillcolor='rgba(0, 255, 128, 0.3)',
-                             line=dict(color='#00ff88', width=1)), row=2, col=1)
+    fig.add_trace(go.Scatter(x=hours, y=cc_flat, name='水库状态',
+                             fill='tozeroy', fillcolor='rgba(0, 180, 255, 0.25)',
+                             line=dict(color='#00b4ff', width=1.5)), row=2, col=1)
 
     fig.update_layout(
         height=500,
