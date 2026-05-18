@@ -495,6 +495,68 @@ def show_parameter_adjustment(data, Zpump, h, efficiency, min_power_ratio,
             st.warning(f"加载默认结果失败: {e}")
 
 
+def show_data_browser(data):
+    """原始数据浏览页"""
+    st.title("🗃️ 原始数据浏览")
+
+    datasets = {
+        "风电 (wind)": data['wind'],
+        "光伏 (solar)": data['solar'],
+        "水电 (hydro)": data['hydro'],
+        "火电负荷 (fh)": data['fh'],
+        "抽水蓄能功率 (np_raw)": data['np_raw'],
+        "有抽蓄火电 (Nt)": data.get('Nt', np.zeros_like(data['fh'])),
+        "无抽蓄火电 (Nt2)": data.get('Nt2', np.zeros_like(data['fh'])),
+    }
+
+    col1, col2, col3 = st.columns(3)
+    with col1:
+        ds_name = st.selectbox("选择数据集", list(datasets.keys()))
+    with col2:
+        ds_matrix = datasets[ds_name]
+        max_day = ds_matrix.shape[0] - 1
+        day_range = st.slider("选择日期范围", 0, max_day, (0, min(6, max_day)))
+    with col3:
+        st.markdown("---")
+        show_stats = st.checkbox("显示统计", value=True)
+
+    day_data = ds_matrix[day_range[0]:day_range[1]+1, :]
+    hours = list(range(ds_matrix.shape[1]))
+
+    df = pd.DataFrame(
+        day_data,
+        index=[f"第{i+1}天" for i in range(day_range[0], day_range[1]+1)],
+        columns=[f"{h}:00" for h in hours]
+    )
+
+    st.subheader(f"📋 {ds_name} — 第{day_range[0]+1}~{day_range[1]+1}天")
+    st.dataframe(df.style.background_gradient(cmap='Blues', axis=None), use_container_width=True)
+
+    if show_stats:
+        st.subheader("📊 统计信息")
+        col_s1, col_s2, col_s3, col_s4 = st.columns(4)
+        with col_s1:
+            st.metric("最小值", f"{day_data.min():.2f}")
+        with col_s2:
+            st.metric("最大值", f"{day_data.max():.2f}")
+        with col_s3:
+            st.metric("均值", f"{day_data.mean():.2f}")
+        with col_s4:
+            st.metric("标准差", f"{day_data.std():.2f}")
+
+        st.subheader("📈 数据分布")
+        fig = go.Figure(data=[go.Histogram(x=day_data.flatten(), nbinsx=30,
+                       marker_color='rgba(0, 212, 255, 0.7)')])
+        fig.update_layout(height=300, template='plotly_dark',
+                          paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
+                          xaxis_title='值', yaxis_title='频次')
+        st.plotly_chart(fig, use_container_width=True)
+
+    # CSV导出
+    csv = df.to_csv(encoding='utf-8-sig')
+    st.download_button("📥 下载当前视图CSV", csv, f"{ds_name}_{day_range[0]+1}_{day_range[1]+1}.csv", "text/csv")
+
+
 def main():
     """主应用入口"""
     init_session_state()
@@ -551,6 +613,29 @@ def main():
         # 参数配置区域（调参即算）
         st.sidebar.markdown("### ⚙️ 参数配置")
         with st.sidebar.expander("点击展开参数配置", expanded=False):
+            # 预设方案
+            PRESETS = {
+                "🏷️ 自定义（手动调整）": None,
+                "📋 默认方案": {'zpump': 1400, 'h_val': 4, 'efficiency_val': 0.75, 'min_power': 0.2,
+                              'carbon_factor': 0.5, 'coal_high': 300, 'coal_mid': 330, 'coal_low': 370},
+                "🌿 高消纳方案": {'zpump': 2000, 'h_val': 5, 'efficiency_val': 0.85, 'min_power': 0.15,
+                              'carbon_factor': 0.4, 'coal_high': 290, 'coal_mid': 320, 'coal_low': 360},
+                "🌍 深度低碳方案": {'zpump': 1600, 'h_val': 4, 'efficiency_val': 0.8, 'min_power': 0.15,
+                               'carbon_factor': 0.35, 'coal_high': 285, 'coal_mid': 315, 'coal_low': 355},
+                "⚡ 灵活调峰方案": {'zpump': 2500, 'h_val': 3, 'efficiency_val': 0.7, 'min_power': 0.25,
+                               'carbon_factor': 0.55, 'coal_high': 300, 'coal_mid': 330, 'coal_low': 380},
+            }
+            preset = st.selectbox("📦 参数预设方案", list(PRESETS.keys()), key='preset_select')
+
+            if preset != "🏷️ 自定义（手动调整）" and st.session_state.get('_last_preset') != preset:
+                for k, v in PRESETS[preset].items():
+                    st.session_state[k] = v
+                st.session_state['_last_preset'] = preset
+                st.rerun()
+
+            if preset == "🏷️ 自定义（手动调整）":
+                st.session_state['_last_preset'] = preset
+
             # 抽蓄参数
             st.markdown("**💧 抽水蓄能参数**")
             Zpump = st.slider("抽蓄额定功率 (MW)", 500, 3000,
@@ -585,40 +670,63 @@ def main():
             if st.button("🔄 重置为默认参数", key='reset_params'):
                 defaults = {'zpump': 1400, 'h_val': 4, 'efficiency_val': 0.75, 'min_power': 0.2,
                             'carbon_factor': 0.5, 'coal_high': 300, 'coal_mid': 330, 'coal_low': 370,
-                            'custom_params': None, 'recalculated_result': None}
+                            'custom_params': None, 'recalculated_result': None, '_last_preset': '🏷️ 自定义（手动调整）'}
                 for k, v in defaults.items():
                     st.session_state[k] = v
                 st.rerun()
         
-        # 页面选择（整合原有和新增页面）
+        # 页面分组导航
         st.sidebar.markdown("### 📑 页面导航")
-        page = st.sidebar.selectbox(
-            "选择展示页面",
-            [
-                "🏠 系统总览",
-                "📐 计算公式详解",
-                "⚙️ 参数调整",
-                "🌿 新能源分析",
-                "💧 抽水蓄能调度",
-                "🔥 火电调峰与碳减排",
-                "🎯 Pareto前沿分析",
-                "📈 综合分析报告",
-                "🎨 高级可视化",
-                "🧠 高级分析"
-            ]
-        )
-        
+
+        PAGE_GROUPS = {
+            "📊 核心看板": ["🏠 系统总览", "📈 综合分析报告"],
+            "📈 专项分析": ["🌿 新能源分析", "💧 抽水蓄能调度", "🔥 火电调峰与碳减排", "🎯 Pareto前沿分析"],
+            "⚙️ 模型与参数": ["📐 计算公式详解", "⚙️ 参数调整", "🗃️ 原始数据浏览"],
+            "🔬 高级功能": ["🎨 高级可视化", "🧠 高级分析"],
+        }
+
+        # 展开所有分组为带缩进的选项列表
+        nav_options = []
+        for group, pages in PAGE_GROUPS.items():
+            nav_options.append(group)
+            for p in pages:
+                nav_options.append(f"   {p}")
+
+        selected = st.sidebar.selectbox("选择展示页面", nav_options, label_visibility="collapsed")
+
+        # 解析选择：若选中分组标题则跳转到第一个子页面
+        page = selected.strip()
+        for group, pages in PAGE_GROUPS.items():
+            if page == group:
+                page = pages[0]
+                break
+
         # 帮助信息
         st.sidebar.markdown("---")
-        st.sidebar.subheader("❓ 使用帮助")
-        st.sidebar.info("""
-        - 使用侧边栏导航不同功能模块
-        - 点击图表可查看详细数据
-        - 支持导出CSV和图表图片
-        - 高级可视化和分析模块提供深度分析功能
-        """)
+        st.sidebar.caption("💡 点击左侧分组展开页面 | 图表可交互缩放 | 支持CSV及PNG导出")
         
         # 页面渲染
+        # 全局KPI状态条
+        kpi_col1, kpi_col2, kpi_col3, kpi_col4 = st.columns(4)
+        with kpi_col1:
+            st.markdown(charts.create_metric_card(
+                "🌍 碳减排量", f"{derived['carbon']['carbon_change']:.2f}", "万吨",
+                color="#00ff88"), unsafe_allow_html=True)
+        with kpi_col2:
+            st.markdown(charts.create_metric_card(
+                "🌿 新能源渗透率", f"{derived['totals']['renewable_ratio']:.1f}", "%",
+                color="#00d4ff"), unsafe_allow_html=True)
+        with kpi_col3:
+            st.markdown(charts.create_metric_card(
+                "💧 抽水小时", f"{derived['totals']['pump_hours']}", "h",
+                color="#ffcc00"), unsafe_allow_html=True)
+        with kpi_col4:
+            eff = derived['ps_stats']['efficiency']
+            st.markdown(charts.create_metric_card(
+                "🔄 抽发效率", f"{eff:.2f}", "%",
+                color="#ff6b9d"), unsafe_allow_html=True)
+        st.caption("📌 全局关键指标 · 所有页面可见")
+
         if page == "🏠 系统总览":
             st.markdown("## 🏠 系统总览")
 
@@ -1187,7 +1295,10 @@ def main():
         
         elif page == "🧠 高级分析":
             show_analysis(data)
-        
+
+        elif page == "🗃️ 原始数据浏览":
+            show_data_browser(data)
+
         # 页脚
         st.markdown("---")
         st.markdown(
