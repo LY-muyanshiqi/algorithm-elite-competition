@@ -116,7 +116,7 @@ def show_pareto_v2(data):
             cols = st.columns(3)
             for i, img_path in enumerate(season_images[idx]):
                 with cols[i]:
-                    st.image(img_path, caption=f"{season_labels[idx]} Pareto前沿 - 子图{i+1}", use_container_width=True)
+                    st.image(img_path, caption=f"{season_labels[idx]} Pareto前沿 - 子图{i+1}", use_column_width=True)
 
     st.markdown("---")
 
@@ -938,7 +938,7 @@ def main():
             st.markdown("#### NSLDE算法程序架构图（图3）")
             st.image(os.path.join(IMAGE_DIR, "nslde_flowchart.png"),
                      caption="抽水蓄能减碳优化核算模型程序架构图（来源：项目分析文档 图3）",
-                     use_container_width=True)
+                     use_column_width=True)
 
             st.markdown("---")
             st.markdown("### 📋 7. 模型公式体系总结")
