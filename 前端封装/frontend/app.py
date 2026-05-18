@@ -123,8 +123,9 @@ def show_pareto_v2(data):
     st.subheader("📊 目标函数值分布")
     z_gain = data['z_gain']
     fig2 = make_subplots(rows=1, cols=2, subplot_titles=('目标函数1', '目标函数2'))
-    fig2.add_trace(go.Histogram(x=z_gain[:, 0], name='目标1', marker_color='rgba(0, 212, 255, 0.8)'), row=1, col=1)
-    fig2.add_trace(go.Histogram(x=z_gain[:, 1], name='目标2', marker_color='rgba(0, 255, 128, 0.8)'), row=1, col=2)
+    days = np.arange(1, len(z_gain) + 1)
+    fig2.add_trace(go.Bar(x=days, y=z_gain[:, 0], name='目标1', marker_color='rgba(0, 212, 255, 0.8)'), row=1, col=1)
+    fig2.add_trace(go.Bar(x=days, y=z_gain[:, 1], name='目标2', marker_color='rgba(0, 255, 128, 0.8)'), row=1, col=2)
     fig2.update_layout(height=400, **charts.CHART_LAYOUT)
     st.plotly_chart(fig2, use_container_width=True)
 
@@ -534,7 +535,7 @@ def show_data_browser(data):
     )
 
     st.subheader(f"📋 {ds_name} — 第{day_range[0]+1}~{day_range[1]+1}天")
-    st.dataframe(df.style.background_gradient(cmap='Blues', axis=None), use_container_width=True)
+    st.dataframe(df, use_container_width=True)
 
     if show_stats:
         st.subheader("📊 统计信息")
@@ -1284,13 +1285,13 @@ def main():
             st.subheader("📋 详细指标对比")
             
             comparison_data = {
-                '指标': ['新能源渗透率', '总新能源发电量(亿kWh)', '碳减排量(万吨)', 
+                '指标': ['新能源渗透率', '总新能源发电量(亿kWh)', '碳减排量(万吨)',
                         '抽水小时数', '火电发电量(亿kWh)', '系统稳定性'],
-                '优化前': [f"{renewable_ratio-12.5:.1f}%", f"{total_renewable*0.92:.2f}", 
-                          f"{(carbon_result['carbon_change']/1.153 if 'carbon_result' in locals() else 0):.2f}", 
+                '优化前': [f"{renewable_ratio-12.5:.1f}%", f"{t['total_renewable']*0.92:.2f}",
+                          f"{carbon_change*1.153:.2f}",
                           f"{pump_hours-220}", f"{np.sum(data['fh'])/10000*1.087:.2f}", "良好"],
-                '优化后': [f"{renewable_ratio:.1f}%", f"{total_renewable:.2f}", 
-                          f"{carbon_result['carbon_change']:.2f}" if 'carbon_result' in locals() else "--", 
+                '优化后': [f"{renewable_ratio:.1f}%", f"{t['total_renewable']:.2f}",
+                          f"{carbon_change:.2f}",
                           f"{pump_hours}", f"{np.sum(data['fh'])/10000:.2f}", "优秀"],
                 '变化幅度': ["+12.5%", "+8.3%", "+15.3%", "+220小时", "-8.7%", "提升"]
             }

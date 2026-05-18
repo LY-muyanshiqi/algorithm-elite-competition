@@ -92,7 +92,7 @@ def calculate_npump(data, Zpump=1400, h=4, efficiency=0.75, min_power_ratio=0.2)
 
         C_all[d, :] = C
 
-    return Npump, C_all, C_all
+    return Npump, C_all
 
 
 def compute_cc_from_C(C_all):
