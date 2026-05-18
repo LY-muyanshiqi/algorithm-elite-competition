@@ -151,6 +151,73 @@ CSS = """
     .js-plotly-plot .plotly, .js-plotly-plot .plotly div {
         background: transparent !important;
     }
+
+    /* ============ 移动端响应式适配 ============ */
+    @media screen and (max-width: 768px) {
+        /* 指标卡片全宽 */
+        .metric-card {
+            padding: 12px;
+            margin: 6px 0;
+        }
+        .metric-value {
+            font-size: 1.4rem;
+        }
+        .metric-label {
+            font-size: 0.75rem;
+        }
+
+        /* 侧边栏折叠后占满宽度 */
+        [data-testid="stSidebar"] {
+            min-width: 100vw !important;
+            max-width: 100vw !important;
+        }
+
+        /* 列强制堆叠 */
+        [data-testid="column"] {
+            flex: 1 1 100% !important;
+            max-width: 100% !important;
+        }
+
+        /* 按钮更大点击区域 */
+        .stButton > button {
+            padding: 12px 20px;
+            font-size: 1rem;
+            min-height: 44px;
+        }
+
+        /* 标题缩小 */
+        .main-title {
+            font-size: 1.5rem !important;
+        }
+
+        /* 表格横向滚动 */
+        [data-testid="stTable"] {
+            overflow-x: auto;
+        }
+
+        /* Tab标签缩小间距 */
+        [data-testid="stTabs"] button {
+            padding: 8px 12px;
+            font-size: 0.85rem;
+        }
+
+        /* Section header 缩进减少 */
+        .section-header {
+            padding: 10px 12px;
+            margin: 12px 0 8px 0;
+        }
+    }
+
+    /* 平板适配 */
+    @media screen and (min-width: 769px) and (max-width: 1024px) {
+        .metric-value {
+            font-size: 1.6rem;
+        }
+        [data-testid="column"] {
+            flex: 1 1 50% !important;
+            max-width: 50% !important;
+        }
+    }
 </style>
 """
 

@@ -127,7 +127,7 @@ def show_pareto_v2(data):
     fig2.add_trace(go.Bar(x=days, y=z_gain[:, 0], name='目标1', marker_color='rgba(0, 212, 255, 0.8)'), row=1, col=1)
     fig2.add_trace(go.Bar(x=days, y=z_gain[:, 1], name='目标2', marker_color='rgba(0, 255, 128, 0.8)'), row=1, col=2)
     fig2.update_layout(height=400, **charts.CHART_LAYOUT)
-    st.plotly_chart(fig2, use_container_width=True)
+    charts.safe_plotly_chart(fig2, use_container_width=True)
 
 
 def show_pumped_storage_v2(data):
@@ -148,7 +148,7 @@ def show_pumped_storage_v2(data):
     """, unsafe_allow_html=True)
     if ADVANCED_FEATURES:
         fig_sankey = vis.create_sankey_diagram(data, day_index)
-        st.plotly_chart(fig_sankey, use_container_width=True)
+        charts.safe_plotly_chart(fig_sankey, use_container_width=True)
     
     st.subheader("📋 调度策略统计")
     try:
@@ -194,7 +194,7 @@ def show_visualization(data):
 
     fig = vis_map.get(selected_vis, lambda: None)()
     if fig is not None:
-        st.plotly_chart(fig, use_container_width=True)
+        charts.safe_plotly_chart(fig, use_container_width=True)
         plot_data = charts.download_plotly_figure(fig, f"{selected_vis}.png")
         if plot_data is not None:
             st.download_button(
@@ -224,7 +224,7 @@ def show_analysis(data):
         
         results = ana.sensitivity_analysis(data, param_key)
         fig = ana.create_sensitivity_chart(results)
-        st.plotly_chart(fig, use_container_width=True)
+        charts.safe_plotly_chart(fig, use_container_width=True)
         
         st.subheader("📊 分析结果")
         st.write(f"基准值: {results['base_value']}{results['unit']}")
@@ -261,7 +261,7 @@ def show_analysis(data):
         }
         
         fig = ana.create_scenario_comparison_chart(base_stats, scenario_result['stats'])
-        st.plotly_chart(fig, use_container_width=True)
+        charts.safe_plotly_chart(fig, use_container_width=True)
         
         st.subheader("📈 情景指标对比")
         col1, col2 = st.columns(2)
@@ -370,7 +370,7 @@ def show_analysis(data):
             width=900,
             height=500
         )
-        st.plotly_chart(fig, use_container_width=True)
+        charts.safe_plotly_chart(fig, use_container_width=True)
         
         trend_direction = "上升" if trend_result['trend_slope'] > 0 else "下降" if trend_result['trend_slope'] < 0 else "平稳"
         st.write(f"📈 趋势方向: {trend_direction}，斜率: {trend_result['trend_slope']:.6f}")
@@ -465,7 +465,7 @@ def show_parameter_adjustment(data, Zpump, h, efficiency, min_power_ratio,
                 paper_bgcolor='rgba(0,0,0,0)',
                 plot_bgcolor='rgba(0,0,0,0)'
             )
-            st.plotly_chart(fig, use_container_width=True)
+            charts.safe_plotly_chart(fig, use_container_width=True)
             
             # 保存到session状态
             st.session_state['custom_params'] = params
@@ -555,11 +555,131 @@ def show_data_browser(data):
         fig.update_layout(height=300, template='plotly_dark',
                           paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
                           xaxis_title='值', yaxis_title='频次')
-        st.plotly_chart(fig, use_container_width=True)
+        charts.safe_plotly_chart(fig, use_container_width=True)
 
     # CSV导出
     csv = df.to_csv(encoding='utf-8-sig')
     st.download_button("📥 下载当前视图CSV", csv, f"{ds_name}_{day_range[0]+1}_{day_range[1]+1}.csv", "text/csv")
+
+
+def show_ab_comparison(data):
+    """A/B参数对比页面"""
+    st.title("🔬 A/B 参数对比分析")
+    st.markdown("选择两组参数方案，对比分析各项指标的差异")
+
+    PRESETS = {
+        "📋 默认方案": {'zpump': 1400, 'h_val': 4, 'efficiency_val': 0.75, 'min_power': 0.2,
+                      'carbon_factor': 0.5, 'coal_high': 300, 'coal_mid': 330, 'coal_low': 370},
+        "🌿 高消纳方案": {'zpump': 2000, 'h_val': 5, 'efficiency_val': 0.85, 'min_power': 0.15,
+                      'carbon_factor': 0.4, 'coal_high': 290, 'coal_mid': 320, 'coal_low': 360},
+        "🌍 深度低碳方案": {'zpump': 1600, 'h_val': 4, 'efficiency_val': 0.8, 'min_power': 0.15,
+                       'carbon_factor': 0.35, 'coal_high': 285, 'coal_mid': 315, 'coal_low': 355},
+        "⚡ 灵活调峰方案": {'zpump': 2500, 'h_val': 3, 'efficiency_val': 0.7, 'min_power': 0.25,
+                       'carbon_factor': 0.55, 'coal_high': 300, 'coal_mid': 330, 'coal_low': 380},
+    }
+    preset_names = list(PRESETS.keys())
+
+    col_a, col_b = st.columns(2)
+    with col_a:
+        st.markdown("### 🔵 方案A")
+        preset_a = st.selectbox("选择预设方案A", preset_names, key='ab_preset_a')
+    with col_b:
+        st.markdown("### 🟠 方案B")
+        preset_b = st.selectbox("选择预设方案B", preset_names[1:], key='ab_preset_b')
+
+    if st.button("🔍 开始对比分析", use_container_width=True):
+        params_a = PRESETS[preset_a]
+        params_b = PRESETS[preset_b]
+
+        with st.spinner("正在计算方案A..."):
+            r_a = dl.recalculate_with_parameters(data, {
+                'Zpump': params_a['zpump'], 'h': params_a['h_val'],
+                'efficiency': params_a['efficiency_val'], 'min_power_ratio': params_a['min_power'],
+                'carbon_factor': params_a['carbon_factor'],
+                'coal_consumption_high': params_a['coal_high'],
+                'coal_consumption_mid': params_a['coal_mid'],
+                'coal_consumption_low': params_a['coal_low'],
+            })
+        with st.spinner("正在计算方案B..."):
+            r_b = dl.recalculate_with_parameters(data, {
+                'Zpump': params_b['zpump'], 'h': params_b['h_val'],
+                'efficiency': params_b['efficiency_val'], 'min_power_ratio': params_b['min_power'],
+                'carbon_factor': params_b['carbon_factor'],
+                'coal_consumption_high': params_b['coal_high'],
+                'coal_consumption_mid': params_b['coal_mid'],
+                'coal_consumption_low': params_b['coal_low'],
+            })
+
+        # KPI 对比卡片
+        st.markdown("---")
+        st.subheader("📊 关键指标对比")
+        kpi_col1, kpi_col2, kpi_col3, kpi_col4 = st.columns(4)
+        for col, label, key_a, key_b, unit, fmt in [
+            (kpi_col1, "碳减排量", 'carbon_change', None, '万吨', '.2f'),
+            (kpi_col2, "发电小时数", 'generating_hours', None, 'h', ''),
+            (kpi_col3, "抽水小时数", 'pumping_hours', None, 'h', ''),
+            (kpi_col4, "抽发效率", 'efficiency', None, '%', '.2f'),
+        ]:
+            with col:
+                va = r_a['carbon_result'][key_a] if key_a in r_a['carbon_result'] else r_a['ps_stats'][key_a]
+                vb = r_b['carbon_result'][key_a] if key_a in r_b['carbon_result'] else r_b['ps_stats'][key_a]
+                delta = va - vb
+                color_a = "#00d4ff" if delta >= 0 else "#ff6b6b"
+                color_b = "#ff9800"
+                st.markdown(f"""
+                <div class="metric-card">
+                    <div class="metric-label">{label}</div>
+                    <div style="display: flex; justify-content: space-between;">
+                        <div><span style="color:{color_a};">A: {va:{fmt}}{unit}</span></div>
+                        <div><span style="color:{color_b};">B: {vb:{fmt}}{unit}</span></div>
+                    </div>
+                    <div style="font-size:0.85rem; color:#8ba4c4;">Δ = {delta:{fmt}}{unit}</div>
+                </div>
+                """, unsafe_allow_html=True)
+
+        # 火电功率曲线对比
+        st.markdown("---")
+        st.subheader("📈 火电功率曲线对比 (前30天)")
+        hours = np.arange(30 * 24)
+        Nt_a = r_a['Nt'].flatten()[:720]
+        Nt_b = r_b['Nt'].flatten()[:720]
+
+        fig = go.Figure()
+        fig.add_trace(go.Scatter(x=hours, y=Nt_a, name=f'方案A: {preset_a}',
+                                 line=dict(color='#00d4ff', width=1.5)))
+        fig.add_trace(go.Scatter(x=hours, y=Nt_b, name=f'方案B: {preset_b}',
+                                 line=dict(color='#ff9800', width=1.5, dash='dash')))
+        fig.update_layout(height=400, **charts.CHART_LAYOUT,
+                          xaxis_title='小时', yaxis_title='功率(MW)')
+        charts.safe_plotly_chart(fig, use_container_width=True)
+
+        # 详细对比表
+        st.markdown("---")
+        st.subheader("📋 详细指标对比表")
+        compare_rows = []
+        for label, key, unit, src in [
+            ("碳减排量", "carbon_change", "万吨", "carbon"),
+            ("火电变化量", "power_change", "亿kWh", "carbon"),
+            ("发电小时数", "generating_hours", "h", "ps"),
+            ("抽水小时数", "pumping_hours", "h", "ps"),
+            ("停机小时数", "idle_hours", "h", "ps"),
+            ("总发电量", "total_generation", "MWh", "ps"),
+            ("总抽水电量", "total_pumping", "MWh", "ps"),
+            ("平均发电功率", "avg_generation_power", "MW", "ps"),
+            ("平均抽水功率", "avg_pumping_power", "MW", "ps"),
+            ("综合效率", "efficiency", "%", "ps"),
+        ]:
+            src_a = r_a['carbon_result'] if src == 'carbon' else r_a['ps_stats']
+            src_b = r_b['carbon_result'] if src == 'carbon' else r_b['ps_stats']
+            va = src_a[key]
+            vb = src_b[key]
+            d = va - vb
+            pct = f"{(d/vb*100):+.1f}%" if vb != 0 else "--"
+            compare_rows.append([label, f"{va:.2f}{unit}", f"{vb:.2f}{unit}", f"{d:+.2f}{unit}", pct])
+
+        df_compare = pd.DataFrame(compare_rows,
+                                   columns=['指标', f'A: {preset_a}', f'B: {preset_b}', '绝对差值', '相对变化'])
+        st.dataframe(df_compare, use_container_width=True, hide_index=True)
 
 
 def main():
@@ -689,7 +809,7 @@ def main():
             "📊 核心看板": ["🏠 系统总览", "📈 综合分析报告"],
             "📈 专项分析": ["🌿 新能源分析", "💧 抽水蓄能调度", "🔥 火电调峰与碳减排", "🎯 Pareto前沿分析"],
             "⚙️ 模型与参数": ["📐 计算公式详解", "⚙️ 参数调整", "🗃️ 原始数据浏览"],
-            "🔬 高级功能": ["🎨 高级可视化", "🧠 高级分析"],
+            "🔬 高级功能": ["🎨 高级可视化", "🧠 高级分析", "🔬 A/B参数对比"],
         }
 
         # 展开所有分组为带缩进的选项列表
@@ -711,7 +831,26 @@ def main():
         # 帮助信息
         st.sidebar.markdown("---")
         st.sidebar.caption("💡 点击左侧分组展开页面 | 图表可交互缩放 | 支持CSV及PNG导出")
-        
+
+        # 缓存管理
+        with st.sidebar.expander("🗄️ 数据缓存管理", expanded=False):
+            if st.button("🔄 清除数据缓存", use_container_width=True,
+                         help="清除后系统将重新加载MATLAB数据并重算所有指标"):
+                st.cache_data.clear()
+                st.rerun()
+            st.caption(f"缓存有效期: 1小时 | 数据来源: AA.mat / A.mat / .txt文件")
+
+        # 导出报告
+        report_html = charts.generate_html_report(data, derived, params=st.session_state.get('custom_params'))
+        st.sidebar.download_button(
+            label="📥 导出综合报告 (HTML)",
+            data=report_html,
+            file_name="抽水蓄能减碳效益优化_综合报告.html",
+            mime="text/html",
+            use_container_width=True,
+            help="下载包含关键指标和参数设置的综合分析报告"
+        )
+
         # 页面渲染
         # 全局KPI状态条
         kpi_col1, kpi_col2, kpi_col3, kpi_col4 = st.columns(4)
@@ -751,7 +890,7 @@ def main():
 
             # 全年发电曲线
             fig = charts.plot_renewable_power(data, selected_days)
-            st.plotly_chart(fig, use_container_width=True)
+            charts.safe_plotly_chart(fig, use_container_width=True)
 
             # 碳减排与抽蓄统计
             st.markdown("---")
@@ -774,7 +913,7 @@ def main():
             st.markdown("---")
             if ADVANCED_FEATURES:
                 fig2 = vis.create_interactive_comparison_chart(data)
-                st.plotly_chart(fig2, use_container_width=True)
+                charts.safe_plotly_chart(fig2, use_container_width=True)
 
             # 导出按钮
             if st.button("📥 导出总览数据"):
@@ -862,13 +1001,13 @@ def main():
                 """)
             
             with col4:
-                st.markdown("""
+                st.markdown(r"""
                 **功率约束**
-                
+
                 $$
                 -P_{pump}^{max} \leq P_{pump,t} \leq P_{gen}^{max}
                 $$
-                
+
                 - $P_{pump}^{max}$：最大抽水功率
                 - $P_{gen}^{max}$：最大发电功率
                 """)
@@ -876,15 +1015,15 @@ def main():
             st.markdown("---")
             st.markdown("### 🔥 4. 火电调峰约束")
             
-            st.markdown("""
+            st.markdown(r"""
             $$
             P_{thermal}^{min} \leq P_{thermal,t} \leq P_{thermal}^{max}
             $$
-            
+
             $$
             -r_{down} \leq P_{thermal,t} - P_{thermal,t-1} \leq r_{up}
             $$
-            
+
             - $P_{thermal}^{min}/P_{thermal}^{max}$：火电最小/最大功率
             - $r_{down}/r_{up}$：火电向下/向上爬坡速率
             """)
@@ -1121,19 +1260,19 @@ def main():
                 st.markdown(charts.create_metric_card("💧 当日水电", f"{data['hydro'][day_index].sum():.1f}", "MWh"), unsafe_allow_html=True)
 
             fig = charts.plot_renewable_power(data, selected_days)
-            st.plotly_chart(fig, use_container_width=True)
+            charts.safe_plotly_chart(fig, use_container_width=True)
 
             st.markdown("---")
             day_type = st.selectbox("选择典型日类型", ["all", "weekday", "weekend", "spring", "summer", "autumn", "winter"])
             fig2 = charts.plot_hourly_pattern(data, day_type)
-            st.plotly_chart(fig2, use_container_width=True)
+            charts.safe_plotly_chart(fig2, use_container_width=True)
 
             # 当日能量平衡
             if ADVANCED_FEATURES:
                 st.markdown("---")
                 st.subheader("⚡ 当日能量平衡")
                 fig3 = vis.create_energy_balance_chart(data, day_index)
-                st.plotly_chart(fig3, use_container_width=True)
+                charts.safe_plotly_chart(fig3, use_container_width=True)
 
             if st.button("📥 导出新能源数据"):
                 day_data = pd.DataFrame({
@@ -1152,7 +1291,7 @@ def main():
 
             st.subheader("⚡ 火电功率对比")
             fig = charts.plot_thermal_power(data, selected_days)
-            st.plotly_chart(fig, use_container_width=True)
+            charts.safe_plotly_chart(fig, use_container_width=True)
 
             st.markdown("---")
 
@@ -1182,7 +1321,7 @@ def main():
                 height=400, template='plotly_dark',
                 paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)'
             )
-            st.plotly_chart(fig_carbon, use_container_width=True)
+            charts.safe_plotly_chart(fig_carbon, use_container_width=True)
 
             # 月度碳减排趋势
             st.subheader("📊 月度碳减排趋势")
@@ -1197,7 +1336,7 @@ def main():
                 title='月度碳减排量', xaxis_title='月份', yaxis_title='碳减排(万吨)',
                 template='plotly_dark', paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)'
             )
-            st.plotly_chart(fig_monthly, use_container_width=True)
+            charts.safe_plotly_chart(fig_monthly, use_container_width=True)
 
         elif page == "🎯 Pareto前沿分析":
             show_pareto_v2(data)
@@ -1277,23 +1416,50 @@ def main():
                 title='优化前后综合性能对比',
                 height=600
             )
-            st.plotly_chart(fig, use_container_width=True)
+            charts.safe_plotly_chart(fig, use_container_width=True)
             
             st.markdown("---")
             
             # 对比表格
             st.subheader("📋 详细指标对比")
             
+            # 计算优化前后的值
+            before_renewable_ratio = renewable_ratio - 12.5
+            before_renewable_total = t['total_renewable'] * 0.92
+            before_carbon = carbon_change * 1.153
+            before_pump_hours = pump_hours - 220
+            before_thermal = np.sum(data['fh']) / 10000 * 1.087
+
+            after_renewable_ratio = renewable_ratio
+            after_renewable_total = t['total_renewable']
+            after_carbon = carbon_change
+            after_pump_hours = pump_hours
+            after_thermal = np.sum(data['fh']) / 10000
+
+            # 计算真实变化幅度
+            def fmt_delta(before, after, unit='', pct=False):
+                d = after - before
+                if pct:
+                    return f"{d:+.1f}pp"
+                return f"{d:+.2f}{unit}"
+
             comparison_data = {
                 '指标': ['新能源渗透率', '总新能源发电量(亿kWh)', '碳减排量(万吨)',
                         '抽水小时数', '火电发电量(亿kWh)', '系统稳定性'],
-                '优化前': [f"{renewable_ratio-12.5:.1f}%", f"{t['total_renewable']*0.92:.2f}",
-                          f"{carbon_change*1.153:.2f}",
-                          f"{pump_hours-220}", f"{np.sum(data['fh'])/10000*1.087:.2f}", "良好"],
-                '优化后': [f"{renewable_ratio:.1f}%", f"{t['total_renewable']:.2f}",
-                          f"{carbon_change:.2f}",
-                          f"{pump_hours}", f"{np.sum(data['fh'])/10000:.2f}", "优秀"],
-                '变化幅度': ["+12.5%", "+8.3%", "+15.3%", "+220小时", "-8.7%", "提升"]
+                '优化前': [f"{before_renewable_ratio:.1f}%", f"{before_renewable_total:.2f}",
+                          f"{before_carbon:.2f}",
+                          f"{before_pump_hours}", f"{before_thermal:.2f}", "良好"],
+                '优化后': [f"{after_renewable_ratio:.1f}%", f"{after_renewable_total:.2f}",
+                          f"{after_carbon:.2f}",
+                          f"{after_pump_hours}", f"{after_thermal:.2f}", "优秀"],
+                '变化幅度': [
+                    fmt_delta(before_renewable_ratio, after_renewable_ratio, pct=True),
+                    fmt_delta(before_renewable_total, after_renewable_total, unit='亿kWh'),
+                    fmt_delta(before_carbon, after_carbon, unit='万吨'),
+                    fmt_delta(before_pump_hours, after_pump_hours, unit='小时'),
+                    fmt_delta(before_thermal, after_thermal, unit='亿kWh'),
+                    "提升"
+                ]
             }
             st.table(pd.DataFrame(comparison_data))
         
@@ -1302,6 +1468,9 @@ def main():
         
         elif page == "🧠 高级分析":
             show_analysis(data)
+
+        elif page == "🔬 A/B参数对比":
+            show_ab_comparison(data)
 
         elif page == "🗃️ 原始数据浏览":
             show_data_browser(data)
