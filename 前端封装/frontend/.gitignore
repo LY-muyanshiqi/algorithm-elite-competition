@@ -1,29 +1,37 @@
-# Python
+# --- Python ---
 __pycache__/
-*.pyc
+*.py[cod]
+.pytest_cache/
+
+# --- MATLAB (前端不应包含 .m 文件) ---
+*.m
 *.asv
 
-# Extracted document files
-doc_images/
-
-# Claude AI
-.claude/
-
-# MATLAB data
-*.mat
-
-# WordPress documents
-*.docx
-
-# IDE
+# --- IDE / OS ---
 .vscode/
 .idea/
-
-# OS
 .DS_Store
 Thumbs.db
+
+# --- 大型数据文件 (从上级目录引用) ---
+*.mat
+
+# --- 文档输出 ---
+*.docx
+*.pdf
+
+# --- 生成的临时文件 ---
+doc_images/
+doc_images_user/
 user_img_*.png
 pdf_raw_html_*.html
 text_page_*.txt
 jie.txt
 Copy_of_*.m
+代码总结.md
+用户手册_*.html
+用户手册_*.pdf
+用户手册_*.docx
+
+# --- Claude AI ---
+.claude/

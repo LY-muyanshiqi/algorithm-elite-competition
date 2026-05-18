@@ -1,149 +1,94 @@
-# 火电深度调峰+抽水蓄能减碳效益优化系统
+# 新型电力系统下抽水蓄能减碳效益优化核算系统
 
-## 项目简介
+基于 NSLDE 多目标优化算法的火电深度调峰与抽水蓄能协同调度系统，用于评估和优化电力系统的碳减排效益。
 
-本项目实现了一个基于多目标优化的火电深度调峰与抽水蓄能协同调度系统，用于评估和优化电力系统的碳减排效益。
+[![Run Tests](https://github.com/LY-muyanshiqi/thermal-peak-shaving-pumped-storage/actions/workflows/test.yml/badge.svg)](https://github.com/LY-muyanshiqi/thermal-peak-shaving-pumped-storage/actions/workflows/test.yml)
 
 ## 项目结构
 
 ```
-火电深度调峰+抽水蓄能/
-├── 全年抽蓄减碳效益优化计算/    # MATLAB优化代码
-│   ├── main.m                  # 主程序
+├── 全年抽蓄减碳效益优化计算/   # MATLAB 优化算法核心
+│   ├── main.m                  # 主程序入口
+│   ├── nslde.m                 # NSLDE 多目标优化算法
 │   ├── evaluate_objective.m    # 目标函数评估
-│   ├── nslde.m                 # NSLDE优化算法
-│   ├── objective_description_function.m  # 目标函数定义
-│   ├── compromise_solution.m   # 妥协解选择
-│   ├── process.m               # 后处理计算
-│   └── *.txt                   # 输入数据文件
+│   ├── process.m               # 抽蓄功率后处理
+│   └── *.txt                   # 输入数据 (365×24)
 │
-└── 前端封装/                    # Python前端应用
-    └── frontend/
-        ├── app.py              # Streamlit应用
-        ├── data_loader.py      # 数据加载模块
-        ├── requirements.txt    # Python依赖
-        └── *.txt               # 数据文件
+├── 前端封装/frontend/          # Python Streamlit 前端
+│   ├── app.py                  # 应用主入口
+│   ├── config.py               # 集中配置 (参数预设、页面定义)
+│   ├── data_loader.py          # 数据加载与计算
+│   ├── charts.py               # 图表绘制模块
+│   ├── report.py               # 综合报告导出
+│   ├── styles.py               # CSS 样式
+│   ├── v2_features/            # 高级功能 (可视化/分析)
+│   ├── static/images/          # 静态图片资源
+│   ├── requirements.txt        # Python 依赖
+│   └── test_data_loader.py     # 单元测试 (pytest)
+│
+├── 建模/                       # Blender 3D 场景建模
+├── .github/workflows/          # CI/CD
+│   ├── test.yml                # 自动测试
+│   └── deploy-frontend.yml     # GitHub Pages 部署
+└── README.md
 ```
 
 ## 主要功能
 
-### 1. 多目标优化
-- 目标1：最小化火电调峰深度
-- 目标2：最小化系统总碳排放
-- 目标3：最大化抽水蓄能利用小时数
+- **多目标优化**：最小化火电调峰深度 & 最小化系统碳排放
+- **NSLDE 算法**：基于非支配排序的差分进化，含 Lévy 飞行扰动
+- **抽水蓄能调度**：365 天 × 24 小时精细调度策略可视化
+- **高级分析**：敏感性分析、情景模拟、决策建议、统计分析
+- **A/B 参数对比**：多方案并行计算与指标对比
+- **交互式图表**：Plotly 驱动的桑基图、Pareto 前沿、3D 可视化
 
-### 2. 核心算法
-- NSLDE（改进的差分进化算法）
-- Pareto前沿分析
-- 妥协解选择
+## 快速开始
 
-### 3. 抽水蓄能调度模型
-- 装机容量：1400 MW
-- 调节时间：4小时
-- 抽发效率：75%
+### 1. 运行 MATLAB 优化
 
-### 4. 碳排放计算
-- 考虑不同负荷率下的碳排放特性
-- 燃料燃烧效率修正
-- 污染物排放系数
-
-## 数据说明
-
-### 输入数据
-| 文件名 | 形状 | 说明 |
-|--------|------|------|
-| hydro.txt | (365, 24) | 水电功率 (MW) |
-| wind.txt | (365, 24) | 风电功率 (MW) |
-| solar.txt | (365, 24) | 光伏功率 (MW) |
-| FH.txt | (365, 24) | 火电负荷 (MW) |
-
-### 输出数据
-| 文件名 | 形状 | 说明 |
-|--------|------|------|
-| A.mat | (100, 27, 365) | Pareto最优解集 |
-| AA.mat | (365, 27) | 最优妥协解 |
-
-## 运行方法
-
-### MATLAB优化程序
-
-1. 进入MATLAB代码目录
-2. 运行主程序：
 ```matlab
-cd('path/to/全年抽蓄减碳效益优化计算')
+cd('全年抽蓄减碳效益优化计算')
 main
 ```
 
-或双击运行 `运行优化.bat`
+### 2. 启动 Python 前端
 
-### Python前端应用
-
-1. 安装依赖：
-```bash
-pip install -r 前端封装/frontend/requirements.txt
-```
-
-2. 启动应用：
 ```bash
 cd 前端封装/frontend
+pip install -r requirements.txt
 streamlit run app.py
 ```
 
-3. 浏览器打开 http://localhost:8501
+浏览器打开 http://localhost:8501
+
+### 3. 运行测试
+
+```bash
+cd 前端封装/frontend
+python -m pytest test_data_loader.py -v
+```
+
+## 部署
+
+- **Streamlit Cloud**：推送代码后自动部署
+- **GitHub Pages**：自动部署项目落地页 [访问](https://LY-muyanshiqi.github.io/thermal-peak-shaving-pumped-storage/)
+- **Dev Container**：支持 GitHub Codespaces 一键开发环境
 
 ## 技术参数
 
-| 参数 | 值 |
-|------|-----|
+| 参数 | 默认值 |
+|------|--------|
 | 抽水蓄能装机容量 | 1400 MW |
-| 调节时间 | 4 小时 |
-| 抽发效率 | 0.75 |
-| Pareto解数量 | 100 |
-| 优化代数 | 3000 |
-| 并行核心数 | 8 |
-
-## 决策变量说明
-
-共23个决策变量：
-- x1-x4：火电调峰系数
-- x5-x8：抽蓄调度系数
-- x9-x12：新能源消纳系数
-- x13-x16：备用容量系数
-- x17-x20：调频备用
-- x21-x23：其他参数
-
-## 依赖环境
-
-### MATLAB
-- MATLAB R2024b 或更高版本
-- 并行计算工具箱
-
-### Python
-- Python 3.8+
-- Streamlit
-- NumPy
-- SciPy
-- Pandas
-- Plotly
-
-## 部署与访问
-
-### Streamlit Cloud 部署
-- **应用链接**：通过Streamlit Cloud访问
-- **自动部署**：GitHub推送代码后自动更新
-
-### GitHub Pages 部署
-- **访问地址**：`https://LY-muyanshiqi.github.io/thermal-peak-shaving-pumped-storage/`
-- **部署方式**：GitHub Actions自动部署
+| 蓄能时长 | 4 h |
+| 抽发效率 | 75% |
+| Pareto 解数量 | 100 |
+| 碳排放系数 | 0.5 吨CO₂/万kWh |
+| 数据粒度 | 365天 × 24小时 = 8760点 |
 
 ## 许可证
 
 MIT License
 
-## 作者
-
-电力系统优化研究团队
-
 ## 更新日期
 
-2026-04-20
+2026-05-18

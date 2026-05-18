@@ -1,32 +1,76 @@
-# MATLAB编译文件（注释掉，允许数据文件上传）
-# *.mat
-*.asv
+# ============================================================
+# 火电深度调峰+抽水蓄能减碳效益优化系统 — Git 忽略规则
+# ============================================================
 
-# Python缓存
+# --- MATLAB ---
+*.asv
+*.mex*
+*.slxc
+*.slx.autosave
+sccprj/
+slprj/
+
+# --- Python ---
 __pycache__/
 *.py[cod]
 *$py.class
 *.so
+*.egg-info/
+.eggs/
+dist/
+build/
+*.egg
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
 
-# Jupyter Notebook
+# --- Jupyter ---
 .ipynb_checkpoints/
+*.ipynb
 
-# IDE配置
+# --- IDE / Editor ---
 .vscode/
 .idea/
 *.swp
 *.swo
+*~
 
-# 系统文件
+# --- OS ---
 .DS_Store
 Thumbs.db
+desktop.ini
 
-# 输出文件
-*.log
+# --- 大型二进制文件 (使用 Git LFS 或外部存储) ---
+*.mat
+*.blend
+*.blend1
+*.blender
+*.blender1
+
+# --- 文档输出 (Word/PDF 生成物) ---
+*.docx
 *.pdf
-*.png
-*.jpg
 
-# 数据文件（根据需要保留或删除）
-# *.txt
-# *.csv
+# --- 生成的临时文件 ---
+*.log
+doc_images/
+doc_images_user/
+user_img_*.png
+pdf_raw_html_*.html
+text_page_*.txt
+jie.txt
+Copy_of_*.m
+
+# --- Claude AI ---
+.claude/
+
+# --- 前端构建产物 ---
+前端封装/frontend/用户手册_*.html
+前端封装/frontend/用户手册_*.pdf
+前端封装/frontend/用户手册_*.docx
+前端封装/frontend/代码总结.md
+
+# --- 其他临时文件 ---
+*.tmp
+*.bak
+*.orig

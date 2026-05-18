@@ -6,8 +6,9 @@ import numpy as np
 import scipy.io as sio
 import os
 
-# 数据路径 - 直接使用当前目录
-DATA_DIR = os.path.dirname(__file__)
+# 数据路径 - 优先从MATLAB计算目录读取，回退到当前目录
+_MATLAB_DATA_DIR = os.path.join(os.path.dirname(__file__), '..', '..', '全年抽蓄减碳效益优化计算')
+DATA_DIR = _MATLAB_DATA_DIR if os.path.isdir(_MATLAB_DATA_DIR) else os.path.dirname(__file__)
 
 
 def load_mat_data():

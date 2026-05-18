@@ -21,6 +21,8 @@ import os
 import sys
 import styles
 import charts
+import config
+import report
 warnings.filterwarnings('ignore')
 
 # 尝试导入增强模块（新增功能）
@@ -56,13 +58,7 @@ def get_all_data():
 # 会话状态初始化
 def init_session_state():
     """初始化默认参数到会话状态"""
-    defaults = {
-        'zpump': 1400, 'h_val': 4, 'efficiency_val': 0.75, 'min_power': 0.2,
-        'carbon_factor': 0.5, 'coal_high': 300, 'coal_mid': 330, 'coal_low': 370,
-        'custom_params': None, 'recalculated_result': None, 'view_mode': '全年总览',
-        '_last_preset': '🏷️ 自定义（手动调整）', 'preset_select': '🏷️ 自定义（手动调整）'
-    }
-    for k, v in defaults.items():
+    for k, v in config.DEFAULT_PARAMS.items():
         if k not in st.session_state:
             st.session_state[k] = v
 
@@ -567,17 +563,7 @@ def show_ab_comparison(data):
     st.title("🔬 A/B 参数对比分析")
     st.markdown("选择两组参数方案，对比分析各项指标的差异")
 
-    PRESETS = {
-        "📋 默认方案": {'zpump': 1400, 'h_val': 4, 'efficiency_val': 0.75, 'min_power': 0.2,
-                      'carbon_factor': 0.5, 'coal_high': 300, 'coal_mid': 330, 'coal_low': 370},
-        "🌿 高消纳方案": {'zpump': 2000, 'h_val': 5, 'efficiency_val': 0.85, 'min_power': 0.15,
-                      'carbon_factor': 0.4, 'coal_high': 290, 'coal_mid': 320, 'coal_low': 360},
-        "🌍 深度低碳方案": {'zpump': 1600, 'h_val': 4, 'efficiency_val': 0.8, 'min_power': 0.15,
-                       'carbon_factor': 0.35, 'coal_high': 285, 'coal_mid': 315, 'coal_low': 355},
-        "⚡ 灵活调峰方案": {'zpump': 2500, 'h_val': 3, 'efficiency_val': 0.7, 'min_power': 0.25,
-                       'carbon_factor': 0.55, 'coal_high': 300, 'coal_mid': 330, 'coal_low': 380},
-    }
-    preset_names = list(PRESETS.keys())
+    preset_names = list(config.PRESETS.keys())[1:]  # 排除"自定义"选项
 
     col_a, col_b = st.columns(2)
     with col_a:
@@ -588,8 +574,8 @@ def show_ab_comparison(data):
         preset_b = st.selectbox("选择预设方案B", preset_names[1:], key='ab_preset_b')
 
     if st.button("🔍 开始对比分析", use_container_width=True):
-        params_a = PRESETS[preset_a]
-        params_b = PRESETS[preset_b]
+        params_a = config.PRESETS[preset_a]
+        params_b = config.PRESETS[preset_b]
 
         with st.spinner("正在计算方案A..."):
             r_a = dl.recalculate_with_parameters(data, {
@@ -738,22 +724,10 @@ def main():
         # 参数配置区域（调参即算）
         st.sidebar.markdown("### ⚙️ 参数配置")
         with st.sidebar.expander("点击展开参数配置", expanded=False):
-            # 预设方案
-            PRESETS = {
-                "🏷️ 自定义（手动调整）": None,
-                "📋 默认方案": {'zpump': 1400, 'h_val': 4, 'efficiency_val': 0.75, 'min_power': 0.2,
-                              'carbon_factor': 0.5, 'coal_high': 300, 'coal_mid': 330, 'coal_low': 370},
-                "🌿 高消纳方案": {'zpump': 2000, 'h_val': 5, 'efficiency_val': 0.85, 'min_power': 0.15,
-                              'carbon_factor': 0.4, 'coal_high': 290, 'coal_mid': 320, 'coal_low': 360},
-                "🌍 深度低碳方案": {'zpump': 1600, 'h_val': 4, 'efficiency_val': 0.8, 'min_power': 0.15,
-                               'carbon_factor': 0.35, 'coal_high': 285, 'coal_mid': 315, 'coal_low': 355},
-                "⚡ 灵活调峰方案": {'zpump': 2500, 'h_val': 3, 'efficiency_val': 0.7, 'min_power': 0.25,
-                               'carbon_factor': 0.55, 'coal_high': 300, 'coal_mid': 330, 'coal_low': 380},
-            }
-            preset = st.selectbox("📦 参数预设方案", list(PRESETS.keys()), key='preset_select')
+            preset = st.selectbox("📦 参数预设方案", list(config.PRESETS.keys()), key='preset_select')
 
             if preset != "🏷️ 自定义（手动调整）" and st.session_state.get('_last_preset') != preset:
-                params = PRESETS.get(preset)
+                params = config.PRESETS.get(preset)
                 if params:
                     for k, v in params.items():
                         st.session_state[k] = v
@@ -795,9 +769,8 @@ def main():
 
             # 重置按钮
             if st.button("🔄 重置为默认参数", key='reset_params'):
-                defaults = {'zpump': 1400, 'h_val': 4, 'efficiency_val': 0.75, 'min_power': 0.2,
-                            'carbon_factor': 0.5, 'coal_high': 300, 'coal_mid': 330, 'coal_low': 370,
-                            'custom_params': None, 'recalculated_result': None, '_last_preset': '🏷️ 自定义（手动调整）'}
+                defaults = {**config.DEFAULT_PARAMS, 'custom_params': None, 'recalculated_result': None,
+                            '_last_preset': '🏷️ 自定义（手动调整）'}
                 for k, v in defaults.items():
                     st.session_state[k] = v
                 st.rerun()
@@ -805,12 +778,7 @@ def main():
         # 页面分组导航
         st.sidebar.markdown("### 📑 页面导航")
 
-        PAGE_GROUPS = {
-            "📊 核心看板": ["🏠 系统总览", "📈 综合分析报告"],
-            "📈 专项分析": ["🌿 新能源分析", "💧 抽水蓄能调度", "🔥 火电调峰与碳减排", "🎯 Pareto前沿分析"],
-            "⚙️ 模型与参数": ["📐 计算公式详解", "⚙️ 参数调整", "🗃️ 原始数据浏览"],
-            "🔬 高级功能": ["🎨 高级可视化", "🧠 高级分析", "🔬 A/B参数对比"],
-        }
+        PAGE_GROUPS = config.PAGE_GROUPS
 
         # 展开所有分组为带缩进的选项列表
         nav_options = []
@@ -841,7 +809,7 @@ def main():
             st.caption(f"缓存有效期: 1小时 | 数据来源: AA.mat / A.mat / .txt文件")
 
         # 导出报告
-        report_html = charts.generate_html_report(data, derived, params=st.session_state.get('custom_params'))
+        report_html = report.generate_html_report(data, derived, params=st.session_state.get('custom_params'))
         st.sidebar.download_button(
             label="📥 导出综合报告 (HTML)",
             data=report_html,
