@@ -32,6 +32,9 @@ try:
 except ImportError:
     ADVANCED_FEATURES = False
 
+# 静态资源路径
+IMAGE_DIR = os.path.join(os.path.dirname(__file__), 'static', 'images')
+
 # 页面配置
 st.set_page_config(
     page_title="新型电力系统下抽水蓄能减碳效益优化核算系统",
@@ -101,10 +104,10 @@ def show_pareto_v2(data):
     # 四季Pareto前沿图片（图8-11）
     season_tabs = st.tabs(["🌸 春季 (图8)", "☀️ 夏季 (图9)", "🍂 秋季 (图10)", "❄️ 冬季 (图11)"])
     season_images = {
-        0: ["static/images/pareto_112.png", "static/images/pareto_113.png", "static/images/pareto_114.png"],
-        1: ["static/images/pareto_115.png", "static/images/pareto_116.png", "static/images/pareto_117.png"],
-        2: ["static/images/pareto_118.png", "static/images/pareto_119.png", "static/images/pareto_120.png"],
-        3: ["static/images/pareto_121.png", "static/images/pareto_122.png", "static/images/pareto_123.png"],
+        0: [os.path.join(IMAGE_DIR, f) for f in ["pareto_112.png", "pareto_113.png", "pareto_114.png"]],
+        1: [os.path.join(IMAGE_DIR, f) for f in ["pareto_115.png", "pareto_116.png", "pareto_117.png"]],
+        2: [os.path.join(IMAGE_DIR, f) for f in ["pareto_118.png", "pareto_119.png", "pareto_120.png"]],
+        3: [os.path.join(IMAGE_DIR, f) for f in ["pareto_121.png", "pareto_122.png", "pareto_123.png"]],
     }
     season_labels = ["春季", "夏季", "秋季", "冬季"]
 
@@ -932,7 +935,7 @@ def main():
 
             # NSLDE算法流程图 — 文档图3
             st.markdown("#### NSLDE算法程序架构图（图3）")
-            st.image("static/images/nslde_flowchart.png",
+            st.image(os.path.join(IMAGE_DIR, "nslde_flowchart.png"),
                      caption="抽水蓄能减碳优化核算模型程序架构图（来源：项目分析文档 图3）",
                      use_container_width=True)
 
