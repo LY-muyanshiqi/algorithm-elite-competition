@@ -1,0 +1,811 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>新型电力系统下抽水蓄能减碳效益优化核算系统 — 用户操作手册 V2.0</title>
+<style>
+  @page {
+    size: A4;
+    margin: 20mm 18mm 22mm 18mm;
+  }
+  @page cover { margin: 0; }
+  @page toc { margin: 20mm 18mm 22mm 18mm; }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: "Microsoft YaHei", "微软雅黑", "SimSun", sans-serif;
+    font-size: 11pt;
+    line-height: 1.65;
+    color: #2c3e50;
+    background: #fff;
+    max-width: 210mm;
+    margin: 0 auto;
+    padding: 0;
+  }
+
+  /* ============ COVER PAGE ============ */
+  .cover {
+    page: cover;
+    page-break-after: always;
+    width: 210mm;
+    height: 297mm;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    overflow: hidden;
+    background: linear-gradient(160deg, #0a1628 0%, #0d1f3c 30%, #1a2f4b 60%, #0a1628 100%);
+    color: #fff;
+    text-align: center;
+    padding: 40px;
+    position: relative;
+    overflow: hidden;
+  }
+  .cover::before {
+    content: '';
+    position: absolute;
+    top: -200px; left: -200px;
+    width: 700px; height: 700px;
+    border: 2px solid rgba(0, 212, 255, 0.08);
+    border-radius: 50%;
+    animation: none;
+  }
+  .cover::after {
+    content: '';
+    position: absolute;
+    bottom: -200px; right: -200px;
+    width: 600px; height: 600px;
+    border: 2px solid rgba(0, 255, 136, 0.06);
+    border-radius: 50%;
+  }
+  .cover .logo-area {
+    margin-bottom: 30px;
+    z-index: 1;
+  }
+  .cover .logo-icon {
+    font-size: 56pt;
+    display: block;
+    margin-bottom: 8px;
+  }
+  .cover .version-badge {
+    display: inline-block;
+    background: linear-gradient(135deg, #00d4ff, #0096ff);
+    color: #fff;
+    padding: 5px 20px;
+    border-radius: 20px;
+    font-size: 10pt;
+    font-weight: bold;
+    letter-spacing: 2px;
+  }
+  .cover h1 {
+    font-size: 24pt;
+    font-weight: 700;
+    line-height: 1.25;
+    letter-spacing: 2px;
+    max-width: 420px;
+    z-index: 1;
+    background: linear-gradient(90deg, #00d4ff, #00ff88);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    margin: 18px 0;
+  }
+  .cover .subtitle {
+    font-size: 11pt;
+    color: #8ba4c4;
+    margin-bottom: 16px;
+    z-index: 1;
+  }
+  .cover .meta-line {
+    font-size: 9pt;
+    color: #5a7a9a;
+    margin: 2px 0;
+    z-index: 1;
+  }
+  .cover .divider {
+    width: 80px;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, #00d4ff, transparent);
+    margin: 22px 0;
+    z-index: 1;
+  }
+
+  /* ============ TOC PAGE ============ */
+  .toc {
+    page: toc;
+    page-break-after: always;
+    page-break-inside: avoid;
+    padding: 26px 50px 30px 50px;
+  }
+  .toc h2 {
+    font-size: 18pt;
+    color: #0a1628;
+    border-bottom: 2px solid #00d4ff;
+    padding-bottom: 8px;
+    margin-bottom: 16px;
+  }
+  .toc-list { list-style: none; }
+  .toc-list li {
+    padding: 3px 0;
+    display: flex;
+    justify-content: space-between;
+  }
+  .toc-list li.chapter {
+    font-weight: bold; font-size: 11.5pt; margin-top: 6px; color: #0a1628;
+    border-bottom: 1px dotted #ddd;
+    padding-bottom: 4px;
+  }
+  .toc-list li.section {
+    padding-left: 28px; font-size: 10pt; color: #555;
+    border-bottom: none;
+  }
+  .toc-list .toc-num { color: #00d4ff; font-weight: bold; margin-right: 8px; }
+  .toc-list .toc-dots { flex: 1; border-bottom: 1px dotted #ccc; margin: 0 8px; position: relative; top: -4px; }
+  .toc-list .toc-page { color: #888; min-width: 30px; text-align: right; }
+
+  /* ============ MAIN CONTENT ============ */
+  .chapter {
+    page-break-before: always;
+    padding: 10px 0;
+  }
+  .chapter-header {
+    background: linear-gradient(90deg, #00d4ff, #0096ff);
+    color: #fff;
+    padding: 12px 24px;
+    border-radius: 0 8px 8px 0;
+    margin-bottom: 16px;
+    font-size: 16pt;
+    border-left: none;
+  }
+  .chapter-num {
+    font-size: 11pt;
+    opacity: 0.8;
+    display: block;
+  }
+  h2 { font-size: 13pt; color: #0a1628; margin: 14px 0 8px; padding-left: 8px; border-left: 4px solid #00d4ff; }
+  h3 { font-size: 11.5pt; color: #1a2f4b; margin: 12px 0 6px; }
+  p { margin-bottom: 6px; text-indent: 2em; }
+  p.no-indent { text-indent: 0; }
+
+  /* ============ SCREENSHOT ============ */
+  .screenshot-container {
+    background: #f5f7fa;
+    border: 2px dashed #c0cdd8;
+    border-radius: 10px;
+    padding: 12px;
+    margin: 12px 0;
+    text-align: center;
+  }
+  .screenshot-container img {
+    max-width: 100%;
+    border-radius: 6px;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.1);
+  }
+  .screenshot-caption {
+    font-size: 9pt;
+    color: #7f8c9b;
+    margin-top: 8px;
+  }
+  .screenshot-placeholder {
+    display: inline-block;
+    background: #e8ecf1;
+    color: #7f8c9b;
+    padding: 30px 60px;
+    border-radius: 8px;
+    font-size: 9pt;
+  }
+
+  /* ============ TIP BOXES ============ */
+  .tip-box {
+    border-radius: 8px;
+    padding: 8px 14px;
+    margin: 8px 0;
+    font-size: 10pt;
+    text-indent: 0;
+  }
+  .tip-info { background: #e8f6ff; border-left: 4px solid #00d4ff; color: #1a5a8a; }
+  .tip-warning { background: #fff8e8; border-left: 4px solid #ff9800; color: #7a5a10; }
+  .tip-success { background: #e8fff0; border-left: 4px solid #00ff88; color: #1a5a3a; }
+  .tip-danger { background: #ffe8e8; border-left: 4px solid #ff5252; color: #7a1a1a; }
+
+  /* ============ TABLES ============ */
+  .param-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 10px 0;
+    font-size: 9.5pt;
+  }
+  .param-table th {
+    background: linear-gradient(135deg, #0a1628, #1a2f4b);
+    color: #fff;
+    padding: 8px 10px;
+    text-align: left;
+    font-weight: 600;
+  }
+  .param-table td {
+    padding: 6px 10px;
+    border-bottom: 1px solid #e0e4e8;
+  }
+  .param-table tr:nth-child(even) { background: #f8f9fb; }
+  .param-table tr:hover { background: #e8f6ff; }
+
+  /* ============ KEY COMBO ============ */
+  .key-combo {
+    display: inline-block;
+    background: #f0f2f5;
+    border: 1px solid #d0d4d8;
+    border-radius: 4px;
+    padding: 2px 8px;
+    font-family: Consolas, monospace;
+    font-size: 9pt;
+    color: #333;
+  }
+
+  /* ============ BULLET LIST ============ */
+  ul.feature-list, ol.step-list {
+    margin: 4px 0 10px 2em;
+  }
+  ul.feature-list li, ol.step-list li {
+    margin-bottom: 2px;
+  }
+
+  /* ============ PAGE NUMBER ============ */
+  .page-num {
+    text-align: right;
+    color: #aaa;
+    font-size: 8pt;
+    margin-top: 12px;
+  }
+
+  /* ============ FOOTER ============ */
+  .manual-footer {
+    page-break-before: always;
+    padding: 40px;
+    text-align: center;
+    color: #7f8c9b;
+    font-size: 9pt;
+  }
+
+  /* ============ PRINT ============ */
+  @media print {
+    body { background: #fff; }
+    .chapter { page-break-before: always; }
+    .no-break { page-break-inside: avoid; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ==================== COVER PAGE ==================== -->
+<div class="cover">
+  <div class="logo-area">
+    <span class="logo-icon">⚡</span>
+    <span class="version-badge">V2.0</span>
+  </div>
+  <h1>新型电力系统下<br>抽水蓄能减碳效益<br>优化核算系统</h1>
+  <p class="subtitle">基于NSLDE多目标优化算法的<br>全年8760小时调度策略可视化分析平台</p>
+  <div class="divider"></div>
+  <p class="meta-line">用户操作手册</p>
+  <p class="meta-line">编制日期：2026年5月</p>
+  <p class="meta-line">适用版本：V2.0</p>
+</div>
+
+<!-- ==================== TOC PAGE ==================== -->
+<div class="toc">
+  <h2>目　录</h2>
+  <ul class="toc-list">
+    <li class="chapter"><span><span class="toc-num">一</span>系统概述</span><span class="toc-dots"></span><span class="toc-page">1</span></li>
+    <li class="section"><span>1.1 系统简介</span></li>
+    <li class="section"><span>1.2 核心功能</span></li>
+    <li class="section"><span>1.3 技术架构</span></li>
+    <li class="section"><span>1.4 运行环境</span></li>
+
+    <li class="chapter"><span><span class="toc-num">二</span>系统启动与界面导览</span><span class="toc-dots"></span><span class="toc-page">4</span></li>
+    <li class="section"><span>2.1 启动系统</span></li>
+    <li class="section"><span>2.2 界面布局说明</span></li>
+    <li class="section"><span>2.3 全局KPI状态条</span></li>
+
+    <li class="chapter"><span><span class="toc-num">三</span>核心看板</span><span class="toc-dots"></span><span class="toc-page">7</span></li>
+    <li class="section"><span>3.1 系统总览仪表盘</span></li>
+    <li class="section"><span>3.2 综合分析报告</span></li>
+
+    <li class="chapter"><span><span class="toc-num">四</span>专项分析</span><span class="toc-dots"></span><span class="toc-page">10</span></li>
+    <li class="section"><span>4.1 新能源分析</span></li>
+    <li class="section"><span>4.2 抽水蓄能调度</span></li>
+    <li class="section"><span>4.3 火电调峰与碳减排</span></li>
+    <li class="section"><span>4.4 Pareto前沿分析</span></li>
+
+    <li class="chapter"><span><span class="toc-num">五</span>模型与参数</span><span class="toc-dots"></span><span class="toc-page">14</span></li>
+    <li class="section"><span>5.1 计算公式详解</span></li>
+    <li class="section"><span>5.2 参数调整（调参即算）</span></li>
+    <li class="section"><span>5.3 原始数据浏览</span></li>
+
+    <li class="chapter"><span><span class="toc-num">六</span>高级功能</span><span class="toc-dots"></span><span class="toc-page">18</span></li>
+    <li class="section"><span>6.1 高级可视化</span></li>
+    <li class="section"><span>6.2 高级分析</span></li>
+    <li class="section"><span>6.3 A/B参数对比分析</span></li>
+
+    <li class="chapter"><span><span class="toc-num">七</span>数据管理</span><span class="toc-dots"></span><span class="toc-page">22</span></li>
+    <li class="section"><span>7.1 时间范围选择</span></li>
+    <li class="section"><span>7.2 导出功能</span></li>
+    <li class="section"><span>7.3 缓存管理</span></li>
+
+    <li class="chapter"><span><span class="toc-num">八</span>附录</span><span class="toc-dots"></span><span class="toc-page">24</span></li>
+    <li class="section"><span>8.1 参数说明一览表</span></li>
+    <li class="section"><span>8.2 数据文件清单</span></li>
+    <li class="section"><span>8.3 常见问题FAQ</span></li>
+    <li class="section"><span>8.4 优化模型公式索引</span></li>
+  </ul>
+</div>
+
+<!-- ==================== CHAPTER 1: SYSTEM OVERVIEW ==================== -->
+<div class="chapter">
+  <div class="chapter-header">
+    <span class="chapter-num">第一章</span>
+    系统概述
+  </div>
+
+  <h2>1.1 系统简介</h2>
+  <p>新型电力系统下抽水蓄能减碳效益优化核算系统（以下简称"本系统"）是一款面向电力系统规划与运行优化的专业级Web分析平台。系统基于NSLDE（Non-dominated Sorting Learning Differential Evolution）多目标优化算法，对全年8760小时的风电、光伏、水电、火电及抽水蓄能数据进行高精度建模与可视化分析，为抽水蓄能电站的容量配置、调度策略、碳减排效益评估提供量化决策支持。</p>
+
+  <p>本系统以Streamlit为前端框架，集成Plotly交互式图表引擎，支持参数实时调整与即时重算、A/B方案对比、多维度可视化及综合分析报告导出等功能，适用于电力系统研究人员、电网调度规划工程师以及能源政策分析人员。</p>
+
+  <div class="screenshot-container">
+    <div class="screenshot-placeholder"><img src="doc_images_user/user_img_01.png" alt="系统首页" style="max-width:100%;border-radius:6px;box-shadow:0 4px 16px rgba(0,0,0,0.1);"></div>
+    <p class="screenshot-caption">图1-1　系统首页：全局KPI状态条 + 关键指标卡片 + 全年发电曲线</p>
+  </div>
+
+  <h2>1.2 核心功能</h2>
+  <p>本系统涵盖以下核心功能模块：</p>
+  <ul class="feature-list">
+    <li><strong>核心看板（2页）</strong>：系统总览仪表盘、综合分析报告，一键掌握全局关键指标</li>
+    <li><strong>专项分析（4页）</strong>：新能源发电分析、抽水蓄能调度、火电调峰效果与碳减排、Pareto最优前沿</li>
+    <li><strong>模型与参数（3页）</strong>：NSLDE算法公式详解、参数实时调整与重算、原始MATLAB数据浏览</li>
+    <li><strong>高级功能（3页）</strong>：7种高级可视化图表、5类高级分析法、A/B参数方案对比</li>
+    <li><strong>数据管理</strong>：时间范围筛选、CSV/PNG/HTML多格式导出、数据缓存控制</li>
+  </ul>
+
+  <h2>1.3 技术架构</h2>
+  <table class="param-table">
+    <tr><th style="width:150px">层级</th><th>技术选型</th><th>说明</th></tr>
+    <tr><td>前端框架</td><td>Streamlit 1.32+</td><td>纯Python驱动的Web应用框架</td></tr>
+    <tr><td>图表引擎</td><td>Plotly 5.x</td><td>交互式图表，支持缩放、平移、悬停提示</td></tr>
+    <tr><td>数值计算</td><td>NumPy, SciPy, Pandas</td><td>矩阵运算、数据加载与统计分析</td></tr>
+    <tr><td>优化算法</td><td>NSLDE (MATLAB/Python)</td><td>非支配排序学习差分进化算法</td></tr>
+    <tr><td>样式系统</td><td>自定义CSS</td><td>深色科技风主题，移动端响应式适配</td></tr>
+    <tr><td>数据存储</td><td>.mat / .txt 文件</td><td>MATLAB数据格式，365天×24小时矩阵</td></tr>
+  </table>
+
+  <h2>1.4 运行环境</h2>
+  <table class="param-table">
+    <tr><th style="width:150px">项目</th><th>最低要求</th><th>推荐配置</th></tr>
+    <tr><td>操作系统</td><td>Windows 10 / macOS 11 / Linux</td><td>Windows 11 / macOS 13+</td></tr>
+    <tr><td>Python版本</td><td>Python 3.9</td><td>Python 3.11+</td></tr>
+    <tr><td>内存</td><td>4 GB</td><td>8 GB+</td></tr>
+    <tr><td>浏览器</td><td>Chrome 90 / Edge 90</td><td>最新版Chrome / Edge / Firefox</td></tr>
+    <tr><td>依赖包</td><td colspan="2">streamlit, numpy, scipy, pandas, plotly</td></tr>
+  </table>
+</div>
+
+<!-- ==================== CHAPTER 2: SYSTEM STARTUP ==================== -->
+<div class="chapter">
+  <div class="chapter-header">
+    <span class="chapter-num">第二章</span>
+    系统启动与界面导览
+  </div>
+
+  <h2>2.1 启动系统</h2>
+  <p>本系统基于Streamlit框架构建，启动步骤如下：</p>
+  <ol class="step-list">
+    <li><strong>打开终端</strong>：在项目根目录（<span class="key-combo">frontend/</span>）下打开命令行终端</li>
+    <li><strong>确认依赖</strong>：运行 <span class="key-combo">pip install -r requirements.txt</span> 安装所需Python包</li>
+    <li><strong>启动服务</strong>：执行 <span class="key-combo">streamlit run app.py</span></li>
+    <li><strong>访问系统</strong>：浏览器自动打开 <span class="key-combo">http://localhost:8501</span>，或手动输入该地址</li>
+  </ol>
+
+  <div class="tip-box tip-info">
+    <strong>提示：</strong>首次启动时系统将自动加载MATLAB数据文件（.mat及.txt格式），此过程约需5-10秒。后续访问受缓存机制加速，加载时间可缩短至2秒以内。
+  </div>
+
+  <h2>2.2 界面布局说明</h2>
+  <p>系统界面采用经典的"侧边栏 + 主内容区"布局：</p>
+  <ul class="feature-list">
+    <li><strong>顶部全局KPI条</strong>（所有页面可见）：碳减排量、新能源渗透率、抽水小时数、抽发效率四项核心指标</li>
+    <li><strong>左侧导航栏</strong>：包含时间范围选择、参数配置面板、页面导航菜单、缓存管理及报告导出按钮</li>
+    <li><strong>主内容区</strong>：根据所选页面动态渲染对应的数据看板、图表及分析结果</li>
+  </ul>
+
+  <div class="screenshot-container">
+    <div class="screenshot-placeholder"><img src="doc_images_user/user_img_02.png" alt="界面布局" style="max-width:100%;border-radius:6px;box-shadow:0 4px 16px rgba(0,0,0,0.1);"></div>
+    <p class="screenshot-caption">图2-1　系统界面布局：左侧导航栏 + 顶部KPI条 + 主内容区</p>
+  </div>
+
+  <h2>2.3 全局KPI状态条</h2>
+  <p>全局KPI状态条固定显示于主内容区顶部，无论切换到哪个页面，以下四项核心指标均保持可见：</p>
+  <table class="param-table">
+    <tr><th>指标名称</th><th>单位</th><th>计算方式</th></tr>
+    <tr><td>🌍 碳减排量</td><td>万吨</td><td>有抽蓄与无抽蓄情景下火电碳排放的差值</td></tr>
+    <tr><td>🌿 新能源渗透率</td><td>%</td><td>风光水总出力 / 所有电源总出力 × 100</td></tr>
+    <tr><td>💧 抽水小时数</td><td>小时</td><td>全年抽水蓄能处于抽水状态的累计小时数</td></tr>
+    <tr><td>🔄 抽发效率</td><td>%</td><td>抽水蓄能总发电量 / 总抽水电量 × 100</td></tr>
+  </table>
+</div>
+
+<!-- ==================== CHAPTER 3: CORE DASHBOARD ==================== -->
+<div class="chapter">
+  <div class="chapter-header">
+    <span class="chapter-num">第三章</span>
+    核心看板
+  </div>
+
+  <h2>3.1 系统总览仪表盘</h2>
+  <p>系统总览（导航路径：<strong>📊 核心看板 → 🏠 系统总览</strong>）是用户进入系统后的默认首页面，提供全局电力数据的一站式概览。</p>
+
+  <h3>3.1.1 能源出力指标卡片</h3>
+  <p>页面顶部展示四张指标卡片，分别显示全年风电、光伏、水电、火电的累计发电量（单位：亿kWh），使用不同颜色区分能源类型。</p>
+
+  <h3>3.1.2 全年发电功率曲线</h3>
+  <p>双面板交互式图表：上板为分类型发电功率（风电、光伏、水电三条填充曲线叠加显示）；下板为总新能源发电量。图表支持缩放、框选、悬停查看精确数值。</p>
+
+  <div class="screenshot-container">
+    <div class="screenshot-placeholder"><img src="doc_images_user/user_img_03.png" alt="系统总览" style="max-width:100%;border-radius:6px;box-shadow:0 4px 16px rgba(0,0,0,0.1);"></div>
+    <p class="screenshot-caption">图3-1　系统总览：能源出力卡片 + 全年发电曲线</p>
+  </div>
+
+  <h3>3.1.3 碳减排与抽蓄统计</h3>
+  <p>第二组四张指标卡片展示碳减排量、抽水小时数、发电小时数和抽发效率。下方展示"月度能源对比图"（需高级功能模块可用），可直观对比各月的风、光、水、火电出力比例。</p>
+
+  <h3>3.1.4 数据导出</h3>
+  <p>点击"📥 导出总览数据"按钮，可将8项核心指标导出为CSV文件，便于外部数据分析。</p>
+
+  <h2>3.2 综合分析报告</h2>
+  <p>综合分析报告（导航路径：<strong>📊 核心看板 → 📈 综合分析报告</strong>）提供优化前后的系统性能对比分析。</p>
+
+  <h3>3.2.1 综合指标</h3>
+  <p>顶部四张指标卡片分别显示新能源渗透率、新能源总发电量、碳减排量和抽水小时数。</p>
+
+  <h3>3.2.2 优化前后雷达图</h3>
+  <p>六维雷达图直观对比"优化前"与"优化后"在新能源消纳、调峰深度、系统灵活性、碳减排、经济性、可靠性六个维度的综合得分变化。</p>
+
+  <div class="screenshot-container">
+    <div class="screenshot-placeholder"><img src="doc_images_user/user_img_04.png" alt="综合分析报告" style="max-width:100%;border-radius:6px;box-shadow:0 4px 16px rgba(0,0,0,0.1);"></div>
+    <p class="screenshot-caption">图3-2　综合分析报告：优化前后六维雷达图对比</p>
+  </div>
+
+  <h3>3.2.3 详细指标对比表</h3>
+  <p>表格列出优化前后各项指标的具体数值及变化幅度，一目了然地展示抽水蓄能系统带来的综合效益提升。</p>
+</div>
+
+<!-- ==================== CHAPTER 4: SPECIALIZED ANALYSIS ==================== -->
+<div class="chapter">
+  <div class="chapter-header">
+    <span class="chapter-num">第四章</span>
+    专项分析
+  </div>
+
+  <h2>4.1 新能源分析</h2>
+  <p>新能源分析页面（导航路径：<strong>📈 专项分析 → 🌿 新能源分析</strong>）专注于风电、光伏、水电三类可再生能源的出力特性分析。</p>
+
+  <h3>4.1.1 日期选择与当日指标</h3>
+  <p>通过滑动条选择日期（0-364，对应全年365天），顶部三张卡片实时显示选定日的风电、光伏、水电当日累计出力（MWh）。</p>
+
+  <h3>4.1.2 全年发电曲线（可选时间范围）</h3>
+  <p>与系统总览一致的分类型发电功率曲线，但受左侧边栏"时间范围"筛选器控制，可按月、按季节、按典型日或全年显示。</p>
+
+  <h3>4.1.3 典型日负荷曲线</h3>
+  <p>下拉框可选择7种典型日类型（全部日、工作日、周末、春/夏/秋/冬季），图表显示所选类型下24小时的火电、风电、光伏、水电平均功率曲线。</p>
+
+  <h3>4.1.4 能量平衡图</h3>
+  <p>若高级功能模块可用，显示当日能量平衡堆叠图，直观展示新能源与火电的出力分配关系。</p>
+
+  <div class="screenshot-container">
+    <div class="screenshot-placeholder"><img src="doc_images_user/user_img_05.png" alt="新能源分析" style="max-width:100%;border-radius:6px;box-shadow:0 4px 16px rgba(0,0,0,0.1);"></div>
+    <p class="screenshot-caption">图4-1　新能源分析：当日指标 + 典型日负荷曲线 + 能量平衡</p>
+  </div>
+
+  <h2>4.2 抽水蓄能调度</h2>
+  <p>抽水蓄能调度页面（导航路径：<strong>📈 专项分析 → 💧 抽水蓄能调度</strong>）是系统的核心功能页面之一，展示抽水蓄能电站的逐日逐时调度策略。</p>
+
+  <h3>4.2.1 桑基图（能量流向）</h3>
+  <p>页面顶部为桑基图，以流动带宽形式可视化展示选定日内电力系统中各能源的流向和比例关系——左侧为各类电源（风电、光伏、水电、抽蓄、火电），右侧为电网负荷。线条宽度代表能量大小，绿色流量代表新能源直供，蓝色流量代表抽蓄发电补充，红色流量代表火电出力。</p>
+
+  <h3>4.2.2 日期选择</h3>
+  <p>滑动条选择日期后，桑基图及后续图表同步更新至所选日的数据。</p>
+
+  <h3>4.2.3 调度策略统计</h3>
+  <p>四张指标卡片汇总全年调度统计数据：发电小时数、抽水小时数、停机小时数、综合效率。</p>
+
+  <div class="tip-box tip-info">
+    <strong>理解抽水蓄能功率的正负号：</strong>功率值为正表示抽水蓄能处于发电状态（水轮机放水发电），为负表示处于抽水状态（水泵抽水蓄能），为零表示停机。
+  </div>
+
+  <div class="screenshot-container">
+    <div class="screenshot-placeholder"><img src="doc_images_user/user_img_06.png" alt="抽水蓄能调度" style="max-width:100%;border-radius:6px;box-shadow:0 4px 16px rgba(0,0,0,0.1);"></div>
+    <p class="screenshot-caption">图4-2　抽水蓄能调度：能量流向桑基图 + 调度策略统计</p>
+  </div>
+
+  <h2>4.3 火电调峰与碳减排</h2>
+  <p>火电调峰与碳减排页面（导航路径：<strong>📈 专项分析 → 🔥 火电调峰与碳减排</strong>）通过对比有无抽水蓄能两种情景，量化评估抽水蓄能的调峰效果与碳减排贡献。</p>
+
+  <h3>4.3.1 火电功率对比图</h3>
+  <p>双面板图表：上板对比有抽蓄（蓝色实线）与无抽蓄（红色虚线）情景下的火电功率；下板展示抽水蓄能水库状态（CC值），反映水库蓄能量的时序变化。</p>
+
+  <h3>4.3.2 碳减排分析</h3>
+  <p>两张指标卡片分别显示年碳减排量（万吨）和火电变化量（亿kWh）。下方展示全年365天的日碳减排柱状图——绿色柱代表当日为减排，红色柱代表当日为增排（碳减排量为负值表示有抽蓄后火电反而增发的异常日）。</p>
+
+  <h3>4.3.3 月度碳减排趋势</h3>
+  <p>12个月柱状图展示碳减排量的月度分布，便于识别碳减排的季节性规律。</p>
+
+  <div class="screenshot-container">
+    <div class="screenshot-placeholder"><img src="doc_images_user/user_img_07.png" alt="火电调峰与碳减排 - 功率对比" style="max-width:100%;border-radius:6px;box-shadow:0 4px 16px rgba(0,0,0,0.1);margin-bottom:10px;"><br><img src="doc_images_user/user_img_08.png" alt="火电调峰与碳减排 - 碳减排趋势" style="max-width:100%;border-radius:6px;box-shadow:0 4px 16px rgba(0,0,0,0.1);"></div>
+    <p class="screenshot-caption">图4-3　火电调峰与碳减排：功率对比 + 碳减排柱状图</p>
+  </div>
+
+  <h2>4.4 Pareto前沿分析</h2>
+  <p>Pareto前沿分析页面（导航路径：<strong>📈 专项分析 → 🎯 Pareto前沿分析</strong>）展示NSLDE多目标优化算法的核心成果——双目标Pareto最优解集。</p>
+
+  <h3>4.4.1 四季Pareto前沿图</h3>
+  <p>四个选项卡分别对应春、夏、秋、冬四季的Pareto前沿图片，每季包含3张子图（各来源项目的分析文档图8-11）。图片来源于MATLAB分析文档中的最优前沿可视化。</p>
+
+  <h3>4.4.2 目标函数值分布</h3>
+  <p>双柱状图展示目标函数1（火电调峰容量）和目标函数2（碳排放）的分布，横轴为日期，纵轴为各目标函数值。</p>
+
+  <div class="screenshot-container">
+    <div class="screenshot-placeholder"><img src="doc_images_user/user_img_09.png" alt="Pareto前沿分析 - 四季前沿" style="max-width:100%;border-radius:6px;box-shadow:0 4px 16px rgba(0,0,0,0.1);margin-bottom:10px;"><br><img src="doc_images_user/user_img_10.png" alt="Pareto前沿分析 - 目标函数值分布" style="max-width:100%;border-radius:6px;box-shadow:0 4px 16px rgba(0,0,0,0.1);"></div>
+    <p class="screenshot-caption">图4-4　Pareto前沿分析：四季Pareto前沿 + 目标函数值分布</p>
+  </div>
+</div>
+
+<!-- ==================== CHAPTER 5: MODEL & PARAMETERS ==================== -->
+<div class="chapter">
+  <div class="chapter-header">
+    <span class="chapter-num">第五章</span>
+    模型与参数
+  </div>
+
+  <h2>5.1 计算公式详解</h2>
+  <p>计算公式详解页面（导航路径：<strong>⚙️ 模型与参数 → 📐 计算公式详解</strong>）完整展示本系统所依据的数学模型，分为七大板块：</p>
+
+  <h3>5.1.1 目标函数</h3>
+  <p><strong>目标1 — 火电参与调峰容量最小化：</strong><br>
+  f₁ = min Σ P<sub>thermal,t</sub>（t = 1→T），最小化火电出力以促进新能源消纳。</p>
+  <p><strong>目标2 — 系统碳排放量最小化：</strong><br>
+  f₂ = min Σ S(P<sub>thermal,t</sub>) · P<sub>thermal,t</sub>，碳排放强度随火电负荷率分段变化。</p>
+
+  <h3>5.1.2 约束条件体系</h3>
+  <p>包含10类约束：水量平衡、水库水位、抽蓄出力、火电出力、上库水位、发电流量、抽水流量、初末水位、水流转续、库容控制。</p>
+
+  <h3>5.1.3 NSLDE算法核心公式</h3>
+  <p>包含混沌初始化、Pareto支配关系、差分进化算子、Lévy飞行扰动等核心算法的数学公式及伪代码流程。</p>
+
+  <h3>5.1.4 分阶段碳排放强度计算</h3>
+  <p>按火电负荷率分段：常规调峰（>50%）、不投油深度调峰（30%-50%）、投油深度调峰（≤30%），每段对应不同的碳排放强度计算公式。</p>
+
+  <div class="screenshot-container">
+    <div class="screenshot-placeholder"><img src="doc_images_user/user_img_11.png" alt="计算公式详解 - NSLDE算法" style="max-width:100%;border-radius:6px;box-shadow:0 4px 16px rgba(0,0,0,0.1);margin-bottom:10px;"><br><img src="doc_images_user/user_img_12.png" alt="计算公式详解 - 约束条件" style="max-width:100%;border-radius:6px;box-shadow:0 4px 16px rgba(0,0,0,0.1);"></div>
+    <p class="screenshot-caption">图5-1　计算公式详解：NSLDE算法公式及模型约束条件</p>
+  </div>
+
+  <h2>5.2 参数调整（调参即算）</h2>
+  <p>参数调整页面（导航路径：<strong>⚙️ 模型与参数 → ⚙️ 参数调整</strong>）是系统最具交互性的功能模块，支持用户实时修改模型参数并立即查看重算结果。</p>
+
+  <h3>5.2.1 参数预设方案</h3>
+  <p>侧边栏"参数预设方案"下拉框提供4种预定义方案，用户可一键切换：</p>
+  <table class="param-table">
+    <tr><th>预设方案</th><th>额定功率</th><th>蓄能时长</th><th>抽水效率</th><th>碳排放系数</th></tr>
+    <tr><td>📋 默认方案</td><td>1400 MW</td><td>4 h</td><td>75%</td><td>0.5</td></tr>
+    <tr><td>🌿 高消纳方案</td><td>2000 MW</td><td>5 h</td><td>85%</td><td>0.4</td></tr>
+    <tr><td>🌍 深度低碳方案</td><td>1600 MW</td><td>4 h</td><td>80%</td><td>0.35</td></tr>
+    <tr><td>⚡ 灵活调峰方案</td><td>2500 MW</td><td>3 h</td><td>70%</td><td>0.55</td></tr>
+  </table>
+
+  <h3>5.2.2 手动参数调整</h3>
+  <p>展开侧边栏的"⚙️ 参数配置"面板，可逐项手动调整以下参数（调整后点击"✅ 应用参数并重新计算"）：</p>
+  <ul class="feature-list">
+    <li><strong>抽水蓄能参数</strong>：额定功率(500-3000MW)、蓄能时长(2-8h)、抽水效率(0.6-0.9)、最小出力比例(0.1-0.5)</li>
+    <li><strong>火电机组参数</strong>：碳排放系数(0.3-0.8吨CO₂/万kWh)、常规调峰煤耗(280-320g/kWh)、深度不助燃调峰煤耗(310-350g/kWh)、深度助燃调峰煤耗(350-400g/kWh)</li>
+  </ul>
+
+  <h3>5.2.3 计算结果展示</h3>
+  <p>点击应用按钮后系统自动重算全部指标，显示：碳减排量、发电小时数、抽发效率三张对比卡片，以及选定日的抽水蓄能功率曲线（红绿色柱状图）。</p>
+
+  <div class="screenshot-container">
+    <div class="screenshot-placeholder"><img src="doc_images_user/user_img_13.png" alt="参数调整" style="max-width:100%;border-radius:6px;box-shadow:0 4px 16px rgba(0,0,0,0.1);"></div>
+    <p class="screenshot-caption">图5-2　参数调整：侧边栏参数配置 + 主区域计算结果</p>
+  </div>
+
+  <h2>5.3 原始数据浏览</h2>
+  <p>原始数据浏览页面（导航路径：<strong>⚙️ 模型与参数 → 🗃️ 原始数据浏览</strong>）提供7类底层MATLAB数据的表格视图与统计分析。</p>
+
+  <h3>5.3.1 数据集选择与查看</h3>
+  <p>左侧下拉框选择数据集（风电/光伏/水电/火电负荷/抽蓄功率/有抽蓄火电/无抽蓄火电），滑动条设定日期范围后，主区域以表格形式展示所选天的24小时数据。</p>
+
+  <h3>5.3.2 统计信息</h3>
+  <p>可选显示最小值、最大值、均值、标准差四项统计量，并配有数据分布直方图。</p>
+
+  <h3>5.3.3 数据导出</h3>
+  <p>支持将当前视图下的数据表导出为CSV文件（UTF-8编码）。</p>
+</div>
+
+<!-- ==================== CHAPTER 6: ADVANCED FEATURES ==================== -->
+<div class="chapter">
+  <div class="chapter-header">
+    <span class="chapter-num">第六章</span>
+    高级功能
+  </div>
+
+  <div class="tip-box tip-warning">
+    <strong>注意：</strong>高级功能依赖 <span class="key-combo">v2_features/</span> 模块（含 visualization.py 和 analysis.py），若模块未正确安装或导入失败，页面将显示"高级可视化/分析功能不可用"警告。此时仍可使用核心看板和专项分析等基础功能。
+  </div>
+
+  <h2>6.1 高级可视化</h2>
+  <p>高级可视化页面（导航路径：<strong>🔬 高级功能 → 🎨 高级可视化</strong>）提供7种专业级可视化图表，通过下拉框切换选择：</p>
+
+  <table class="param-table">
+    <tr><th>可视化功能</th><th>图表类型</th><th>需要日期参数</th><th>说明</th></tr>
+    <tr><td>桑基图 — 能量流向</td><td>Sankey Diagram</td><td>是</td><td>展示电力能源从源头到负荷的流动路径</td></tr>
+    <tr><td>3D水库可视化</td><td>3D Surface</td><td>是</td><td>三维水面展示水库蓄能状态变化</td></tr>
+    <tr><td>能量平衡图</td><td>Stacked Bar</td><td>是</td><td>24小时各能源出力堆叠展示</td></tr>
+    <tr><td>Pareto前沿3D图</td><td>3D Scatter</td><td>否</td><td>三维散点图展示Pareto解分布</td></tr>
+    <tr><td>碳减排热力图</td><td>Heatmap</td><td>否</td><td>365天×24小时的碳减排热度分布</td></tr>
+    <tr><td>月度对比图</td><td>Grouped Bar</td><td>否</td><td>12个月各能源产出分组柱状对比</td></tr>
+    <tr><td>能源流动动画</td><td>Animated</td><td>是</td><td>24小时动态展示能源出力变化</td></tr>
+  </table>
+
+  <p>每种可视化均支持<strong>PNG图片下载</strong>，点击图表下方的"📥 下载图表"按钮即可保存当前视图。</p>
+
+  <div class="screenshot-container">
+    <div class="screenshot-placeholder"><img src="doc_images_user/user_img_14.png" alt="高级可视化" style="max-width:100%;border-radius:6px;box-shadow:0 4px 16px rgba(0,0,0,0.1);"></div>
+    <p class="screenshot-caption">图6-1　高级可视化：3D水库可视化效果示意</p>
+  </div>
+
+  <h2>6.2 高级分析</h2>
+  <p>高级分析页面（导航路径：<strong>🔬 高级功能 → 🧠 高级分析</strong>）提供5类高级分析功能：</p>
+
+  <h3>6.2.1 敏感性分析</h3>
+  <p>选择分析参数（抽发效率、装机容量、碳排放系数、电价之一），系统自动计算该参数在±50%范围内变动时对碳减排量的影响。输出影响曲线图和基准值分析。</p>
+
+  <h3>6.2.2 情景模拟</h3>
+  <p>可分别调整风电增长比例(0.5-2.0)、光伏增长比例(0.5-2.0)、负荷增长比例(0.8-1.5)三个参数，模拟不同新能源发展情景下的系统表现。输出情景对比图和关键指标变化。</p>
+
+  <h3>6.2.3 决策建议</h3>
+  <p>系统基于数据分析自动生成决策建议卡，按优先级（高/中/低）排序。每张建议卡片包含：现状分析、建议措施、预期效果。</p>
+
+  <h3>6.2.4 统计分析</h3>
+  <p>展示年度统计指标（总风电/光伏/水电/火电）和相关性分析表（风电-光伏、风电-负荷、光伏-负荷、抽蓄-风电、抽蓄-光伏五组相关系数）。</p>
+
+  <h3>6.2.5 趋势分析</h3>
+  <p>选择分析指标（碳减排量、抽水小时数、新能源占比之一），展示：每日原始值曲线、7日移动平均线、线性趋势线，并给出趋势方向（上升/下降/平稳）和斜率。</p>
+
+  <div class="screenshot-container">
+    <div class="screenshot-placeholder"><img src="doc_images_user/user_img_15.png" alt="高级分析" style="max-width:100%;border-radius:6px;box-shadow:0 4px 16px rgba(0,0,0,0.1);"></div>
+    <p class="screenshot-caption">图6-2　高级分析：决策建议（按优先级排序的彩色卡片）</p>
+  </div>
+
+  <h2>6.3 A/B参数对比分析</h2>
+  <p>A/B参数对比页面（导航路径：<strong>🔬 高级功能 → 🔬 A/B参数对比</strong>）支持选择两组不同的参数方案，一键对比各项指标差异。</p>
+
+  <h3>6.3.1 方案选择</h3>
+  <p>左右两栏分别选择方案A和方案B（下拉框从4种预设方案中选择），点击"🔍 开始对比分析"按钮启动双方案计算。</p>
+
+  <h3>6.3.2 对比结果</h3>
+  <ul class="feature-list">
+    <li><strong>KPI对比卡片</strong>：碳减排量、发电/抽水小时数、抽发效率的四项并排对比，显示A/B方案值和差值</li>
+    <li><strong>火电功率曲线对比</strong>：前30天（720小时）的A/B方案火电功率对比曲线</li>
+    <li><strong>详细指标对比表</strong>：10项指标（含总发电量、平均功率等）的完整对比，含绝对差值和相对变化百分比</li>
+  </ul>
+
+  <div class="screenshot-container">
+    <div class="screenshot-placeholder"><img src="doc_images_user/user_img_16.png" alt="A/B参数对比 - KPI对比" style="max-width:100%;border-radius:6px;box-shadow:0 4px 16px rgba(0,0,0,0.1);margin-bottom:10px;"><br><img src="doc_images_user/user_img_17.png" alt="A/B参数对比 - 功率曲线" style="max-width:100%;border-radius:6px;box-shadow:0 4px 16px rgba(0,0,0,0.1);"></div>
+    <p class="screenshot-caption">图6-3　A/B参数对比：KPI对比卡片 + 火电功率曲线对比</p>
+  </div>
+</div>
+
+<!-- ==================== CHAPTER 7: DATA MANAGEMENT ==================== -->
+<div class="chapter">
+  <div class="chapter-header">
+    <span class="chapter-num">第七章</span>
+    数据管理
+  </div>
+
+  <h2>7.1 时间范围选择</h2>
+  <p>左侧边栏"🕐 时间范围"区域提供四种视图模式，影响全部页面的数据展示范围：</p>
+  <table class="param-table">
+    <tr><th>视图模式</th><th>数据范围</th><th>适用场景</th></tr>
+    <tr><td>全年总览</td><td>365天 × 24小时 = 8760小时</td><td>默认模式，查看全年整体趋势</td></tr>
+    <tr><td>按月查看</td><td>选定月份的28-31天</td><td>分析特定月份的出力特性</td></tr>
+    <tr><td>按季节查看</td><td>春(1-3月)/夏(4-6月)/秋(7-9月)/冬(10-12月)</td><td>对比四季差异</td></tr>
+    <tr><td>典型日分析</td><td>选定单日</td><td>精细化分析某一天的逐时数据</td></tr>
+  </table>
+
+  <h2>7.2 导出功能</h2>
+  <p>系统支持三种导出格式：</p>
+  <ul class="feature-list">
+    <li><strong>CSV导出</strong>：在各专项分析页面点击"📥 导出...数据"按钮，下载当前视图的结构化数据表（UTF-8编码，Excel可直接打开）</li>
+    <li><strong>PNG图表导出</strong>：在高级可视化页面点击"📥 下载图表"按钮，保存当前图表的PNG截图（1200×600分辨率）</li>
+    <li><strong>HTML综合报告导出</strong>：左侧边栏底部的"📥 导出综合报告 (HTML)"按钮，下载包含关键指标、参数设置和生成时间的完整分析报告</li>
+  </ul>
+
+  <h2>7.3 缓存管理</h2>
+  <p>展开侧边栏"🗄️ 数据缓存管理"，点击"🔄 清除数据缓存"按钮可强制系统重新加载MATLAB数据文件并重算所有派生指标。缓存有效期为1小时，到期自动刷新。</p>
+  <div class="tip-box tip-success">
+    <strong>最佳实践：</strong>当修改了原始数据文件（.mat或.txt）后，应先清除缓存再查看更新结果；日常参数调整（调参即算）无需清除缓存。
+  </div>
+</div>
+
+<!-- ==================== CHAPTER 8: APPENDIX ==================== -->
+<div class="chapter">
+  <div class="chapter-header">
+    <span class="chapter-num">第八章</span>
+    附录
+  </div>
+
+  <h2>8.1 参数说明一览表</h2>
+  <table class="param-table">
+    <tr><th>参数名</th><th>代码变量</th><th>默认值</th><th>取值范围</th><th>单位</th></tr>
+    <tr><td>抽蓄额定功率</td><td>Zpump</td><td>1400</td><td>500 - 3000</td><td>MW</td></tr>
+    <tr><td>蓄能时长</td><td>h</td><td>4</td><td>2 - 8</td><td>h</td></tr>
+    <tr><td>抽水效率</td><td>efficiency</td><td>0.75</td><td>0.6 - 0.9</td><td>—</td></tr>
+    <tr><td>最小出力比例</td><td>min_power_ratio</td><td>0.2</td><td>0.1 - 0.5</td><td>—</td></tr>
+    <tr><td>碳排放系数</td><td>carbon_factor</td><td>0.5</td><td>0.3 - 0.8</td><td>吨CO₂/万kWh</td></tr>
+    <tr><td>常规调峰煤耗</td><td>coal_high</td><td>300</td><td>280 - 320</td><td>g/kWh</td></tr>
+    <tr><td>深度不助燃调峰煤耗</td><td>coal_mid</td><td>330</td><td>310 - 350</td><td>g/kWh</td></tr>
+    <tr><td>深度助燃调峰煤耗</td><td>coal_low</td><td>370</td><td>350 - 400</td><td>g/kWh</td></tr>
+  </table>
+
+  <h2>8.2 数据文件清单</h2>
+  <table class="param-table">
+    <tr><th>文件名</th><th>格式</th><th>维度</th><th>内容说明</th></tr>
+    <tr><td>A.mat</td><td>MATLAB .mat</td><td>100×27×365</td><td>100个Pareto解的决策变量矩阵</td></tr>
+    <tr><td>AA.mat</td><td>MATLAB .mat</td><td>365×23 / 365×2</td><td>最优解决策变量 + 目标函数值</td></tr>
+    <tr><td>wind.txt</td><td>文本矩阵</td><td>365×24</td><td>全年逐时风电功率 (MW)</td></tr>
+    <tr><td>solar.txt</td><td>文本矩阵</td><td>365×24</td><td>全年逐时光伏功率 (MW)</td></tr>
+    <tr><td>hydro.txt</td><td>文本矩阵</td><td>365×24</td><td>全年逐时水电功率 (MW)</td></tr>
+    <tr><td>FH.txt</td><td>文本矩阵</td><td>365×24</td><td>全年逐时火电负荷 (MW)</td></tr>
+    <tr><td>solution.txt</td><td>文本矩阵</td><td>100×27</td><td>Pareto解集的火电出力方案</td></tr>
+  </table>
+
+  <h2>8.3 常见问题FAQ</h2>
+
+  <h3>Q1：启动系统后页面空白，没有图表显示？</h3>
+  <p><strong>A：</strong>请检查数据文件（A.mat、AA.mat及各.txt文件）是否存在于 frontend/ 根目录下。系统依赖这些数据文件进行所有计算。</p>
+
+  <h3>Q2：高级可视化/分析页面显示"功能不可用"？</h3>
+  <p><strong>A：</strong>请确认 <span class="key-combo">v2_features/</span> 目录下的 <span class="key-combo">visualization.py</span> 和 <span class="key-combo">analysis.py</span> 文件存在且语法正确。该模块为可选增强功能，不影响核心页面的正常使用。</p>
+
+  <h3>Q3：参数调整后图表未更新？</h3>
+  <p><strong>A：</strong>调整参数后必须点击"✅ 应用参数并重新计算"按钮才会触发重新计算。仅拖动滑块不会自动重算。</p>
+
+  <h3>Q4：图表"渲染失败"警告如何解决？</h3>
+  <p><strong>A：</strong>展开警告下方的"查看详细错误"可获取具体错误信息。常见原因包括：Plotly版本不兼容、数据维度异常、内存不足。建议升级至最新版Plotly并确保至少有4GB可用内存。</p>
+
+  <h3>Q5：如何修改系统默认参数？</h3>
+  <p><strong>A：</strong>默认参数定义在 <span class="key-combo">app.py</span> 的 <span class="key-combo">init_session_state()</span> 函数中。修改后重启Streamlit服务即可生效。</p>
+
+  <h3>Q6：CSV导出后Excel打开中文乱码？</h3>
+  <p><strong>A：</strong>系统使用UTF-8 BOM（utf-8-sig）编码导出CSV。若仍出现乱码，请在Excel中使用"数据 → 从文本/CSV导入"，选择UTF-8编码后导入。</p>
+
+  <h2>8.4 优化模型公式索引</h2>
+  <table class="param-table">
+    <tr><th style="width:60px">公式编号</th><th>公式名称</th><th>所在章节</th></tr>
+    <tr><td>3-1</td><td>常规调峰阶段碳排放强度</td><td>§5.1 — 7.1节</td></tr>
+    <tr><td>3-2</td><td>不投油深度调峰额外碳排放强度</td><td>§5.1 — 7.1节</td></tr>
+    <tr><td>3-5</td><td>投油深度调峰碳排放强度</td><td>§5.1 — 7.1节</td></tr>
+    <tr><td>3-6</td><td>全工况碳排放强度分段函数</td><td>§5.1 — 7.1节</td></tr>
+    <tr><td>3-7</td><td>目标1：火电调峰容量最小化</td><td>§5.1 — 7.2节</td></tr>
+    <tr><td>3-8</td><td>目标2：碳排放量最小化</td><td>§5.1 — 7.2节</td></tr>
+    <tr><td>3-9 ~ 3-20</td><td>约束条件体系（12项）</td><td>§5.1 — 7.3节</td></tr>
+    <tr><td>4-1 ~ 4-14</td><td>NSLDE算法核心公式</td><td>§5.1 — 7.4节</td></tr>
+  </table>
+
+  <div style="text-align:center; margin: 50px 0 30px; padding: 30px; background: linear-gradient(135deg, rgba(0,212,255,0.05) 0%, rgba(0,150,255,0.02) 100%); border-radius: 12px;">
+    <p style="font-size: 14pt; color: #0a1628; font-weight: bold; margin-bottom: 8px; text-indent: 0;">— 全文完 —</p>
+    <p style="color: #7f8c9b; font-size: 9pt; text-indent: 0;">新型电力系统下抽水蓄能减碳效益优化核算系统 · 用户操作手册 V2.0</p>
+    <p style="color: #7f8c9b; font-size: 9pt; text-indent: 0;">基于NSLDE多目标优化算法 | 全年8760小时调度策略可视化分析平台</p>
+  </div>
+</div>
+
+</body>
+</html>

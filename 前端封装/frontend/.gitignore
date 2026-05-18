@@ -22,3 +22,8 @@ doc_images/
 # OS
 .DS_Store
 Thumbs.db
+user_img_*.png
+pdf_raw_html_*.html
+text_page_*.txt
+jie.txt
+Copy_of_*.m
