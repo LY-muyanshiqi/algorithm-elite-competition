@@ -56,7 +56,8 @@ def init_session_state():
     defaults = {
         'zpump': 1400, 'h_val': 4, 'efficiency_val': 0.75, 'min_power': 0.2,
         'carbon_factor': 0.5, 'coal_high': 300, 'coal_mid': 330, 'coal_low': 370,
-        'custom_params': None, 'recalculated_result': None, 'view_mode': '全年总览'
+        'custom_params': None, 'recalculated_result': None, 'view_mode': '全年总览',
+        '_last_preset': '🏷️ 自定义（手动调整）', 'preset_select': '🏷️ 自定义（手动调整）'
     }
     for k, v in defaults.items():
         if k not in st.session_state:
@@ -628,8 +629,10 @@ def main():
             preset = st.selectbox("📦 参数预设方案", list(PRESETS.keys()), key='preset_select')
 
             if preset != "🏷️ 自定义（手动调整）" and st.session_state.get('_last_preset') != preset:
-                for k, v in PRESETS[preset].items():
-                    st.session_state[k] = v
+                params = PRESETS.get(preset)
+                if params:
+                    for k, v in params.items():
+                        st.session_state[k] = v
                 st.session_state['_last_preset'] = preset
                 st.rerun()
 
