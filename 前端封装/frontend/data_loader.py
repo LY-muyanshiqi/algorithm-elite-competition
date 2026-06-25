@@ -6,21 +6,14 @@ import numpy as np
 import scipy.io as sio
 import os
 
-# 数据路径 - 按优先级查找：当前文件目录 > MATLAB计算目录
+# 数据路径：所有数据文件与当前脚本同目录
 _LOCAL_DIR = os.path.dirname(os.path.abspath(__file__))
-_MATLAB_DATA_DIR = os.path.join(_LOCAL_DIR, '..', '..', '全年抽蓄减碳效益优化计算')
-# 本地目录优先（部署时只有本地目录），MATLAB目录作为本地开发的补充
-_DATA_SEARCH_DIRS = [d for d in [_LOCAL_DIR, _MATLAB_DATA_DIR] if os.path.isdir(d)]
 
 def _find_data_file(filename):
-    """在多级目录中查找数据文件"""
-    for d in _DATA_SEARCH_DIRS:
-        path = os.path.join(d, filename)
-        if os.path.isfile(path):
-            return path
-    return os.path.join(_LOCAL_DIR, filename)  # fallback
+    """查找数据文件（当前目录）"""
+    return os.path.join(_LOCAL_DIR, filename)
 
-DATA_DIR = _MATLAB_DATA_DIR if os.path.isdir(_MATLAB_DATA_DIR) else _LOCAL_DIR
+DATA_DIR = _LOCAL_DIR
 
 
 def load_mat_data():
