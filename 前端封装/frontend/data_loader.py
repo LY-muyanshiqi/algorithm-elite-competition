@@ -6,9 +6,21 @@ import numpy as np
 import scipy.io as sio
 import os
 
-# 数据路径 - 优先从MATLAB计算目录读取，回退到当前目录
-_MATLAB_DATA_DIR = os.path.join(os.path.dirname(__file__), '..', '..', '全年抽蓄减碳效益优化计算')
-DATA_DIR = _MATLAB_DATA_DIR if os.path.isdir(_MATLAB_DATA_DIR) else os.path.dirname(__file__)
+# 数据路径 - 按优先级查找：当前文件目录 > MATLAB计算目录
+_LOCAL_DIR = os.path.dirname(os.path.abspath(__file__))
+_MATLAB_DATA_DIR = os.path.join(_LOCAL_DIR, '..', '..', '全年抽蓄减碳效益优化计算')
+# 本地目录优先（部署时只有本地目录），MATLAB目录作为本地开发的补充
+_DATA_SEARCH_DIRS = [d for d in [_LOCAL_DIR, _MATLAB_DATA_DIR] if os.path.isdir(d)]
+
+def _find_data_file(filename):
+    """在多级目录中查找数据文件"""
+    for d in _DATA_SEARCH_DIRS:
+        path = os.path.join(d, filename)
+        if os.path.isfile(path):
+            return path
+    return os.path.join(_LOCAL_DIR, filename)  # fallback
+
+DATA_DIR = _MATLAB_DATA_DIR if os.path.isdir(_MATLAB_DATA_DIR) else _LOCAL_DIR
 
 
 def load_mat_data():
@@ -16,23 +28,23 @@ def load_mat_data():
     data = {}
     
     # 加载A.mat (100个Pareto解)
-    a_mat = sio.loadmat(os.path.join(DATA_DIR, 'A.mat'))
+    a_mat = sio.loadmat(_find_data_file('A.mat'))
     data['A'] = a_mat['A']  # (100, 27, 365) - Pareto解
     data['fh_raw'] = a_mat['FH']  # (365, 24) - 火电负荷
     data['NW'] = a_mat['NW']  # (365, 24) - 风电功率
     data['NH'] = a_mat['NH']  # (365, 24) - 水电功率
     
     # 加载AA.mat (最优解)
-    aa_mat = sio.loadmat(os.path.join(DATA_DIR, 'AA.mat'))
+    aa_mat = sio.loadmat(_find_data_file('AA.mat'))
     data['solution'] = aa_mat['solution']  # (365, 23) - 最优决策变量
     data['z_gain'] = aa_mat['Z_gain']  # (365, 2) - 目标函数值
     
     # 加载txt数据
-    data['hydro'] = np.loadtxt(os.path.join(DATA_DIR, 'hydro.txt'))  # (365, 24)
-    data['wind'] = np.loadtxt(os.path.join(DATA_DIR, 'wind.txt'))  # (365, 24)
-    data['solar'] = np.loadtxt(os.path.join(DATA_DIR, 'solar.txt'))  # (365, 24)
-    data['fh'] = np.loadtxt(os.path.join(DATA_DIR, 'FH.txt'))  # (365, 24)
-    data['solution_txt'] = np.loadtxt(os.path.join(DATA_DIR, 'solution.txt'))  # (100, 27)
+    data['hydro'] = np.loadtxt(_find_data_file('hydro.txt'))  # (365, 24)
+    data['wind'] = np.loadtxt(_find_data_file('wind.txt'))  # (365, 24)
+    data['solar'] = np.loadtxt(_find_data_file('solar.txt'))  # (365, 24)
+    data['fh'] = np.loadtxt(_find_data_file('FH.txt'))  # (365, 24)
+    data['solution_txt'] = np.loadtxt(_find_data_file('solution.txt'))  # (100, 27)
     
     # 计算抽水蓄能功率 (仿照process.m)
     data['np_raw'], C_all = calculate_npump(data)
