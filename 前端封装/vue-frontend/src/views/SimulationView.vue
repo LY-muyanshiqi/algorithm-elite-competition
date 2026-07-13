@@ -336,6 +336,9 @@
       <button class="btn-compare" @click="runComparison" :disabled="computing">
         {{ computing ? "⏳ 计算中..." : "🔍 开始对比分析" }}
       </button>
+      <button class="btn-save" @click="saveToHistory" :disabled="!showComparison">
+        💾 保存到历史
+      </button>
       <button class="btn-reset" @click="resetAll">↺ 重置</button>
     </div>
 
@@ -549,6 +552,17 @@ function resetAll() {
   showComparison.value = false;
   scenarioALabel.value = "默认方案";
   scenarioBLabel.value = "高消纳方案";
+}
+
+async function saveToHistory() {
+  try {
+    await saveHistory({ params: { ...paramsA }, note: scenarioALabel.value, region: '华东', year: 2024 })
+    await saveHistory({ params: { ...paramsB }, note: scenarioBLabel.value, region: '华东', year: 2024 })
+    alert('已保存到历史记录！')
+  } catch (e) {
+    console.error('保存失败:', e)
+    alert('保存失败，请确认后端已启动')
+  }
 }
 
 onBeforeUnmount(() => {
@@ -835,6 +849,23 @@ function initCompareChart() {
   color: var(--danger);
   border-color: var(--danger);
 }
+
+.btn-save {
+  padding: 12px 24px;
+  background: linear-gradient(135deg, rgba(0,255,136,0.15), rgba(0,200,80,0.08));
+  border: 1px solid rgba(0,255,136,0.3);
+  border-radius: 8px;
+  color: #00ff88;
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-weight: 600;
+  transition: all 0.2s;
+}
+.btn-save:hover:not(:disabled) {
+  background: rgba(0,255,136,0.2);
+  box-shadow: 0 4px 15px rgba(0,255,136,0.2);
+}
+.btn-save:disabled { opacity: 0.4; cursor: not-allowed; }
 
 .comparison-result {
   background: linear-gradient(
