@@ -52,6 +52,18 @@ const routes = [
     component: () => import('../views/AlgorithmComparison.vue'),
     meta: { title: '算法对比', navTitle: '算法对比', icon: '⚔️' },
   },
+
+  { path: '/history',
+    name: 'History',
+    component: () => import('../views/HistoryComparison.vue'),
+    meta: { title: '历史对比', navTitle: '历史对比', icon: '📜' },
+  },
+
+  { path: '/seasonal',
+    name: 'Seasonal',
+    component: () => import('../views/SeasonalAnalysis.vue'),
+    meta: { title: '四季分析', navTitle: '四季分析', icon: '🍃' },
+  },
 ]
 
 const router = createRouter({
