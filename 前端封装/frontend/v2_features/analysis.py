@@ -507,3 +507,144 @@ def get_analysis_list() -> List[str]:
         '统计分析',
         '趋势分析'
     ]
+
+
+def algorithm_comparison_data(data: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    NSLDE vs NSGA-II vs MOEA/D 三算法对比数据
+    优先读取 MATLAB 真实结果，文件不存在时降级为模拟数据
+
+    Returns:
+        dict: z_nslde / z_nsga2 / z_moead / hv / igd / spacing / timing / days_used / is_real
+    """
+    import data_loader as dl
+    real = dl.load_comparison_data()
+
+    if real is not None:
+        n_days = real['z_nslde'].shape[0]
+        if n_days == 1:
+            z_nslde_out = real['z_nslde'][0]
+            z_nsga2_out = real['z_nsga2'][0]
+            z_moead_out = real['z_moead'][0]
+        else:
+            z_nslde_out = real['z_nslde'].mean(axis=0)
+            z_nsga2_out = real['z_nsga2'].mean(axis=0)
+            z_moead_out = real['z_moead'].mean(axis=0)
+
+        return {
+            'z_nslde': z_nslde_out,
+            'z_nsga2': z_nsga2_out,
+            'z_moead': z_moead_out,
+            'hv': real['hv'].mean(axis=0),
+            'igd': real['igd'].mean(axis=0),
+            'spacing': real['spacing'].mean(axis=0),
+            'timing': real['timing'].mean(axis=0),
+            'days_used': real['days_used'],
+            'is_real': True,
+        }
+
+    # === 降级: 模拟数据 ===
+    z_nslde = data['z_gain']
+    n_points = len(z_nslde)
+    np.random.seed(42)
+
+    nsga2_offset_f1 = np.random.normal(0.08, 0.04, n_points)
+    nsga2_offset_f2 = np.random.normal(0.06, 0.03, n_points)
+    z_nsga2_out = np.column_stack([
+        z_nslde[:, 0] * (1 + np.abs(nsga2_offset_f1)),
+        z_nslde[:, 1] * (1 + np.abs(nsga2_offset_f2))
+    ])
+    z_nsga2_out = z_nsga2_out[np.lexsort((z_nsga2_out[:, 1], z_nsga2_out[:, 0]))]
+
+    moead_offset_f1 = np.random.normal(0.04, 0.03, n_points)
+    moead_offset_f2 = np.random.normal(0.03, 0.02, n_points)
+    z_moead_out = np.column_stack([
+        z_nslde[:, 0] * (1 + np.abs(moead_offset_f1)),
+        z_nslde[:, 1] * (1 + np.abs(moead_offset_f2))
+    ])
+    z_moead_out = z_moead_out[np.lexsort((z_moead_out[:, 1], z_moead_out[:, 0]))]
+
+    return {
+        'z_nslde': z_nslde,
+        'z_nsga2': z_nsga2_out,
+        'z_moead': z_moead_out,
+        'hv': None, 'igd': None, 'spacing': None, 'timing': None,
+        'days_used': None, 'is_real': False,
+    }
+
+
+def seasonal_comparative_analysis(data: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    四季对比分析: Spring/Summer/Autumn/Winter 各项指标汇总
+
+    Returns:
+        dict with: seasonal_kpi (DataFrame), fig_renewable, fig_carbon
+    """
+    z_gain = data['z_gain']
+    fh = data['fh']
+    wind = data['wind']
+    solar = data['solar']
+    hydro = data['hydro']
+    np_raw = data['np_raw']
+    Nt = data['Nt']
+    Nt2 = data['Nt2']
+
+    seasons = {
+        'Spring': (0, 90),
+        'Summer': (90, 181),
+        'Autumn': (181, 273),
+        'Winter': (273, 365),
+    }
+
+    rows = []
+    for name, (start, end) in seasons.items():
+        z1_mean = np.mean(z_gain[start:end, 0])
+        z2_mean = np.mean(z_gain[start:end, 1])
+        carbon_reduction = np.sum(np.abs(Nt[start:end] - Nt2[start:end])) / 1e4
+        renewable_ratio = (
+            np.sum(wind[start:end] + solar[start:end] + hydro[start:end])
+            / np.sum(fh[start:end] + wind[start:end] + solar[start:end] + hydro[start:end])
+            * 100
+        )
+        pump_hours = int(np.sum(np_raw[start:end] < 0))
+        gen_hours = int(np.sum(np_raw[start:end] > 0))
+        total_load = np.sum(fh[start:end]) / 1e4
+        rows.append({
+            'season': name, 'z1_mean': z1_mean, 'z2_mean': z2_mean,
+            'carbon_reduction': carbon_reduction, 'renewable_ratio': renewable_ratio,
+            'pump_hours': pump_hours, 'gen_hours': gen_hours, 'total_load': total_load,
+        })
+
+    seasonal_kpi = pd.DataFrame(rows)
+
+    fig_renewable = go.Figure()
+    fig_renewable.add_trace(go.Bar(
+        name='新能源消纳率 (%)', x=[r['season'] for r in rows],
+        y=[r['renewable_ratio'] for r in rows],
+        marker_color=['#00ff88', '#00d4ff', '#ff9800', '#ff6b6b'],
+        text=[f"{r['renewable_ratio']:.1f}%" for r in rows],
+        textposition='outside',
+    ))
+    fig_renewable.update_layout(
+        template='plotly_dark',
+        title='四季新能源消纳率对比',
+        margin=dict(t=50, b=40, l=50, r=20),
+    )
+
+    fig_carbon = go.Figure()
+    fig_carbon.add_trace(go.Bar(
+        name='碳减排量 (万吨)', x=[r['season'] for r in rows],
+        y=[r['carbon_reduction'] for r in rows],
+        marker_color=['#00ff88', '#00d4ff', '#ff9800', '#ff6b6b'],
+    ))
+    fig_carbon.update_layout(
+        template='plotly_dark',
+        title='四季碳减排量对比',
+        margin=dict(t=50, b=40, l=50, r=20),
+    )
+
+    return {
+        'seasonal_kpi': seasonal_kpi,
+        'fig_renewable': fig_renewable,
+        'fig_carbon': fig_carbon,
+    }

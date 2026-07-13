@@ -291,3 +291,38 @@ def recalculate_with_parameters(data, params):
         'ps_stats': ps_stats,
         'params': params
     }
+
+
+def load_comparison_data():
+    """
+    加载 MATLAB 对比实验结果 (NSLDE vs NSGA-II vs MOEA/D)
+    文件不存在时返回 None，调用方应降级到模拟数据
+    """
+    comp_path = _find_data_file('comparison_results.mat')
+    if not os.path.exists(comp_path):
+        return None
+
+    mat = sio.loadmat(comp_path)
+    return {
+        'z_nslde': np.array(mat['z_nslde']),
+        'z_nsga2': np.array(mat['z_nsga2']),
+        'z_moead': np.array(mat['z_moead']),
+        'hv': np.array(mat['hv']),
+        'igd': np.array(mat['igd']),
+        'spacing': np.array(mat['spacing']),
+        'timing': np.array(mat['timing']),
+        'days_used': np.array(mat['days_used']).flatten(),
+    }
+
+
+def load_scenario_data():
+    """
+    加载典型日/极端日场景数据
+    文件不存在时返回 None
+    """
+    sc_path = _find_data_file('scenario_data.mat')
+    if not os.path.exists(sc_path):
+        return None
+
+    mat = sio.loadmat(sc_path)
+    return mat['scenario_data']
