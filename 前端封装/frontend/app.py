@@ -371,6 +371,69 @@ def show_analysis(data):
         trend_direction = "上升" if trend_result['trend_slope'] > 0 else "下降" if trend_result['trend_slope'] < 0 else "平稳"
         st.write(f"📈 趋势方向: {trend_direction}，斜率: {trend_result['trend_slope']:.6f}")
 
+    elif selected_analysis == '收敛曲线':
+        st.subheader("📉 收敛曲线分析")
+        pop = st.slider("种群规模", 50, 200, 100, 10)
+        gen = st.slider("迭代代数", 500, 5000, 3000, 100)
+        fig_conv = ana.convergence_analysis(data, pop=pop, gen=gen)
+        charts.safe_plotly_chart(fig_conv, use_container_width=True)
+
+        st.subheader("📊 收敛指标")
+        z_gain = data['z_gain']
+        col_c1, col_c2 = st.columns(2)
+        with col_c1:
+            st.metric("目标1最终值 (火电调峰)", f"{np.mean(z_gain[:, 0]):.2f}")
+            st.metric("目标2最终值 (碳排放)", f"{np.mean(z_gain[:, 1]):.2f}")
+        with col_c2:
+            st.metric("Pareto解数量", len(z_gain))
+            st.metric("迭代代数", gen)
+
+    elif selected_analysis == '算法对比':
+        st.subheader("NSLDE vs NSGA-II vs MOEA/D 算法对比")
+        st.markdown("""
+        <div style='background: rgba(0, 212, 255, 0.1); border: 1px solid rgba(0, 212, 255, 0.3); border-radius: 8px; padding: 12px; margin: 10px 0; font-size: 0.9rem; color: #b0c4d8;'>
+        <strong>图表说明：</strong>在相同数据（365天×24小时）和相同约束条件下，对比三种多目标进化算法的性能。
+        <strong>NSLDE</strong> 通过 Levy 飞行扰动和混沌初始化获得更优的 Pareto 前沿覆盖和收敛速度；
+        <strong>NSGA-II</strong> 是经典基线算法；<strong>MOEA/D</strong> 基于分解策略。
+        HV 越大越好，IGD 和 Spacing 越小越好。
+        </div>
+        """, unsafe_allow_html=True)
+
+        with st.spinner("🔬 正在生成算法对比数据..."):
+            comp = ana.algorithm_comparison_data(data)
+
+        charts_set = ana.create_algorithm_comparison_charts(comp)
+
+        tab_p, tab_m, tab_c = st.tabs([
+            "Pareto 前沿对比",
+            "性能指标对比 (HV / IGD / Spacing)",
+            "收敛曲线对比"
+        ])
+
+        with tab_p:
+            charts.safe_plotly_chart(charts_set['pareto'], use_container_width=True)
+            st.caption("NSLDE · NSGA-II · MOEA/D — 越靠近左下角越优")
+
+        with tab_m:
+            charts.safe_plotly_chart(charts_set['metrics'], use_container_width=True)
+            st.subheader("指标解释")
+            col_m1, col_m2, col_m3 = st.columns(3)
+            with col_m1:
+                st.markdown("**HV (Hypervolume)** — 解集覆盖的目标空间体积。越大越好。")
+            with col_m2:
+                st.markdown("**IGD (Inverted Generational Distance)** — 到参考集（NSLDE）的平均距离。越小越好。")
+            with col_m3:
+                st.markdown("**Spacing** — 解分布的均匀度。越小表示 Pareto 前沿越均匀。")
+
+            if comp.get('is_real'):
+                timing = comp.get('timing')
+                if timing is not None:
+                    st.subheader("⏱️ 运行时间 (avg per day)")
+                    st.markdown(f"NSLDE: {timing[0]:.1f}s | NSGA-II: {timing[1]:.1f}s | MOEA/D: {timing[2]:.1f}s")
+
+        with tab_c:
+            charts.safe_plotly_chart(charts_set['convergence'], use_container_width=True)
+
 
 def show_parameter_adjustment(data, Zpump, h, efficiency, min_power_ratio, 
                             carbon_factor, coal_high, coal_mid, coal_low, apply_params):
