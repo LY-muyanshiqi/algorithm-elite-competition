@@ -2,7 +2,9 @@
 % 从365天中自动识别：四季典型日 + 6种极端日 + 24h调度曲线
 clear; clc;
 
-load('AA.mat');       % AA: (365, 23) 最优解
+% 从前端目录加载已有的 AA.mat
+data_dir = '../前端封装/frontend/';
+load(fullfile(data_dir, 'AA.mat'));       % AA: (365, 23) 最优解
 NH = load('hydro.txt');
 NW = load('wind.txt');
 NP = load('solar.txt');
@@ -101,5 +103,5 @@ for i = 1:n_scenarios
 end
 
 % === 保存 ===
-save('../前端封装/frontend/scenario_data.mat', '-struct', 'scenario_data');
+save(fullfile(data_dir, 'scenario_data.mat'), '-struct', 'scenario_data');
 fprintf('\n场景数据已保存到 scenario_data.mat\n');

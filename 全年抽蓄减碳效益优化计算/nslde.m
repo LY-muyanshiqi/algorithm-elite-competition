@@ -1,14 +1,14 @@
-function chromosome=nslde(Nh,Nw,Np,L,Zpump,h)
-%if nargin < 2  %ÅÐ¶Ï±äÁ¿¸öÊý
-%    error('NSGA-II: Please enter the population size and number of generations as input arguments.');%ÇëÊäÈëÖÖÈº´óÐ¡ºÍ×î´óµü´ú´ÎÊý×÷Îª²ÎÊý
+function chromosome=nslde(Nh,Nw,Np,L,Zpump,h,Cprice)
+%if nargin < 2  %ï¿½Ð¶Ï±ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+%    error('NSGA-II: Please enter the population size and number of generations as input arguments.');%ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Èºï¿½ï¿½Ð¡ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Îªï¿½ï¿½ï¿½ï¿½
 %end
-% Both the input arguments need to of integer data type ÕûÊý
-%if isnumeric(pop) == 0 || isnumeric(gen) == 0   %isnumeric£ºÅÐ¶ÏÊäÈë²ÎÊýÊÇ·ñÊÇÊý×ÖÀàÐÍ£¨°üÀ¨¸¡µãÐÍºÍÕûÐÍ£©
-                                                %·µ»Ø1£¨true£©Èç¹ûAÊÇÊý×ÖÀàÐÍµÄ£¬
-                                                %·µ»Ø0£¨false£©Èç¹ûA²»ÊÇÊý×ÖÀàÐÍµÄ.ÀàÐÍµÄ
+% Both the input arguments need to of integer data type ï¿½ï¿½ï¿½ï¿½
+%if isnumeric(pop) == 0 || isnumeric(gen) == 0   %isnumericï¿½ï¿½ï¿½Ð¶ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ç·ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Í£ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Íºï¿½ï¿½ï¿½ï¿½Í£ï¿½
+                                                %ï¿½ï¿½ï¿½ï¿½1ï¿½ï¿½trueï¿½ï¿½ï¿½ï¿½ï¿½Aï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ÍµÄ£ï¿½
+                                                %ï¿½ï¿½ï¿½ï¿½0ï¿½ï¿½falseï¿½ï¿½ï¿½ï¿½ï¿½Aï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Íµï¿½.ï¿½ï¿½ï¿½Íµï¿½
 %    error('Both input arguments pop and gen should be integer datatype');
 %end
-% Minimum population size has to be 20 individuals  ÖÖÈº´óÐ¡×îÐ¡Îª20
+% Minimum population size has to be 20 individuals  ï¿½ï¿½Èºï¿½ï¿½Ð¡ï¿½ï¿½Ð¡Îª20
 
 
 %if pop < 20
@@ -17,69 +17,69 @@ function chromosome=nslde(Nh,Nw,Np,L,Zpump,h)
 %if gen < 5
 %    error('Minimum number of generations is 5');
 %end
-% Make sure pop and gen are integers£¨ÕûÊý£©
-pop = round(100);   %round£ºËÄÉáÎåÈëÈ¡Õû
+% Make sure pop and gen are integersï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+pop = round(100);   %roundï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½È¡ï¿½ï¿½
 gen = round(3000);
-%% Objective Function   Ä¿±êº¯Êý
-% The objective function description contains information about the        Ä¿±êº¯ÊýÃèÊö°üº¬ÓÐ¹ØÄ¿±êº¯ÊýµÄÐÅÏ¢¡£ MÊÇÄ¿±ê¿Õ¼äµÄÎ¬Êý£¬VÊÇ¾ö²ß±äÁ¿¿Õ¼äµÄÎ¬Êý£¬                                                                           
-% objective function. M is the dimension of the objective space, V is the  min_rangeºÍmax_rangeÊÇ¾ö²ß±äÁ¿¿Õ¼äÖÐ±äÁ¿µÄ·¶Î§¡£ ¡£
-% dimension of decision variable space, min_range and max_range are the    ÓÃ»§±ØÐëÊ¹ÓÃ¾ö²ß±äÁ¿¶¨ÒåÄ¿±êº¯Êý¡£ 
-% range for the variables in the decision variable space. User has to      È·±£±à¼­º¯Êý¡°evaluate_objective¡±ÒÔÂú×ãÄúµÄÐèÒª
+%% Objective Function   Ä¿ï¿½êº¯ï¿½ï¿½
+% The objective function description contains information about the        Ä¿ï¿½êº¯ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ð¹ï¿½Ä¿ï¿½êº¯ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ï¢ï¿½ï¿½ Mï¿½ï¿½Ä¿ï¿½ï¿½Õ¼ï¿½ï¿½Î¬ï¿½ï¿½ï¿½ï¿½Vï¿½Ç¾ï¿½ï¿½ß±ï¿½ï¿½ï¿½ï¿½Õ¼ï¿½ï¿½Î¬ï¿½ï¿½ï¿½ï¿½                                                                           
+% objective function. M is the dimension of the objective space, V is the  min_rangeï¿½ï¿½max_rangeï¿½Ç¾ï¿½ï¿½ß±ï¿½ï¿½ï¿½ï¿½Õ¼ï¿½ï¿½Ð±ï¿½ï¿½ï¿½ï¿½Ä·ï¿½Î§ï¿½ï¿½ ï¿½ï¿½
+% dimension of decision variable space, min_range and max_range are the    ï¿½Ã»ï¿½ï¿½ï¿½ï¿½ï¿½Ê¹ï¿½Ã¾ï¿½ï¿½ß±ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ä¿ï¿½êº¯ï¿½ï¿½ï¿½ï¿½ 
+% range for the variables in the decision variable space. User has to      È·ï¿½ï¿½ï¿½à¼­ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½evaluate_objectiveï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Òª
 % define the objective functions using the decision variables. Make sure to
 % edit the function 'evaluate_objective' to suit your needs.
-[M, V, min_range, max_range] = objective_description_function();  %Ä¿±êÃèÊö
+[M, V, min_range, max_range] = objective_description_function();  %Ä¿ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 
-%% Initialize the population   ÖÖÈº³õÊ¼»¯
-% Population is initialized with random values which are within the        ÔÚÖ¸¶¨·¶Î§ÄÚ¶ÔÖÖÈº½øÐÐ³õÊ¼»¯¡£ 
-% specified range. Each chromosome consists of the decision variables. AlsoÃ¿¸öÈ¾É«ÌåÓÉ¾ö²ß±äÁ¿×é³É¡£ 
-% the value of the objective functions, rank and crowding distance         ´ËÍâ£¬Ä¿±êº¯Êý£¬µÈ¼¶ºÍÓµ¼·¾àÀëÐÅÏ¢µÄÖµÒ²±»Ìí¼Óµ½È¾É«ÌåÔØÌåÖÐ£¬
-% information is also added to the chromosome vector but only the elements µ«ÊÇÖ»ÓÐ¾ßÓÐ¾ö²ß±äÁ¿µÄÏòÁ¿µÄÔªËØ±»²Ù×÷ÒÔÖ´ÐÐÈçcorssoverºÍÍ»±äµÄÒÅ´«²Ù×÷¡£
+%% Initialize the population   ï¿½ï¿½Èºï¿½ï¿½Ê¼ï¿½ï¿½
+% Population is initialized with random values which are within the        ï¿½ï¿½Ö¸ï¿½ï¿½ï¿½ï¿½Î§ï¿½Ú¶ï¿½ï¿½ï¿½Èºï¿½ï¿½ï¿½Ð³ï¿½Ê¼ï¿½ï¿½ï¿½ï¿½ 
+% specified range. Each chromosome consists of the decision variables. AlsoÃ¿ï¿½ï¿½È¾É«ï¿½ï¿½ï¿½É¾ï¿½ï¿½ß±ï¿½ï¿½ï¿½ï¿½ï¿½É¡ï¿½ 
+% the value of the objective functions, rank and crowding distance         ï¿½ï¿½ï¿½â£¬Ä¿ï¿½êº¯ï¿½ï¿½ï¿½ï¿½ï¿½È¼ï¿½ï¿½ï¿½Óµï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ï¢ï¿½ï¿½ÖµÒ²ï¿½ï¿½ï¿½ï¿½ï¿½Óµï¿½È¾É«ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ð£ï¿½
+% information is also added to the chromosome vector but only the elements ï¿½ï¿½ï¿½ï¿½Ö»ï¿½Ð¾ï¿½ï¿½Ð¾ï¿½ï¿½ß±ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ôªï¿½Ø±ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ö´ï¿½ï¿½ï¿½ï¿½corssoverï¿½ï¿½Í»ï¿½ï¿½ï¿½ï¿½Å´ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 % of the vector which has the decision variables are operated upon to
 % perform the genetic operations like corssover and mutation.
-chromosome = initialize_variables(pop, M, V, min_range, max_range,Nh,Nw,Np,L,Zpump,h);
+chromosome = initialize_variables(pop, M, V, min_range, max_range,Nh,Nw,Np,L,Zpump,h,Cprice);
 
 
-%% Sort the initialized population   ³õÊ¼»¯ÖÖÈºÅÅÐò
-% Sort the population using non-domination-sort. This returns two columns  Ê¹ÓÃ·ÇÖ§ÅäÅÅÐò¶ÔÖÖÈº½øÐÐÅÅÐò¡£ 
-% for each individual which are the rank and the crowding distance         ÕâÎªÃ¿¸ö¸öÌå·µ»ØÁ½ÁÐ£¬ÕâÐ©ÁÐÊÇ¶ÔÓ¦ÓÚÆäËùÊôÇ°¶ËµÄÎ»ÖÃµÄÅÅÃûºÍÓµ¼·¾àÀë¡£ 
-% corresponding to their position in the front they belong. At this stage  ÔÚÕâ¸ö½×¶Î£¬Ã¿¸öÈ¾É«ÌåµÄÅÅÐòºÍÓµ¼·¾àÀë±»Ìí¼Óµ½È¾É«ÌåÔØÌåÖÐÒÔ±ãÓÚ¼ÆËã¡£
+%% Sort the initialized population   ï¿½ï¿½Ê¼ï¿½ï¿½ï¿½ï¿½Èºï¿½ï¿½ï¿½ï¿½
+% Sort the population using non-domination-sort. This returns two columns  Ê¹ï¿½Ã·ï¿½Ö§ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Èºï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ 
+% for each individual which are the rank and the crowding distance         ï¿½ï¿½ÎªÃ¿ï¿½ï¿½ï¿½ï¿½ï¿½å·µï¿½ï¿½ï¿½ï¿½ï¿½Ð£ï¿½ï¿½ï¿½Ð©ï¿½ï¿½ï¿½Ç¶ï¿½Ó¦ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ç°ï¿½Ëµï¿½Î»ï¿½Ãµï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Óµï¿½ï¿½ï¿½ï¿½ï¿½ë¡£ 
+% corresponding to their position in the front they belong. At this stage  ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½×¶Î£ï¿½Ã¿ï¿½ï¿½È¾É«ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Óµï¿½ï¿½ï¿½ï¿½ï¿½ë±»ï¿½ï¿½ï¿½Óµï¿½È¾É«ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ô±ï¿½ï¿½Ú¼ï¿½ï¿½ã¡£
 % the rank and the crowding distance for each chromosome is added to the
 % chromosome vector for easy of computation.
-chromosome = non_domination_sort_mod(chromosome, M, V);  %·ÇÖ§ÅäÅÅÐò
+chromosome = non_domination_sort_mod(chromosome, M, V);  %ï¿½ï¿½Ö§ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 
-%% Start the evolution process                                    ¿ªÊ¼½ø»¯¹ý³Ì
-% The following are performed in each generation                           ÒÔÏÂÊÇÃ¿Ò»´úÖ´ÐÐµÄ²Ù×÷
-% * Select the parents which are fit for reproduction                      Ñ¡ÔñÊÊºÏ·±Ö³µÄ¸¸´ú
-% * Perfrom crossover and Mutation operator on the selected parents        ÔÚËùÑ¡¸¸´ú¸öÌåÉÏÖ´ÐÐ½»²æºÍÍ»±ä²Ù×÷
-% * Perform Selection from the parents and the offsprings                  ÔÚ¸¸´úºÍ×Ó´úÖ®¼ä½øÐÐÑ¡Ôñ²Ù×÷
+%% Start the evolution process                                    ï¿½ï¿½Ê¼ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+% The following are performed in each generation                           ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ã¿Ò»ï¿½ï¿½Ö´ï¿½ÐµÄ²ï¿½ï¿½ï¿½
+% * Select the parents which are fit for reproduction                      Ñ¡ï¿½ï¿½ï¿½ÊºÏ·ï¿½Ö³ï¿½Ä¸ï¿½ï¿½ï¿½
+% * Perfrom crossover and Mutation operator on the selected parents        ï¿½ï¿½ï¿½ï¿½Ñ¡ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ö´ï¿½Ð½ï¿½ï¿½ï¿½ï¿½Í»ï¿½ï¿½ï¿½ï¿½ï¿½
+% * Perform Selection from the parents and the offsprings                  ï¿½Ú¸ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ó´ï¿½Ö®ï¿½ï¿½ï¿½ï¿½ï¿½Ñ¡ï¿½ï¿½ï¿½ï¿½ï¿½
 % * Replace the unfit individuals with the fit individuals to maintain a
-%   constant population size.                                              ÓÃºÏÊÊµÄ¸öÈËÌæ»»²»ºÏÊÊµÄ¸öÌå£¬ÒÔ±£³Öºã¶¨µÄÖÖÈº¹æÄ£¡£
+%   constant population size.                                              ï¿½Ãºï¿½ï¿½ÊµÄ¸ï¿½ï¿½ï¿½ï¿½æ»»ï¿½ï¿½ï¿½ï¿½ï¿½ÊµÄ¸ï¿½ï¿½å£¬ï¿½Ô±ï¿½ï¿½Öºã¶¨ï¿½ï¿½ï¿½ï¿½Èºï¿½ï¿½Ä£ï¿½ï¿½
 
 for i = 1 : gen
-    % Select the parents ¸¸´úÖÐËÑË÷
+    % Select the parents ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
     % Parents are selected for reproduction to generate offspring. The
-    % ´Ó¸¸´úÖÐËÑË÷²úÉú×Ó´ú
+    % ï¿½Ó¸ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ó´ï¿½
     % original NSGA-II uses a binary tournament selection based on
-    % the´«Í³µÄnsga2 Ê¹ÓÃÁËÒ»ÖÖ»ùÓÚÓµ¼·¶ÈËã×ÓµÄ¶þ½øÖÆ½õ±êÈü»úÖÆ
-    % crowded-comparision operator. The arguments are ²ÎÊýÊÇ
+    % theï¿½ï¿½Í³ï¿½ï¿½nsga2 Ê¹ï¿½ï¿½ï¿½ï¿½Ò»ï¿½Ö»ï¿½ï¿½ï¿½Óµï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ÓµÄ¶ï¿½ï¿½ï¿½ï¿½Æ½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+    % crowded-comparision operator. The arguments are ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
     % pool - size of the mating pool. It is common to have this to be half the
-    %        population size.½»Åä³ØµÄ´óÐ¡£¬ÕâÍ¨³£ÊÇÖÖÈº´óÐ¡µÄÒ»°ë
+    %        population size.ï¿½ï¿½ï¿½ï¿½ØµÄ´ï¿½Ð¡ï¿½ï¿½ï¿½ï¿½Í¨ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Èºï¿½ï¿½Ð¡ï¿½ï¿½Ò»ï¿½ï¿½
     % tour - Tournament size. Original NSGA-II uses a binary tournament
     %        selection, but to see the effect of tournament size this is kept
     %        arbitary, to be choosen by the user.
     pool = round(pop/2);
     tour = 2; 
-    % Selection process Ñ¡Ôñ¹ý³Ì
-    % A binary tournament selection is employed in NSGA-II. In a binary(¶þ½øÖÆ)
+    % Selection process Ñ¡ï¿½ï¿½ï¿½ï¿½ï¿½
+    % A binary tournament selection is employed in NSGA-II. In a binary(ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½)
     % tournament selection process two individuals are selected at random
     % and their fitness is compared. The individual with better fitness is
     % selcted as a parent. Tournament selection is carried out until the
     % pool size is filled. Basically a pool size is the number of parents
-    % to be selected. The input arguments(²ÎÊý) to the function
+    % to be selected. The input arguments(ï¿½ï¿½ï¿½ï¿½) to the function
     % tournament_selection are chromosome, pool, tour. The function uses
-    % only the information from last two elements£¨·Ö×Ó£© in the chromosome vector£¨ÔØÌå£©.
-    % The last element£¨ÔªËØ£© has the crowding distance information while the
-    % penultimate element£¨µ¹ÊýµÚ¶þ¸ö£© has the rank information. Selection is based on
+    % only the information from last two elementsï¿½ï¿½ï¿½ï¿½ï¿½Ó£ï¿½ in the chromosome vectorï¿½ï¿½ï¿½ï¿½ï¿½å£©.
+    % The last elementï¿½ï¿½Ôªï¿½Ø£ï¿½ has the crowding distance information while the
+    % penultimate elementï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ú¶ï¿½ï¿½ï¿½ï¿½ï¿½ has the rank information. Selection is based on
     % rank and if individuals with same rank are encountered, crowding
     % distance is compared. A lower rank and higher crowding distance is
     % the selection criteria.
@@ -97,17 +97,16 @@ for i = 1 : gen
     %mu = 20;
     %mum = 20;
     offspring_chromosome = ...
-        genetic_operator(parent_chromosome,chromosome, ...
-        M, V,  min_range , max_range,Nh,Nw,Np,L,Zpump,h);
+        genetic_operator(parent_chromosome,chromosome, M, V, min_range, max_range,Nh,Nw,Np,L,Zpump,h,Cprice);
 
-    % Intermediate population£¨ÖÐ¼ä¸öÌå£©
+    % Intermediate populationï¿½ï¿½ï¿½Ð¼ï¿½ï¿½ï¿½å£©
     % Intermediate population is the combined population of parents and
     % offsprings of the current generation. The population size is two
-    % times the initial population£¨ÖÐµÈÈË¿ÚÊÇµ±´ú¸¸Ä¸ºÍ×ÓÅ®µÄºÏ²¢ÈË¿Ú¡£ ÈË¿Ú¹æÄ£ÊÇ³õÊ¼ÈË¿ÚµÄÁ½±¶£©.
+    % times the initial populationï¿½ï¿½ï¿½Ðµï¿½ï¿½Ë¿ï¿½ï¿½Çµï¿½ï¿½ï¿½ï¿½ï¿½Ä¸ï¿½ï¿½ï¿½ï¿½Å®ï¿½ÄºÏ²ï¿½ï¿½Ë¿Ú¡ï¿½ ï¿½Ë¿Ú¹ï¿½Ä£ï¿½Ç³ï¿½Ê¼ï¿½Ë¿Úµï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½.
     
     [main_pop,temp] = size(chromosome);
     [offspring_pop,temp] = size(offspring_chromosome);
-    % temp is a dummy variable£¨ÐéÄâ±äÁ¿£©.
+    % temp is a dummy variableï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½.
     clear temp
     % intermediate_chromosome is a concatenation of current population and
     % the offspring population.
@@ -118,13 +117,13 @@ for i = 1 : gen
     % Non-domination-sort of intermediate population
     % The intermediate population is sorted again based on non-domination sort
     % before the replacement operator is performed on the intermediate
-    % population£¨ÔÚ¶ÔÖÐ¼äÈË¿Ú½øÐÐÌæ»»²Ù×÷Ô±Ö®Ç°£¬ÖÐ¼äÈË¿ÚÔÙ´Î»ùÓÚ·ÇÖ§ÅäÅÅÐò½øÐÐ·ÖÀà¡££©.
+    % populationï¿½ï¿½ï¿½Ú¶ï¿½ï¿½Ð¼ï¿½ï¿½Ë¿Ú½ï¿½ï¿½ï¿½ï¿½æ»»ï¿½ï¿½ï¿½ï¿½Ô±Ö®Ç°ï¿½ï¿½ï¿½Ð¼ï¿½ï¿½Ë¿ï¿½ï¿½Ù´Î»ï¿½ï¿½Ú·ï¿½Ö§ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ð·ï¿½ï¿½à¡£ï¿½ï¿½.
     intermediate_chromosome = ...
         non_domination_sort_mod(intermediate_chromosome, M, V);
     % Perform Selection
-    % Once the intermediate population is sorted only the best solution isÒ»µ©ÖÐ¼äÖÖÈº±»·ÖÀà£¬¸ù¾ÝËüµÄµÈ¼¶ºÍÓµ¼·¾àÀëÖ»Ñ¡Ôñ×îºÃµÄ½â¾ö·½°¸¡£ 
-    % selected based on it rank and crowding distance. Each front is filled inÃ¿¸öÇ°ÑØ°´ÕÕÉýÐòÅÅÁÐ£¬Ö±µ½´ïµ½ÈË¿Ú¹æÄ£¡£ 
-    % ascending order until the addition of population size is reached. The¸ù¾Ý¾àÀë×îÐ¡µÄÈËÈº£¬×îºóµÄÇ°ÑØ°üÀ¨ÔÚÈË¿ÚÖÐ
+    % Once the intermediate population is sorted only the best solution isÒ»ï¿½ï¿½ï¿½Ð¼ï¿½ï¿½ï¿½Èºï¿½ï¿½ï¿½ï¿½ï¿½à£¬ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ÄµÈ¼ï¿½ï¿½ï¿½Óµï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ö»Ñ¡ï¿½ï¿½ï¿½ï¿½ÃµÄ½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ 
+    % selected based on it rank and crowding distance. Each front is filled inÃ¿ï¿½ï¿½Ç°ï¿½Ø°ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ð£ï¿½Ö±ï¿½ï¿½ï¿½ïµ½ï¿½Ë¿Ú¹ï¿½Ä£ï¿½ï¿½ 
+    % ascending order until the addition of population size is reached. Theï¿½ï¿½ï¿½Ý¾ï¿½ï¿½ï¿½ï¿½ï¿½Ð¡ï¿½ï¿½ï¿½ï¿½Èºï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ç°ï¿½Ø°ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ë¿ï¿½ï¿½ï¿½
     % last front is included in the population based on the individuals with
     % least crowding distance
     chromosome = replace_chromosome(intermediate_chromosome, M, V, pop);

@@ -1,25 +1,25 @@
-function f = initialize_variables(N, M, V, min_range, max_range,Nh,Nw,Np,L,Zpump,h)
+function f = initialize_variables(N, M, V, min_range, max_range,Nh,Nw,Np,L,Zpump,h,Cprice)
 
 %% function f = initialize_variables(N, M, V, min_tange, max_range) 
 % This function initializes the chromosomes. Each chromosome has the
-% following at this stage       ³õÊ¼»¯È¾É«Ìå
-%       * set of decision variables   Ò»×é¾ö²ß±äÁ¿
-%       * objective function values   Ä¿±êº¯ÊýÖµ
+% following at this stage       ï¿½ï¿½Ê¼ï¿½ï¿½È¾É«ï¿½ï¿½
+%       * set of decision variables   Ò»ï¿½ï¿½ï¿½ï¿½ß±ï¿½ï¿½ï¿½
+%       * objective function values   Ä¿ï¿½êº¯ï¿½ï¿½Öµ
 % 
 % where,
-% N - Population size   ÖÖÈº´óÐ¡
-% M - Number of objective functions  Ä¿±êº¯Êý¸öÊý
-% V - Number of decision variables   ¾ö²ß±äÁ¿¸öÊý
+% N - Population size   ï¿½ï¿½Èºï¿½ï¿½Ð¡
+% M - Number of objective functions  Ä¿ï¿½êº¯ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+% V - Number of decision variables   ï¿½ï¿½ï¿½ß±ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 % min_range - A vector of decimal values which indicate the minimum value
-% for each decision variable.  Ö¸Ê¾Ã¿¸ö¾ö²ß±äÁ¿µÄ×îÐ¡ÖµµÄÊ®½øÖÆÖµÏòÁ¿
+% for each decision variable.  Ö¸Ê¾Ã¿ï¿½ï¿½ï¿½ï¿½ï¿½ß±ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ð¡Öµï¿½ï¿½Ê®ï¿½ï¿½ï¿½ï¿½Öµï¿½ï¿½ï¿½ï¿½
 % max_range - Vector of maximum possible values for decision variables. 
 
 min = min_range;
 max = max_range;
 
-% K is the total number of array elements. For ease of computation decision KÊÇÊý×éÔªËØµÄ×ÜÊý¡£ 
-% variables and objective functions are concatenated to form a single      ÎªÁË±ãÓÚ¼ÆËã£¬¾ö²ß±äÁ¿ºÍÄ¿±êº¯Êý±»Á¬½ÓÐÎ³Éµ¥¸öÊý×é¡£ 
-% array. For crossover and mutation only the decision variables are used   ¶ÔÓÚ½»²æºÍ±äÒì£¬½öÊ¹ÓÃ¾ö²ß±äÁ¿½øÐÐÑ¡Ôñ£¬½öÊ¹ÓÃ¿Í¹Û±äÁ¿
+% K is the total number of array elements. For ease of computation decision Kï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ôªï¿½Øµï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ 
+% variables and objective functions are concatenated to form a single      Îªï¿½Ë±ï¿½ï¿½Ú¼ï¿½ï¿½ã£¬ï¿½ï¿½ï¿½ß±ï¿½ï¿½ï¿½ï¿½ï¿½Ä¿ï¿½êº¯ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Î³Éµï¿½ï¿½ï¿½ï¿½ï¿½ï¿½é¡£ 
+% array. For crossover and mutation only the decision variables are used   ï¿½ï¿½ï¿½Ú½ï¿½ï¿½ï¿½Í±ï¿½ï¿½ì£¬ï¿½ï¿½Ê¹ï¿½Ã¾ï¿½ï¿½ß±ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ñ¡ï¿½ñ£¬½ï¿½Ê¹ï¿½Ã¿Í¹Û±ï¿½ï¿½ï¿½
 % while for selection, only the objective variable are utilized.
 
 K = M + V;
@@ -34,21 +34,21 @@ for k= 1 : N
 end
 % For each chromosome perform the following (N is the population size)
 for i = 1 : N
-    % Initialize the decision variables based on the minimum and maximum   ¸ù¾Ý×îÐ¡ºÍ×î´ó¿ÉÄÜÖµ³õÊ¼»¯¾ö²ß±äÁ¿¡£ 
-    % possible values. V is the number of decision variable. A random      VÊÇ¾ö²ß±äÁ¿µÄÊýÁ¿¡£ ÔÚÃ¿¸ö¾ö²ß±äÁ¿µÄ×îÐ¡ºÍ×î´ó¿ÉÄÜÖµÖ®¼äÌôÑ¡Ò»¸öËæ»úÊý¡£
+    % Initialize the decision variables based on the minimum and maximum   ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ð¡ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Öµï¿½ï¿½Ê¼ï¿½ï¿½ï¿½ï¿½ï¿½ß±ï¿½ï¿½ï¿½ï¿½ï¿½ 
+    % possible values. V is the number of decision variable. A random      Vï¿½Ç¾ï¿½ï¿½ß±ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½Ã¿ï¿½ï¿½ï¿½ï¿½ï¿½ß±ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ð¡ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ÖµÖ®ï¿½ï¿½ï¿½ï¿½Ñ¡Ò»ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
     % number is picked between the minimum and maximum possible values for
     % the each decision variable.
     
     for j = 1 : V
             f(i,j) = min(j) + (max(j) - min(j))*y(i+1,j);
     end
-    % For ease of computation and handling data the chromosome also has theÎªÁË±ãÓÚ¼ÆËãºÍ´¦ÀíÊý¾Ý£¬È¾É«ÌåÄ©¶Ë»¹¾ßÓÐÄ¿±êº¯ÊýÖµ¡£
-    % vlaue of the objective function concatenated at the end. The elementsÔª¼þV + 1ÖÁK¾ßÓÐÄ¿±êº¯ÊýµÄÖµ¡£ 
-    % V + 1 to K has the objective function valued.                        º¯Êýevaluate_objectiveÔÚÒ»¸öÊ±¼äÖ»ÐèÒ»¸öÈ¾É«Ìå£¬ 
-    % The function evaluate_objective takes one chromosome at a time,      Ö»ÓÐ¾ö²ß±äÁ¿Óë±»´¦ÀíµÄÄ¿±êº¯ÊýµÄÊýÁ¿Ò»Æð´«µÝ¸øº¯Êý£¬²¢·µ»ØÄ¿±êº¯ÊýµÄÖµ¡£
-    % infact only the decision variables are passed to the function along  ÕâÐ©ÖµÏÖÔÚ´æ´¢ÔÚÈ¾É«Ìå±¾ÉíµÄÄ©¶Ë¡£
+    % For ease of computation and handling data the chromosome also has theÎªï¿½Ë±ï¿½ï¿½Ú¼ï¿½ï¿½ï¿½Í´ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ý£ï¿½È¾É«ï¿½ï¿½Ä©ï¿½Ë»ï¿½ï¿½ï¿½ï¿½ï¿½Ä¿ï¿½êº¯ï¿½ï¿½Öµï¿½ï¿½
+    % vlaue of the objective function concatenated at the end. The elementsÔªï¿½ï¿½V + 1ï¿½ï¿½Kï¿½ï¿½ï¿½ï¿½Ä¿ï¿½êº¯ï¿½ï¿½ï¿½ï¿½Öµï¿½ï¿½ 
+    % V + 1 to K has the objective function valued.                        ï¿½ï¿½ï¿½ï¿½evaluate_objectiveï¿½ï¿½Ò»ï¿½ï¿½Ê±ï¿½ï¿½Ö»ï¿½ï¿½Ò»ï¿½ï¿½È¾É«ï¿½å£¬ 
+    % The function evaluate_objective takes one chromosome at a time,      Ö»ï¿½Ð¾ï¿½ï¿½ß±ï¿½ï¿½ï¿½ï¿½ë±»ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ä¿ï¿½êº¯ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ò»ï¿½ð´«µÝ¸ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ä¿ï¿½êº¯ï¿½ï¿½ï¿½ï¿½Öµï¿½ï¿½
+    % infact only the decision variables are passed to the function along  ï¿½ï¿½Ð©Öµï¿½ï¿½ï¿½Ú´æ´¢ï¿½ï¿½È¾É«ï¿½å±¾ï¿½ï¿½ï¿½ï¿½Ä©ï¿½Ë¡ï¿½
     % with information about the number of objective functions which are
     % processed and returns the value for the objective functions. These
     % values are now stored at the end of the chromosome itself.
-    f(i,V + 1: K) = evaluate_objective(f(i,:), M, V,Nh,Nw,Np,L,Zpump,h);   %¼ÆËãÄ¿±êº¯Êý
+    f(i,V + 1: K) = evaluate_objective(f(i,:), M, V,Nh,Nw,Np,L,Zpump,h,Cprice);   %ï¿½ï¿½ï¿½ï¿½Ä¿ï¿½êº¯ï¿½ï¿½
 end

@@ -2,6 +2,8 @@
 % 选取 5 个代表日运行 NSLDE / NSGA-II / MOEA/D，保存结果到 .mat 文件
 clear; clc;
 
+data_dir = '../前端封装/frontend/';
+
 NH = load('hydro.txt');
 NW = load('wind.txt');
 NP = load('solar.txt');
@@ -102,7 +104,7 @@ for d_idx = 1:n_days
 end
 
 % === 保存结果 ===
-save('../前端封装/frontend/comparison_results.mat', ...
+save(fullfile(data_dir, 'comparison_results.mat'), ...
      'z_nslde', 'z_nsga2', 'z_moead', ...
      'hv', 'igd', 'spacing', 'timing', 'days_to_run');
 

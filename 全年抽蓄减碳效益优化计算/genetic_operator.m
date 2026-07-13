@@ -1,4 +1,4 @@
-function f  = genetic_operator(parent_chromosome, chromosome, M, V,  l_limit, u_limit,Nh,Nw,Np,L,Zpump,h)
+function f  = genetic_operator(parent_chromosome, chromosome, M, V,  l_limit, u_limit,Nh,Nw,Np,L,Zpump,h,Cprice)
 
 %% function f  = genetic_operator(parent_chromosome, M, V, mu, mum, l_limit, u_limit)
 % 
@@ -83,8 +83,8 @@ for i = 1 : N
         end
         % Evaluate the objective function for the offsprings and as before
         % concatenate the offspring chromosome with objective value.
-        child_1(:,V + 1: M + V) = evaluate_objective(child_1, M, V,Nh,Nw,Np,L,Zpump,h);
-        child_2(:,V + 1: M + V) = evaluate_objective(child_2, M, V,Nh,Nw,Np,L,Zpump,h);
+        child_1(:,V + 1: M + V) = evaluate_objective(child_1, M, V,Nh,Nw,Np,L,Zpump,h,Cprice);
+        child_2(:,V + 1: M + V) = evaluate_objective(child_2, M, V,Nh,Nw,Np,L,Zpump,h,Cprice);
         child(p,:) = child_1;
         child(p+1,:) = child_2;
         p = p + 2;
