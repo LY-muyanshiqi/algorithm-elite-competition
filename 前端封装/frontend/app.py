@@ -621,6 +621,81 @@ def show_data_browser(data):
     st.download_button("📥 下载当前视图CSV", csv, f"{ds_name}_{day_range[0]+1}_{day_range[1]+1}.csv", "text/csv")
 
 
+def show_algorithm_comparison(data):
+    """算法对比独立页面 — NSLDE vs NSGA-II vs MOEA/D"""
+    st.markdown("## ⚔️ NSLDE vs NSGA-II vs MOEA/D 算法对比")
+    st.markdown("""
+    <div style='background: rgba(0, 212, 255, 0.1); border: 1px solid rgba(0, 212, 255, 0.3); border-radius: 8px; padding: 12px; margin: 10px 0; font-size: 0.9rem; color: #b0c4d8;'>
+    在相同数据（365天×24小时）和相同约束条件下，对比三种多目标进化算法的性能。
+    <strong>NSLDE</strong> 通过 Lévy 飞行扰动和混沌初始化获得更优的 Pareto 前沿覆盖和收敛速度；
+    <strong>NSGA-II</strong> 是经典基线算法；<strong>MOEA/D</strong> 基于分解策略。
+    HV 越大越好，IGD 和 Spacing 越小越好。
+    </div>
+    """, unsafe_allow_html=True)
+
+    with st.spinner("🔬 正在加载 MATLAB 对比实验数据..."):
+        comp = ana.algorithm_comparison_data(data)
+
+    if comp.get('is_real'):
+        st.success(f"✅ 使用真实 MATLAB 对比实验数据（{len(comp.get('days_used', []))} 个代表日）")
+
+    charts_set = ana.create_algorithm_comparison_charts(comp)
+
+    # KPI cards
+    z_nslde = comp['z_nslde']
+    z_nsga2 = comp['z_nsga2']
+    z_moead = comp['z_moead']
+
+    c1, c2, c3 = st.columns(3)
+    with c1:
+        st.metric("NSLDE f1 均值", f"{z_nslde[:, 0].mean():.1f}")
+    with c2:
+        st.metric("NSGA-II f1 均值", f"{z_nsga2[:, 0].mean():.1f}",
+                 f"{((z_nsga2[:, 0].mean() - z_nslde[:, 0].mean()) / z_nslde[:, 0].mean() * 100):+.1f}%")
+    with c3:
+        st.metric("MOEA/D f1 均值", f"{z_moead[:, 0].mean():.1f}",
+                 f"{((z_moead[:, 0].mean() - z_nslde[:, 0].mean()) / z_nslde[:, 0].mean() * 100):+.1f}%")
+
+    st.markdown("---")
+
+    tab_p, tab_m, tab_c = st.tabs([
+        "🎯 Pareto 前沿对比",
+        "📊 性能指标 (HV / IGD / Spacing)",
+        "📉 收敛曲线对比"
+    ])
+
+    with tab_p:
+        charts.safe_plotly_chart(charts_set['pareto'], use_container_width=True)
+        st.caption("🔵 NSLDE · 🟠 NSGA-II · 🟣 MOEA/D — 越靠近左下角越优")
+
+    with tab_m:
+        charts.safe_plotly_chart(charts_set['metrics'], use_container_width=True)
+        st.markdown("### 📋 指标解释")
+        cm1, cm2, cm3 = st.columns(3)
+        with cm1:
+            st.info("**HV (Hypervolume)** ↑\n解集覆盖的目标空间体积，越大表示前沿更广更优")
+        with cm2:
+            st.info("**IGD (Inverted Generational Distance)** ↓\n到参考集(NSLDE)的平均距离，越小越逼近真实前沿")
+        with cm3:
+            st.info("**Spacing** ↓\n解分布的均匀度，越小表示前沿覆盖更均匀")
+
+        if comp.get('is_real'):
+            timing = comp.get('timing')
+            if timing is not None:
+                st.markdown("---")
+                st.subheader("⏱️ 平均运行时间 (per day)")
+                tc1, tc2, tc3 = st.columns(3)
+                with tc1:
+                    st.metric("NSLDE", f"{timing[0]:.1f}s")
+                with tc2:
+                    st.metric("NSGA-II", f"{timing[1]:.1f}s")
+                with tc3:
+                    st.metric("MOEA/D", f"{timing[2]:.1f}s")
+
+    with tab_c:
+        charts.safe_plotly_chart(charts_set['convergence'], use_container_width=True)
+
+
 def show_history_comparison(data):
     """历史运行对比页面"""
     st.markdown("## 📜 历史运行对比")
@@ -1622,6 +1697,9 @@ def main():
 
         elif page == "🔬 A/B参数对比":
             show_ab_comparison(data)
+
+        elif page == "⚔️ 算法对比":
+            show_algorithm_comparison(data)
 
         elif page == "📜 历史对比":
             show_history_comparison(data)
