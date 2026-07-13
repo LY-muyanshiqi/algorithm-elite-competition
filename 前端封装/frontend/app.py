@@ -434,8 +434,43 @@ def show_analysis(data):
         with tab_c:
             charts.safe_plotly_chart(charts_set['convergence'], use_container_width=True)
 
+    elif selected_analysis == '储能对比':
+        st.subheader("🔋 抽水蓄能 vs 电化学储能 (锂电池)")
+        import data_loader as dl_es
+        es = ana.energy_storage_comparison(data)
 
-def show_parameter_adjustment(data, Zpump, h, efficiency, min_power_ratio, 
+        st.markdown("---")
+        st.subheader("📊 综合对比雷达图")
+        charts.safe_plotly_chart(es['fig_radar'], use_container_width=True)
+
+        tab1, tab2, tab3, tab4 = st.tabs(["🔧 技术参数", "💰 经济性", "🌍 碳减排效益", "⚡ 电网适用性"])
+
+        for tab, key in [(tab1, '技术参数'), (tab2, '经济性'), (tab3, '碳减排效益'), (tab4, '电网适用性')]:
+            with tab:
+                comp = es['comparison'][key]
+                st.dataframe(
+                    pd.DataFrame({'指标': comp['指标'], '抽水蓄能': comp['抽水蓄能'], '锂电池储能': comp['锂电池储能']}),
+                    use_container_width=True, hide_index=True,
+                )
+
+        st.markdown("---")
+        st.subheader("💰 经济性对比")
+        charts.safe_plotly_chart(es['fig_cost'], use_container_width=True)
+
+        st.subheader("🌍 年度累计碳减排量")
+        charts.safe_plotly_chart(es['fig_carbon'], use_container_width=True)
+
+        st.markdown("---")
+        st.subheader("📋 关键结论")
+        st.markdown("""
+        - **抽水蓄能**在长时储能（>4h）、电网惯量支撑和全生命周期成本上具有显著优势，是目前最成熟的大规模储能技术
+        - **锂电池储能**响应速度更快、选址灵活，但当前度电成本仍是抽水蓄能的 2-3 倍，且循环寿命仅 1/3
+        - 本项目的 NSLDE 算法框架可直接迁移至锂电池储能调度场景，只需调整储能模型参数
+        - **推荐**：以抽水蓄能为主力调峰、锂电池储能作为快速响应补充的混合储能策略
+        """)
+
+
+def show_parameter_adjustment(data, Zpump, h, efficiency, min_power_ratio,
                             carbon_factor, coal_high, coal_mid, coal_low, apply_params):
     """显示参数调整页面（调参即算功能）"""
     st.title("⚙️ 参数调整")

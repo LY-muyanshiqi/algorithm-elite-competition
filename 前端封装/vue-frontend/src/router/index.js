@@ -64,6 +64,12 @@ const routes = [
     component: () => import('../views/SeasonalAnalysis.vue'),
     meta: { title: '四季分析', navTitle: '四季分析', icon: '🍃' },
   },
+
+  { path: '/storage-compare',
+    name: 'StorageCompare',
+    component: () => import('../views/StorageComparison.vue'),
+    meta: { title: '储能对比', navTitle: '储能对比', icon: '🔋' },
+  },
 ]
 
 const router = createRouter({
