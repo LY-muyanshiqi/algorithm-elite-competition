@@ -942,6 +942,19 @@ def main():
 
         # 帮助信息
         st.sidebar.markdown("---")
+        st.sidebar.markdown("### 🎯 交互式工具")
+        vue_url = os.environ.get("VUE_FRONTEND_URL", "http://localhost:5173")
+        st.sidebar.markdown(
+            f'<a href="{vue_url}" target="_blank" '
+            f'style="display:block; padding:10px 16px; '
+            f'background:linear-gradient(135deg,rgba(0,212,255,0.15),rgba(0,150,255,0.08)); '
+            f'border:1px solid rgba(0,212,255,0.3); border-radius:8px; margin:8px 0; '
+            f'color:#00d4ff; text-decoration:none; font-weight:600; '
+            f'text-align:center; transition:all 0.3s;">'
+            f'🎮 打开调度编辑器（Vue）</a>',
+            unsafe_allow_html=True,
+        )
+        st.sidebar.markdown("---")
         st.sidebar.caption("💡 点击左侧分组展开页面 | 图表可交互缩放 | 支持CSV及PNG导出")
 
         # 缓存管理
