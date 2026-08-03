@@ -122,7 +122,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, nextTick } from "vue";
+import { ref, computed, onMounted, onBeforeUnmount, nextTick } from "vue";
 import * as echarts from "echarts";
 import { fetchCarbonAnalysis } from "../api";
 
@@ -132,6 +132,10 @@ const compareChartRef = ref(null);
 const dailyChartRef = ref(null);
 const cumChartRef = ref(null);
 const monthlyChartRef = ref(null);
+const compareChart = ref(null);
+const dailyChart = ref(null);
+const cumChart = ref(null);
+const monthlyChart = ref(null);
 
 const ntTotal = computed(() => data.value?.Nt_total ?? 0);
 const nt2Total = computed(() => data.value?.Nt2_total ?? 0);
@@ -147,13 +151,13 @@ const flightsCancelled = computed(() =>
 
 function initCompareChart() {
   if (!compareChartRef.value || !data.value) return;
-  const chart = echarts.init(compareChartRef.value);
+  compareChart.value = echarts.init(compareChartRef.value);
   const d = data.value;
   const hours = Array.from(
     { length: 720 },
     (_, i) => `${Math.floor(i / 24) + 1}d`,
   );
-  chart.setOption({
+  compareChart.value.setOption({
     backgroundColor: "transparent",
     tooltip: { trigger: "axis" },
     legend: { data: ["有抽蓄", "无抽蓄"], textStyle: { color: "#8ba4c4" } },
@@ -191,9 +195,9 @@ function initCompareChart() {
 
 function initDailyChart() {
   if (!dailyChartRef.value || !data.value) return;
-  const chart = echarts.init(dailyChartRef.value);
+  dailyChart.value = echarts.init(dailyChartRef.value);
   const days = Array.from({ length: 365 }, (_, i) => i + 1);
-  chart.setOption({
+  dailyChart.value.setOption({
     backgroundColor: "transparent",
     tooltip: { trigger: "axis" },
     grid: { left: 55, right: 20, top: 20, bottom: 40 },
@@ -223,8 +227,8 @@ function initDailyChart() {
 
 function initCumChart() {
   if (!cumChartRef.value || !data.value) return;
-  const chart = echarts.init(cumChartRef.value);
-  chart.setOption({
+  cumChart.value = echarts.init(cumChartRef.value);
+  cumChart.value.setOption({
     backgroundColor: "transparent",
     tooltip: {
       trigger: "axis",
@@ -261,8 +265,8 @@ function initCumChart() {
 
 function initMonthlyChart() {
   if (!monthlyChartRef.value || !data.value) return;
-  const chart = echarts.init(monthlyChartRef.value);
-  chart.setOption({
+  monthlyChart.value = echarts.init(monthlyChartRef.value);
+  monthlyChart.value.setOption({
     backgroundColor: "transparent",
     tooltip: {
       trigger: "axis",
@@ -308,17 +312,27 @@ onMounted(async () => {
     initDailyChart();
     initCumChart();
     initMonthlyChart();
-    window.addEventListener("resize", () => {
-      [compareChartRef, dailyChartRef, cumChartRef, monthlyChartRef].forEach(
-        (ref) => {
-          echarts.getInstanceByDom(ref.value)?.resize();
-        },
-      );
-    });
+    window.addEventListener("resize", handleResize);
   } catch (e) {
     console.error(e);
     loading.value = false;
   }
+});
+
+function handleResize() {
+  [compareChartRef, dailyChartRef, cumChartRef, monthlyChartRef].forEach(
+    (ref) => {
+      echarts.getInstanceByDom(ref.value)?.resize();
+    },
+  );
+}
+
+onBeforeUnmount(() => {
+  window.removeEventListener("resize", handleResize);
+  [compareChart, dailyChart, cumChart, monthlyChart].forEach((ref) => {
+    ref.value?.dispose();
+    ref.value = null;
+  });
 });
 </script>
 

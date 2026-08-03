@@ -120,9 +120,9 @@ def apply_material(obj, material_name):
 def clear_scene():
     bpy.ops.object.select_all(action='SELECT')
     bpy.ops.object.delete(use_global=False)
-    for m in bpy.data.meshes: bpy.data.meshes.remove(m)
-    for m in bpy.data.materials: bpy.data.materials.remove(m)
-    for t in bpy.data.textures: bpy.data.textures.remove(t)
+    for m in list(bpy.data.meshes): bpy.data.meshes.remove(m)
+    for m in list(bpy.data.materials): bpy.data.materials.remove(m)
+    for t in list(bpy.data.textures): bpy.data.textures.remove(t)
     for g in list(bpy.data.node_groups):
         if g.name.startswith("PSP_"): bpy.data.node_groups.remove(g)
     MAT_CACHE.clear()

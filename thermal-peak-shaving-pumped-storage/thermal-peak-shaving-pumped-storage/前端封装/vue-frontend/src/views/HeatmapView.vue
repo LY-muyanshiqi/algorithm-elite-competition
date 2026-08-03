@@ -130,7 +130,7 @@
 </template>
 
 <script setup>
-import { ref, computed, watch, onMounted, nextTick } from "vue";
+import { ref, computed, watch, onMounted, onBeforeUnmount, nextTick } from "vue";
 import * as echarts from "echarts";
 import { fetchAllData } from "../api";
 
@@ -143,6 +143,11 @@ const monthStatsRef = ref(null);
 const hourAvgRef = ref(null);
 const weekPatternRef = ref(null);
 const anomalyChartRef = ref(null);
+const heatmapChart = ref(null);
+const monthStatsChart = ref(null);
+const hourAvgChart = ref(null);
+const weekPatternChart = ref(null);
+const anomalyChart = ref(null);
 const anomalyThreshold = ref(2.0);
 
 const labels = {
@@ -199,7 +204,7 @@ function computeStats(data) {
 
 function initHeatmap() {
   if (!heatmapRef.value || !allData.value) return;
-  const chart = echarts.init(heatmapRef.value);
+  heatmapChart.value = echarts.init(heatmapRef.value);
   const raw = allData.value[dataKey.value];
   // 转成 [day, hour, value] 格式
   const data = [];
@@ -249,7 +254,7 @@ function initHeatmap() {
     ],
   };
 
-  chart.setOption({
+  heatmapChart.value.setOption({
     backgroundColor: "transparent",
     tooltip: {
       formatter: (p) =>
@@ -293,7 +298,7 @@ function initHeatmap() {
 
 function initMonthStats() {
   if (!monthStatsRef.value || !allData.value) return;
-  const chart = echarts.init(monthStatsRef.value);
+  monthStatsChart.value = echarts.init(monthStatsRef.value);
   const raw = allData.value[dataKey.value];
   const daysInMonth = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
   let start = 0;
@@ -310,7 +315,7 @@ function initMonthStats() {
       median: sorted[Math.floor(sorted.length / 2)],
     };
   });
-  chart.setOption({
+  monthStatsChart.value.setOption({
     backgroundColor: "transparent",
     tooltip: { trigger: "axis" },
     legend: {
@@ -364,7 +369,7 @@ function initMonthStats() {
 
 function initHourAvg() {
   if (!hourAvgRef.value || !allData.value) return;
-  const chart = echarts.init(hourAvgRef.value);
+  hourAvgChart.value = echarts.init(hourAvgRef.value);
   const raw = allData.value[dataKey.value];
   const byHour = Array.from({ length: 24 }, (_, h) => raw.map((r) => r[h]));
   const hourStats = byHour.map((arr) => {
@@ -378,7 +383,7 @@ function initHourAvg() {
       q3: sorted[~~(sorted.length * 0.75)],
     };
   });
-  chart.setOption({
+  hourAvgChart.value.setOption({
     backgroundColor: "transparent",
     tooltip: { trigger: "axis" },
     legend: { data: ["平均", "P25", "P75"], textStyle: { color: "#8ba4c4" } },
@@ -425,7 +430,7 @@ function initHourAvg() {
 // 工作日 vs 周末模式对比
 function initWeekPattern() {
   if (!weekPatternRef.value || !allData.value) return;
-  const chart = echarts.init(weekPatternRef.value);
+  weekPatternChart.value = echarts.init(weekPatternRef.value);
   const raw = allData.value[dataKey.value];
   // 2026-01-01 是周四 → day0=周四
   const weekdayOffset = 4; // 周四=4
@@ -441,7 +446,7 @@ function initWeekPattern() {
   }
   const avg = (arr) => arr.reduce((a, b) => a + b, 0) / arr.length;
   const hours = Array.from({ length: 24 }, (_, i) => `${i}:00`);
-  chart.setOption({
+  weekPatternChart.value.setOption({
     backgroundColor: "transparent",
     tooltip: { trigger: "axis" },
     legend: {
@@ -491,12 +496,12 @@ function initAnomalyChart() {
     anomalyDays.value.length === 0
   )
     return;
-  const chart = echarts.init(anomalyChartRef.value);
+  anomalyChart.value = echarts.init(anomalyChartRef.value);
   const d = dailyTotals.value;
   const { mean, std } = anomalyStats.value;
   const upper = mean + anomalyThreshold.value * std;
   const lower = mean - anomalyThreshold.value * std;
-  chart.setOption({
+  anomalyChart.value.setOption({
     backgroundColor: "transparent",
     tooltip: {
       trigger: "axis",
@@ -595,6 +600,13 @@ onMounted(async () => {
     console.error(e);
     loading.value = false;
   }
+});
+
+onBeforeUnmount(() => {
+  [heatmapChart, monthStatsChart, hourAvgChart, weekPatternChart, anomalyChart].forEach((ref) => {
+    ref.value?.dispose();
+    ref.value = null;
+  });
 });
 </script>
 

@@ -54,9 +54,11 @@ def create_sankey_diagram(data: Dict[str, Any], day_index: int = 0) -> go.Figure
     # 计算净负荷和火电
     renewable_total = wind_avg + solar_avg + hydro_avg
     grid_load = np.mean(day_data['fh']) + pump_consumption
-    
-    # 假设弃风弃光比例
-    curtailment_ratio = 0.1
+
+    # 基于新能源实际出力比的弃电估算
+    renewable_used_total = np.sum(day_data['wind']) + np.sum(day_data['solar']) + np.sum(day_data['hydro'])
+    fh_total = np.sum(day_data['fh'])
+    curtailment_ratio = max(0, min(0.15, 1 - fh_total / max(renewable_used_total, 1)))
     curtailment = renewable_total * curtailment_ratio
     renewable_used = renewable_total * (1 - curtailment_ratio)
     

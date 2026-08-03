@@ -116,6 +116,7 @@ class DataService:
 
         N = hydro + wind + solar
         carbon_result = self._carbon_cache or dl.calculate_carbon_reduction(data)
+        ps_stats = self._ps_cache or dl.calculate_pumped_storage_schedule(np_raw)
 
         return NumpyEncoder.dict_to_native({
             'carbon_reduction': carbon_result['carbon_change'],

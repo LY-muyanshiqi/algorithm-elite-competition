@@ -109,7 +109,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, nextTick, watch } from "vue";
+import { ref, computed, onMounted, onBeforeUnmount, nextTick, watch } from "vue";
 import * as echarts from "echarts";
 import { fetchAllData } from "../api";
 
@@ -120,6 +120,10 @@ const corrChartRef = ref(null);
 const histChartRef = ref(null);
 const quantileChartRef = ref(null);
 const distFitChartRef = ref(null);
+const corrChart = ref(null);
+const histChart = ref(null);
+const quantileChart = ref(null);
+const distFitChart = ref(null);
 const distKey = ref("wind");
 
 const keys = ["wind", "solar", "hydro", "fh", "np_raw"];
@@ -254,9 +258,16 @@ onMounted(async () => {
   }
 });
 
+onBeforeUnmount(() => {
+  [corrChart, histChart, quantileChart, distFitChart].forEach((ref) => {
+    ref.value?.dispose();
+    ref.value = null;
+  });
+});
+
 function initCorrChart(stats) {
   if (!corrChartRef.value) return;
-  const chart = echarts.init(corrChartRef.value);
+  corrChart.value = echarts.init(corrChartRef.value);
   const matrix = keys.map((k1) =>
     keys.map((k2) => {
       if (k1 === k2) return 1;
@@ -276,7 +287,7 @@ function initCorrChart(stats) {
       return isNaN(r) || !isFinite(r) ? 0 : r;
     }),
   );
-  chart.setOption({
+  corrChart.value.setOption({
     backgroundColor: "transparent",
     tooltip: {
       formatter: (p) =>
@@ -363,7 +374,10 @@ function refreshHistogram() {
   nextTick(() => {
     if (!histChartRef.value) return;
     let chart = echarts.getInstanceByDom(histChartRef.value);
-    if (!chart) chart = echarts.init(histChartRef.value);
+    if (!chart) {
+      histChart.value = echarts.init(histChartRef.value);
+      chart = histChart.value;
+    }
     chart.setOption({
       backgroundColor: "transparent",
       tooltip: {
@@ -423,8 +437,8 @@ function initHistChart(stats) {
     const idx = Math.min(Math.floor((v - min) / binWidth), binCount - 1);
     bins[idx].count++;
   }
-  const chart = echarts.init(histChartRef.value);
-  chart.setOption({
+  histChart.value = echarts.init(histChartRef.value);
+  histChart.value.setOption({
     backgroundColor: "transparent",
     tooltip: {
       trigger: "axis",
@@ -454,7 +468,7 @@ function initHistChart(stats) {
 
 function initQuantileChart(stats) {
   if (!quantileChartRef.value) return;
-  const chart = echarts.init(quantileChartRef.value);
+  quantileChart.value = echarts.init(quantileChartRef.value);
   const fields = ["p1", "p5", "p25", "median", "avg", "p75", "p95", "p99"];
   const fLabels = {
     p1: "1%",
@@ -466,7 +480,7 @@ function initQuantileChart(stats) {
     p95: "95%",
     p99: "99%",
   };
-  chart.setOption({
+  quantileChart.value.setOption({
     backgroundColor: "transparent",
     tooltip: { trigger: "axis" },
     legend: {
@@ -528,7 +542,7 @@ function initDistFit() {
   distFitResult.value = { best, normalLL, lognormalLL };
 
   // 绘制直方图 + 拟合曲线
-  const chart = echarts.init(distFitChartRef.value);
+  distFitChart.value = echarts.init(distFitChartRef.value);
   const bins = 40;
   const min = Math.min(...data);
   const max = Math.max(...data);
@@ -563,7 +577,7 @@ function initDistFit() {
     );
   });
 
-  chart.setOption({
+  distFitChart.value.setOption({
     backgroundColor: "transparent",
     tooltip: { trigger: "axis" },
     legend: {

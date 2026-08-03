@@ -650,9 +650,9 @@ def main():
 
     # 清空
     bpy.ops.object.select_all(action='SELECT'); bpy.ops.object.delete(use_global=False)
-    for m in bpy.data.meshes: bpy.data.meshes.remove(m)
-    for m in bpy.data.materials: bpy.data.materials.remove(m)
-    for t in bpy.data.textures: bpy.data.textures.remove(t)
+    for m in list(bpy.data.meshes): bpy.data.meshes.remove(m)
+    for m in list(bpy.data.materials): bpy.data.materials.remove(m)
+    for t in list(bpy.data.textures): bpy.data.textures.remove(t)
     MAT_CACHE.clear()
 
     # 预建材质

@@ -1,6 +1,7 @@
 """验证数据库持久化"""
 import sys
-sys.path.insert(0, r'D:\thermal-peak-shaving-pumped-storage\前端封装\frontend')
+import os
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), '前端封装', 'frontend'))
 from db import init_db, list_runs, load_run_daily, save_run
 import api_client as dl
 

@@ -107,7 +107,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, nextTick } from "vue";
+import { ref, computed, onMounted, onBeforeUnmount, nextTick } from "vue";
 import * as echarts from "echarts";
 import { fetchDashboard } from "../api";
 
@@ -116,6 +116,9 @@ const dash = ref(null);
 const pieChartRef = ref(null);
 const thermalChartRef = ref(null);
 const dailyCarbonChartRef = ref(null);
+const pieChart = ref(null);
+const thermalChart = ref(null);
+const dailyCarbonChart = ref(null);
 
 const kpiList = ref([]);
 const psStats = ref({
@@ -139,9 +142,9 @@ const idlePct = computed(() =>
 
 function initPieChart() {
   if (!pieChartRef.value || !dash.value) return;
-  const chart = echarts.init(pieChartRef.value);
+  pieChart.value = echarts.init(pieChartRef.value);
   const s = dash.value;
-  chart.setOption({
+  pieChart.value.setOption({
     backgroundColor: "transparent",
     tooltip: { trigger: "item", formatter: "{b}: {c} 亿kWh ({d}%)" },
     series: [
@@ -176,10 +179,10 @@ function initPieChart() {
 
 function initThermalChart() {
   if (!thermalChartRef.value || !dash.value) return;
-  const chart = echarts.init(thermalChartRef.value);
+  thermalChart.value = echarts.init(thermalChartRef.value);
   const d = dash.value;
   const hours = Array.from({ length: 720 }, (_, i) => i + 1);
-  chart.setOption({
+  thermalChart.value.setOption({
     backgroundColor: "transparent",
     tooltip: { trigger: "axis" },
     legend: {
@@ -222,10 +225,10 @@ function initThermalChart() {
 
 function initDailyCarbonChart() {
   if (!dailyCarbonChartRef.value || !dash.value) return;
-  const chart = echarts.init(dailyCarbonChartRef.value);
+  dailyCarbonChart.value = echarts.init(dailyCarbonChartRef.value);
   const daily = dash.value.daily_carbon;
   const days = Array.from({ length: 365 }, (_, i) => `第${i + 1}天`);
-  chart.setOption({
+  dailyCarbonChart.value.setOption({
     backgroundColor: "transparent",
     tooltip: { trigger: "axis" },
     grid: { left: 60, right: 20, top: 20, bottom: 40 },
@@ -317,15 +320,25 @@ onMounted(async () => {
     initPieChart();
     initThermalChart();
     initDailyCarbonChart();
-    window.addEventListener("resize", () => {
-      echarts.getInstanceByDom(pieChartRef.value)?.resize();
-      echarts.getInstanceByDom(thermalChartRef.value)?.resize();
-      echarts.getInstanceByDom(dailyCarbonChartRef.value)?.resize();
-    });
+    window.addEventListener("resize", handleResize);
   } catch (e) {
     console.error(e);
     loading.value = false;
   }
+});
+
+function handleResize() {
+  echarts.getInstanceByDom(pieChartRef.value)?.resize();
+  echarts.getInstanceByDom(thermalChartRef.value)?.resize();
+  echarts.getInstanceByDom(dailyCarbonChartRef.value)?.resize();
+}
+
+onBeforeUnmount(() => {
+  window.removeEventListener("resize", handleResize);
+  [pieChart, thermalChart, dailyCarbonChart].forEach((ref) => {
+    ref.value?.dispose();
+    ref.value = null;
+  });
 });
 </script>
 

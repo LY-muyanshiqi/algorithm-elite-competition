@@ -14,6 +14,7 @@ API 客户端 — 面向 FastAPI 后端的 HTTP 调用封装
 """
 import numpy as np
 import os
+import atexit
 from typing import Dict, Any, Optional
 
 # ==================== 配置 ====================
@@ -28,6 +29,7 @@ try:
 
     # 复用连接池 — 避免每次请求都新建连接（第一次请求可省 100-200ms）
     _client = httpx.Client(timeout=httpx.Timeout(60.0, connect=5.0))
+    atexit.register(_client.close)
 
     def _get(path: str) -> dict:
         """GET 请求（复用连接池）"""

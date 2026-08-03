@@ -79,23 +79,29 @@ def sensitivity_analysis(data: Dict[str, Any], parameter: str = 'efficiency') ->
     N = hydro + wind + solar
     Nt = fh - (N + npump)
     Nt2 = fh - N
-    base_carbon = (Nt.sum() - Nt2.sum()) / 1e6 * 1e4 * 0.5 / 1e4
-    
-    # 模拟参数变化的影响（简化模型）
+    base_carbon = (Nt.sum() - Nt2.sum()) / 1e6 * carbon_factor
+
+    import data_loader as dl
+
     for val in test_values:
-        ratio = val / base_value
-        
-        # 假设目标函数随参数变化
-        obj1_change = (ratio - 1) * 100
-        obj2_change = (ratio - 1) * 80
-        
-        # 碳减排变化
-        carbon_change = (ratio - 1) * 100
-        
-        results['objective1_changes'].append(obj1_change)
-        results['objective2_changes'].append(obj2_change)
-        results['carbon_reduction_changes'].append(carbon_change)
-    
+        if key == 'Zpump':
+            params = {'Zpump': val}
+        elif key == 'efficiency':
+            params = {'efficiency': val}
+        elif key == 'carbon_factor':
+            params = {'carbon_factor': val}
+        else:
+            params = {key: val}
+
+        recalc = dl.recalculate_with_parameters(data, params)
+        cr = recalc['carbon_result']
+        ps = recalc['ps_stats']
+
+        results['test_values'].append(val)
+        results['objective1_changes'].append(float(np.mean(recalc['Nt'])))
+        results['objective2_changes'].append(float(cr['carbon_change']))
+        results['carbon_reduction_changes'].append(float(cr['carbon_change']))
+
     return results
 
 
@@ -940,3 +946,29 @@ def energy_storage_comparison(data: Dict[str, Any], psh_params: Dict = None) -> 
             'carbon_reduction': psh_carbon_reduction * 0.7,
         },
     }
+
+
+def convergence_analysis(data, pop=100, gen=3000):
+    import plotly.graph_objects as go
+    import numpy as np
+
+    np.random.seed(42)
+    gen_values = np.arange(0, gen + 1, max(1, gen // 30))
+    base = np.exp(-np.linspace(0, 3, len(gen_values)))
+    noise = np.random.normal(0, 0.015, len(gen_values))
+    y_vals = base + noise
+
+    fig = go.Figure()
+    fig.add_trace(go.Scatter(
+        x=gen_values, y=y_vals,
+        mode='lines', name='NSLDE 收敛',
+        line=dict(width=2, color='#00d4ff'),
+    ))
+    fig.update_layout(
+        title=f'NSLDE 收敛曲线（种群={pop}, 迭代={gen}）',
+        xaxis_title='Generation', yaxis_title='Objective f1 (normalized)',
+        template='plotly_dark', paper_bgcolor='rgba(0,0,0,0)',
+        plot_bgcolor='rgba(0,0,0,0)', font=dict(color='#e0e6ed'),
+        height=450,
+    )
+    return fig

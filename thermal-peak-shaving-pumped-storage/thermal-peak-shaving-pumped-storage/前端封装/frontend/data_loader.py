@@ -218,13 +218,13 @@ def calculate_carbon_reduction(data, carbon_factor=0.5, coal_consumption_high=30
     # 火电负荷变化量 (亿kWh)
     # 正值表示火电增发，负值表示火电减少
     power_change = (Nt.sum() - Nt2.sum()) / 1e6
-    
-    # 碳排放变化量 (万吨)
-    # 正值表示碳排放增加，负值表示碳减排
-    carbon_change = power_change * 1e4 * carbon_factor / 1e4
-    
-    # 每天碳排放变化
-    daily_carbon_change = (Nt - Nt2).sum(axis=1) / 1e6 * 1e4 * carbon_factor / 1e4
+
+    # 碳排放变化量 (万吨)，power_change(亿kWh) × carbon_factor(吨CO2/万kWh) × 10000万kWh/亿kWh / 10000吨/万吨
+    # = power_change × carbon_factor (万吨)
+    carbon_change = power_change * carbon_factor
+
+    # 每天碳排放变化 (万吨/天)
+    daily_carbon_change = (Nt - Nt2).sum(axis=1) / 1e6 * carbon_factor
     
     return {
         'power_change': power_change,  # 火电变化 (亿kWh)，正=增发，负=减发

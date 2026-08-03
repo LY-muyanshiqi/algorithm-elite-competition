@@ -15,7 +15,7 @@ Blender 几何节点快速生成器代码（全资产包）
 import bpy
 
 # 清空现有节点组
-for group in bpy.data.node_groups:
+for group in list(bpy.data.node_groups):
     if group.name.startswith("PSP_"):
         bpy.data.node_groups.remove(group)
 
@@ -513,58 +513,6 @@ def create_mountain_terrain_generator():
     group.links.new(noise_node.outputs["Geometry"], output_node.inputs["Geometry"])
 
 # ======================
-# 运行所有生成器
-# ======================
-if __name__ == "__main__":
-    print("=== 创建抽水蓄能电站几何节点生成器 ===")
-    
-    create_dam_generator()
-    print("✓ PSP_UpperDam - 上水库大坝生成器")
-    
-    create_reservoir_generator()
-    print("✓ PSP_ReservoirWater - 水库水体生成器")
-    
-    create_tunnel_generator()
-    print("✓ PSP_Tunnel - 隧洞生成器")
-    
-    create_underground_plant_generator()
-    print("✓ PSP_UndergroundPlant - 地下厂房生成器")
-    
-    create_turbine_generator()
-    print("✓ PSP_Turbine - 水轮发电机组生成器")
-    
-    create_thermal_plant_generator()
-    print("✓ PSP_ThermalPlant - 火力发电厂生成器")
-    
-    create_cooling_tower_generator()
-    print("✓ PSP_CoolingTower - 双曲线冷却塔生成器")
-    
-    create_chimney_generator()
-    print("✓ PSP_Chimney - 烟囱生成器")
-    
-    create_solar_panel_generator()
-    print("✓ PSP_SolarPanel - 光伏板阵列生成器")
-    
-    create_wind_turbine_generator()
-    print("✓ PSP_WindTurbine - 风电机组生成器")
-    
-    create_substation_generator()
-    print("✓ PSP_Substation - 变电站生成器")
-    
-    create_transmission_tower_generator()
-    print("✓ PSP_TransmissionTower - 输电铁塔生成器")
-    
-    create_residential_building_generator()
-    print("✓ PSP_ResidentialBuilding - 居民楼生成器")
-    
-    create_mountain_terrain_generator()
-    print("✓ PSP_MountainTerrain - 山地地形生成器")
-    
-    print("\n=== 所有生成器创建完成 ===")
-    print("切换到几何节点工作区，在「添加」→「组」中找到生成器节点")
-
-
-# ======================
 # 高级功能：一键完整场景生成器
 # ======================
 def generate_complete_system():
@@ -572,41 +520,41 @@ def generate_complete_system():
     # 清空场景
     bpy.ops.object.select_all(action='SELECT')
     bpy.ops.object.delete()
-    
+
     # 1. 生成地形
     bpy.ops.mesh.primitive_plane_add(size=5000, location=(0, 0, 0))
     terrain = bpy.context.active_object
     terrain.name = "地形"
-    
+
     # 添加地形修改器
     mod = terrain.modifiers.new(name="地形噪声", type='DISPLACE')
     tex = bpy.data.textures.new(name="地形纹理", type='CLOUDS')
     tex.noise_scale = 500.0
     mod.texture = tex
     mod.strength = 800.0
-    
+
     # 2. 生成抽水蓄能电站
     # 上水库
     bpy.ops.mesh.primitive_plane_add(size=800, location=(0, -1500, 600))
     upper_reservoir = bpy.context.active_object
     upper_reservoir.name = "上水库"
-    
+
     # 下水库
     bpy.ops.mesh.primitive_plane_add(size=600, location=(0, 1500, 100))
     lower_reservoir = bpy.context.active_object
     lower_reservoir.name = "下水库"
-    
+
     # 3. 生成火力发电厂
     bpy.ops.mesh.primitive_cube_add(size=120, location=(-2000, 0, 50))
     thermal_plant = bpy.context.active_object
     thermal_plant.name = "火力发电厂"
-    
+
     # 冷却塔
     for i in range(2):
         bpy.ops.mesh.primitive_cylinder_add(radius=40, depth=120, location=(-2000, -200+i*400, 110))
         cooling_tower = bpy.context.active_object
         cooling_tower.name = f"冷却塔_{i+1}"
-    
+
     # 4. 生成风电场
     import random
     for i in range(5):
@@ -615,7 +563,7 @@ def generate_complete_system():
         bpy.ops.mesh.primitive_cylinder_add(radius=2, depth=100, location=(x, y, 50))
         wind_turbine = bpy.context.active_object
         wind_turbine.name = f"风电机_{i+1}"
-    
+
     # 5. 生成光伏电站
     for i in range(10):
         for j in range(10):
@@ -625,7 +573,7 @@ def generate_complete_system():
             solar_panel = bpy.context.active_object
             solar_panel.name = f"光伏板_{i*10+j+1}"
             solar_panel.rotation_euler = (0.5236, 0, 0)  # 30度倾斜
-    
+
     # 6. 生成居民区
     for i in range(5):
         for j in range(5):
@@ -635,7 +583,7 @@ def generate_complete_system():
             building = bpy.context.active_object
             building.name = f"居民楼_{i*5+j+1}"
             building.scale = (1, 0.75, 1)
-    
+
     print("\n=== 完整综合能源系统场景已生成！ ===")
 
 
@@ -643,24 +591,53 @@ def generate_complete_system():
 # 启动选项
 # ======================
 if __name__ == "__main__":
-    # 创建几何节点生成器
+    print("=== 创建抽水蓄能电站几何节点生成器 ===")
+
     create_dam_generator()
+    print("✓ PSP_UpperDam - 上水库大坝生成器")
+
     create_reservoir_generator()
+    print("✓ PSP_ReservoirWater - 水库水体生成器")
+
     create_tunnel_generator()
+    print("✓ PSP_Tunnel - 隧洞生成器")
+
     create_underground_plant_generator()
+    print("✓ PSP_UndergroundPlant - 地下厂房生成器")
+
     create_turbine_generator()
+    print("✓ PSP_Turbine - 水轮发电机组生成器")
+
     create_thermal_plant_generator()
+    print("✓ PSP_ThermalPlant - 火力发电厂生成器")
+
     create_cooling_tower_generator()
+    print("✓ PSP_CoolingTower - 双曲线冷却塔生成器")
+
     create_chimney_generator()
+    print("✓ PSP_Chimney - 烟囱生成器")
+
     create_solar_panel_generator()
+    print("✓ PSP_SolarPanel - 光伏板阵列生成器")
+
     create_wind_turbine_generator()
+    print("✓ PSP_WindTurbine - 风电机组生成器")
+
     create_substation_generator()
+    print("✓ PSP_Substation - 变电站生成器")
+
     create_transmission_tower_generator()
+    print("✓ PSP_TransmissionTower - 输电铁塔生成器")
+
     create_residential_building_generator()
+    print("✓ PSP_ResidentialBuilding - 居民楼生成器")
+
     create_mountain_terrain_generator()
-    
-    print("=== 几何节点生成器创建完成 ===")
-    print("=== 正在一键生成完整综合能源系统场景 ===")
-    
+    print("✓ PSP_MountainTerrain - 山地地形生成器")
+
+    print("\n=== 所有生成器创建完成 ===")
+    print("切换到几何节点工作区，在「添加」→「组」中找到生成器节点")
+    print("\n=== 正在一键生成完整综合能源系统场景 ===")
+
     # 一键生成完整场景
     generate_complete_system()

@@ -36,15 +36,15 @@ def clear_scene():
     bpy.ops.object.delete(use_global=False)
 
     # 清空网格数据
-    for mesh in bpy.data.meshes:
+    for mesh in list(bpy.data.meshes):
         bpy.data.meshes.remove(mesh)
-    for mat in bpy.data.materials:
+    for mat in list(bpy.data.materials):
         bpy.data.materials.remove(mat)
-    for tex in bpy.data.textures:
+    for tex in list(bpy.data.textures):
         bpy.data.textures.remove(tex)
 
     # 清空旧几何节点组
-    for group in bpy.data.node_groups:
+    for group in list(bpy.data.node_groups):
         if group.name.startswith("PSP_"):
             bpy.data.node_groups.remove(group)
 
@@ -434,7 +434,7 @@ def create_all_geometry_node_generators():
 # 阶段 4: 相机设置
 # ============================================================
 def setup_camera():
-    for obj in bpy.data.objects:
+    for obj in list(bpy.data.objects):
         if obj.type == 'CAMERA':
             bpy.data.objects.remove(obj)
 
@@ -459,7 +459,7 @@ def setup_camera():
 # 阶段 5: 光照设置
 # ============================================================
 def setup_lighting():
-    for obj in bpy.data.objects:
+    for obj in list(bpy.data.objects):
         if obj.type == 'LIGHT':
             bpy.data.objects.remove(obj)
 

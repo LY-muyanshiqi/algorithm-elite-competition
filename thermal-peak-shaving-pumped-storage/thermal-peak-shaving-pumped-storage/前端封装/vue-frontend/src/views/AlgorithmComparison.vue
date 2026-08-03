@@ -221,12 +221,15 @@ function initConvChart() {
   convInstance = echarts.init(convChart.value)
 
   const gens = Array.from({ length: 31 }, (_, i) => i * 100)
+  const seed = 42
   const series = [
     { name: 'NSLDE', color: '#00d4ff', factor: 0.7 },
     { name: 'NSGA-II', color: '#ff9800', factor: 1.0 },
     { name: 'MOEA/D', color: '#e040fb', factor: 1.3 },
-  ].map(s => {
-    const data = gens.map((g, i) => [g, Math.exp(-(g / 1000)) * s.factor + Math.random() * 0.05])
+  ].map((s, si) => {
+    const data = gens.map((g, i) => [g, Math.exp(-(g / 1000)) * s.factor + ((Math.sin(i * 3.7 + si * 2.1 + seed) * 0.5 + 0.5) * 0.04)])
+    return { name: s.name, type: 'line', data, smooth: true, lineStyle: { color: s.color, width: 2 }, symbol: 'none' }
+  })
     return { name: s.name, type: 'line', data, smooth: true, lineStyle: { color: s.color, width: 2 }, symbol: 'none' }
   })
 

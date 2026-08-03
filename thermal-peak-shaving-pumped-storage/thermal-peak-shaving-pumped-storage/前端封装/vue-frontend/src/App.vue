@@ -47,22 +47,26 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from "vue";
+import { ref, onMounted, onBeforeUnmount } from "vue";
 import { useRouter } from "vue-router";
 import { checkHealth } from "./api";
 
 const router = useRouter();
 const routes = router.getRoutes().filter((r) => r.name);
 const apiOnline = ref(false);
+const _healthTimer = ref(null);
 
 onMounted(async () => {
   const health = await checkHealth();
   apiOnline.value = health.status === "ok";
-  // 定时检查
-  setInterval(async () => {
+  _healthTimer.value = setInterval(async () => {
     const h = await checkHealth();
     apiOnline.value = h.status === "ok";
   }, 30000);
+});
+
+onBeforeUnmount(() => {
+  if (_healthTimer.value) clearInterval(_healthTimer.value);
 });
 </script>
 

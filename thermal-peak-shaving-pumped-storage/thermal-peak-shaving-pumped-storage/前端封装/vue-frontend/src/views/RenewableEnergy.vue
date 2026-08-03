@@ -78,7 +78,7 @@
 </template>
 
 <script setup>
-import { ref, computed, watch, onMounted, nextTick } from "vue";
+import { ref, computed, watch, onMounted, onBeforeUnmount, nextTick } from "vue";
 import * as echarts from "echarts";
 import { fetchAllData } from "../api";
 
@@ -87,6 +87,9 @@ const allData = ref(null);
 const mainChartRef = ref(null);
 const monthChartRef = ref(null);
 const distChartRef = ref(null);
+const mainChart = ref(null);
+const monthChart = ref(null);
+const distChart = ref(null);
 
 const selectedSource = ref("all");
 const viewMode = ref("全年");
@@ -108,7 +111,7 @@ function getSourceData(key) {
 
 function initMainChart() {
   if (!mainChartRef.value || !allData.value) return;
-  const chart = echarts.init(mainChartRef.value);
+  mainChart.value = echarts.init(mainChartRef.value);
   const d = allData.value;
   let series = [];
   const colors = { wind: "#00c8ff", solar: "#ffb400", hydro: "#00ff88" };
@@ -142,7 +145,7 @@ function initMainChart() {
     ];
   }
 
-  chart.setOption({
+  mainChart.value.setOption({
     backgroundColor: "transparent",
     tooltip: { trigger: "axis" },
     legend: {
@@ -174,7 +177,7 @@ function initMainChart() {
 
 function initMonthChart() {
   if (!monthChartRef.value || !allData.value) return;
-  const chart = echarts.init(monthChartRef.value);
+  monthChart.value = echarts.init(monthChartRef.value);
   const d = allData.value;
   const daysInMonth = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
   const months = [];
@@ -196,7 +199,7 @@ function initMonthChart() {
     });
     start = end;
   }
-  chart.setOption({
+  monthChart.value.setOption({
     backgroundColor: "transparent",
     tooltip: { trigger: "axis" },
     legend: { data: ["风电", "光伏", "水电"], textStyle: { color: "#8ba4c4" } },
@@ -237,7 +240,7 @@ function initMonthChart() {
 
 function initDistChart() {
   if (!distChartRef.value || !allData.value) return;
-  const chart = echarts.init(distChartRef.value);
+  distChart.value = echarts.init(distChartRef.value);
   const d = allData.value;
   // 计算每个小时的平均值、最小值、最大值
   const hours = Array.from({ length: 24 }, (_, h) => `${h}:00`);
@@ -260,7 +263,7 @@ function initDistChart() {
   const solarStats = calcStats(d.solar);
   const hydroStats = calcStats(d.hydro);
 
-  chart.setOption({
+  distChart.value.setOption({
     backgroundColor: "transparent",
     tooltip: {
       trigger: "axis",
@@ -382,6 +385,13 @@ onMounted(async () => {
     console.error(e);
     loading.value = false;
   }
+});
+
+onBeforeUnmount(() => {
+  [mainChart, monthChart, distChart].forEach((ref) => {
+    ref.value?.dispose();
+    ref.value = null;
+  });
 });
 </script>
 
