@@ -230,8 +230,6 @@ function initConvChart() {
     const data = gens.map((g, i) => [g, Math.exp(-(g / 1000)) * s.factor + ((Math.sin(i * 3.7 + si * 2.1 + seed) * 0.5 + 0.5) * 0.04)])
     return { name: s.name, type: 'line', data, smooth: true, lineStyle: { color: s.color, width: 2 }, symbol: 'none' }
   })
-    return { name: s.name, type: 'line', data, smooth: true, lineStyle: { color: s.color, width: 2 }, symbol: 'none' }
-  })
 
   convInstance.setOption({
     tooltip: { trigger: 'axis' },
