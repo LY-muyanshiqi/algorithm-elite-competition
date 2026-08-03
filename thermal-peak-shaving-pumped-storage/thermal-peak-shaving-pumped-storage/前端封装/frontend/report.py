@@ -4,7 +4,7 @@
 """
 
 import datetime
-import html
+from html import escape as html_escape
 
 
 def generate_html_report(data, derived, params=None):
@@ -26,13 +26,13 @@ def generate_html_report(data, derived, params=None):
         ("总发电量", f"{ps['total_generation']:.2f} MWh"),
     ]
     for label, val in metrics:
-        rows += f"<tr><td>{html.escape(label)}</td><td>{html.escape(val)}</td></tr>"
+        rows += f"<tr><td>{html_escape(label)}</td><td>{html_escape(val)}</td></tr>"
 
     params_html = ""
     if params:
         params_html = "<h3>参数设置</h3><table>"
         for k, v in params.items():
-            params_html += f"<tr><td>{html.escape(str(k))}</td><td>{html.escape(str(v))}</td></tr>"
+            params_html += f"<tr><td>{html_escape(str(k))}</td><td>{html_escape(str(v))}</td></tr>"
         params_html += "</table>"
 
     html = f"""<!DOCTYPE html>
