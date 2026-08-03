@@ -190,7 +190,8 @@ const feedbackType = ref("success"); // 'success' | 'info'
 const simulatedNpRaw = ref(null); // (365,24) 或 null
 const simulatedNt = ref(null);
 const simulatedNt2 = ref(null);
-let simulateTimer = null; // 防抖定时器
+let simulateTimer = null;
+let feedbackTimer = null;
 
 // ==================== 计算属性 ====================
 
@@ -297,7 +298,8 @@ function initComparisonChart() {
 function showFeedback(msg, type = "success", duration = 2500) {
   feedbackMessage.value = msg;
   feedbackType.value = type;
-  setTimeout(() => {
+  clearTimeout(feedbackTimer);
+  feedbackTimer = setTimeout(() => {
     feedbackMessage.value = "";
   }, duration);
 }
@@ -399,6 +401,8 @@ watch(selectedDay, async () => {
 });
 
 onBeforeUnmount(() => {
+  clearTimeout(simulateTimer);
+  clearTimeout(feedbackTimer);
   comparisonChartInstance?.dispose();
   comparisonChartInstance = null;
 });
