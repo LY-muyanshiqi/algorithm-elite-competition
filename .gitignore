@@ -24,6 +24,10 @@ build/
 .mypy_cache/
 .ruff_cache/
 .venv/
+node_modules/
+
+# --- Vite ---
+.vite/
 
 # --- Jupyter ---
 .ipynb_checkpoints/
