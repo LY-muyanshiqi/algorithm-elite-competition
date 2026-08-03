@@ -8,14 +8,10 @@ import os
 
 _frontend_dir = os.path.join(os.path.dirname(__file__), "thermal-peak-shaving-pumped-storage", "thermal-peak-shaving-pumped-storage", "前端封装", "frontend")
 sys.path.insert(0, _frontend_dir)
+os.chdir(_frontend_dir)
 
-import streamlit as st
+# 读取 app.py 并用 streamlit 的 bootstrap 方式执行
+with open(os.path.join(_frontend_dir, "app.py"), encoding="utf-8") as f:
+    code = f.read()
 
-st.set_page_config(
-    page_title="抽水蓄能减碳效益优化核算系统",
-    page_icon="⚡",
-    layout="wide",
-    initial_sidebar_state="expanded",
-)
-
-import app as main_app
+exec(compile(code, os.path.join(_frontend_dir, "app.py"), "exec"))
