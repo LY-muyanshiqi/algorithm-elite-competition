@@ -11,6 +11,7 @@ import os
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from contextlib import asynccontextmanager
 
 # 确保 backend 包可被找到
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -22,6 +23,7 @@ app = FastAPI(
     title="抽水蓄能减碳效益优化 API",
     description="新型电力系统下抽水蓄能减碳效益优化核算系统 — 后端数据服务",
     version="1.0.0",
+    lifespan=startup_event,
 )
 
 # ==================== CORS 配置 ====================
@@ -41,10 +43,10 @@ app.add_middleware(
 )
 
 
-# ==================== 启动事件 ====================
+# ==================== 生命周期 ====================
 
-@app.on_event("startup")
-async def startup_event():
+@asynccontextmanager
+async def startup_event(app: FastAPI):
     """启动时预加载数据"""
     try:
         data_service.load_all()
@@ -52,6 +54,7 @@ async def startup_event():
     except Exception as e:
         print(f"[API] 数据加载失败: {e}")
         print("[API] 请确保 MATLAB 数据文件 (.mat, .txt) 存在于 前端封装/frontend/ 目录")
+    yield
 
 
 # ==================== 健康检查 ====================

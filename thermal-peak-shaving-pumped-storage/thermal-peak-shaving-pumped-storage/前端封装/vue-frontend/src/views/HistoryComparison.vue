@@ -89,7 +89,7 @@ import { fetchHistoryList, fetchHistoryRun } from '../api'
 const loading = ref(true)
 const runs = ref([])
 const selectedA = ref(0)
-const selectedB = ref(1)
+const selectedB = ref(runs.value.length > 1 ? 1 : 0)
 const dataA = ref(null)
 const dataB = ref(null)
 const dailyChart = ref(null)

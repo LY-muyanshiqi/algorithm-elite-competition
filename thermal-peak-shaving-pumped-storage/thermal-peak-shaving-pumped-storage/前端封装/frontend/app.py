@@ -112,7 +112,7 @@ def show_pareto_v2(data):
             cols = st.columns(3)
             for i, img_path in enumerate(season_images[idx]):
                 with cols[i]:
-                    st.image(img_path, caption=f"{season_labels[idx]} Pareto前沿 - 子图{i+1}", use_column_width=True)
+                    st.image(img_path, caption=f"{season_labels[idx]} Pareto前沿 - 子图{i+1}", use_container_width=True)
 
     st.markdown("---")
 

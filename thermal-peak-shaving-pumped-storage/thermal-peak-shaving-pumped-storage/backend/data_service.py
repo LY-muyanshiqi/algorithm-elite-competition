@@ -36,7 +36,7 @@ class NumpyEncoder:
     def _clean_val(v: Any, round_digits: int = 2) -> Any:
         """递归清理单个值（处理 inf/nan + 浮点数精度压缩）"""
         if isinstance(v, dict):
-            return {k: NumpyEncoder._clean_val(v, round_digits) for k, v in v.items()}
+            return {kk: NumpyEncoder._clean_val(vv, round_digits) for kk, vv in v.items()}
         if isinstance(v, list):
             return [NumpyEncoder._clean_val(x, round_digits) for x in v]
         if isinstance(v, float):

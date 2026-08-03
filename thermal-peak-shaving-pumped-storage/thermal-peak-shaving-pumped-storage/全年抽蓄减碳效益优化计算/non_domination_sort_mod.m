@@ -1,16 +1,16 @@
 
 function f = non_domination_sort_mod(x, M, V)
 
-%% function f = non_domination_sort_mod(x, M, V)  ·ÇÖ§ÅäÅÅĞò
-% This function sort the current popultion based on non-domination. All theÕâÖÖ¹¦ÄÜ¸ù¾İ·ÇÖ§ÅäĞÔ¶Ôµ±Ç°ÖÖÈº½øĞĞÅÅĞò¡£ 
-% individuals in the first front are given a rank of 1, the second front   ËùÓĞÔÚµÚÒ»µÈ¼¶µÄÈËÔ±¶¼»ñµÃÁË1¼¶µÄÅÅÃû£¬µÚ¶şÃûµÈ¼¶µÄ¸öÈË±»·ÖÅäÁË2¼¶£¬
-% individuals are assigned rank 2 and so on. After assigning the rank the  ÒÀ´ËÀàÍÆ¡£ ·ÖÅäÅÅÃûºó£¬¼ÆËãÃ¿¸öÇ°ÅÅÖĞµÄÓµ¼·¶È¡£
+%% function f = non_domination_sort_mod(x, M, V)  ï¿½ï¿½Ö§ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+% This function sort the current popultion based on non-domination. All theï¿½ï¿½ï¿½Ö¹ï¿½ï¿½Ü¸ï¿½ï¿½İ·ï¿½Ö§ï¿½ï¿½ï¿½Ô¶Ôµï¿½Ç°ï¿½ï¿½Èºï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ 
+% individuals in the first front are given a rank of 1, the second front   ï¿½ï¿½ï¿½ï¿½ï¿½Úµï¿½Ò»ï¿½È¼ï¿½ï¿½ï¿½ï¿½ï¿½Ô±ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½1ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ú¶ï¿½ï¿½ï¿½ï¿½È¼ï¿½ï¿½Ä¸ï¿½ï¿½Ë±ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½2ï¿½ï¿½ï¿½ï¿½
+% individuals are assigned rank 2 and so on. After assigning the rank the  ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Æ¡ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ó£¬¼ï¿½ï¿½ï¿½Ã¿ï¿½ï¿½Ç°ï¿½ï¿½ï¿½Ğµï¿½Óµï¿½ï¿½ï¿½È¡ï¿½
 % crowding in each front is calculated.
 
-[N, m] = size(x);  %size£º»ñÈ¡¾ØÕóµÄĞĞÊıºÍÁĞÊı
-clear m  %Çå³ım
+[N, m] = size(x);  %sizeï¿½ï¿½ï¿½ï¿½È¡ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+clear m  %ï¿½ï¿½ï¿½m
 
-% Initialize the front number to 1.  ³õÊ¼»¯Ç°¶ÎµÈ¼¶Îª1
+% Initialize the front number to 1.  ï¿½ï¿½Ê¼ï¿½ï¿½Ç°ï¿½ÎµÈ¼ï¿½Îª1
 front = 1;
 
 % There is nothing to this assignment, used only to manipulate easily in
@@ -18,59 +18,59 @@ front = 1;
 F(front).f = [];
 individual = [];
 
-%% Non-Dominated sort. ·ÇÖ§ÅäÅÅĞò
-% The initialized population is sorted based on non-domination. The fast   ³õÊ¼»¯µÄÖÖÈºÊÇ»ùÓÚ·ÇÖ§ÅäĞÔÅÅĞòµÄ¡£ ¿ìËÙÅÅĞòËã·¨[1]ÈçÏÂËùÊö
+%% Non-Dominated sort. ï¿½ï¿½Ö§ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+% The initialized population is sorted based on non-domination. The fast   ï¿½ï¿½Ê¼ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Èºï¿½Ç»ï¿½ï¿½Ú·ï¿½Ö§ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ä¡ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ã·¨[1]ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 % sort algorithm [1] is described as below for each
 
-% ?for each individual p in main population P do the following            ¶ÔÓÚÖ÷ÒªÖÖÈºPÖĞµÄÃ¿¸ö¸öÌåp£¬Ö´ĞĞÒÔÏÂ²Ù×÷
-%   ?Initialize Sp = []. This set would contain all the individuals that is  ³õÊ¼»¯Sp = []¡£ Õâ¸ö¼¯ºÏ½«°üº¬ËùÓĞÓÉpÖ÷µ¼µÄ¸öÌå¡£
+% ?for each individual p in main population P do the following            ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Òªï¿½ï¿½ÈºPï¿½Ğµï¿½Ã¿ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½pï¿½ï¿½Ö´ï¿½ï¿½ï¿½ï¿½ï¿½Â²ï¿½ï¿½ï¿½
+%   ?Initialize Sp = []. This set would contain all the individuals that is  ï¿½ï¿½Ê¼ï¿½ï¿½Sp = []ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ï½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½pï¿½ï¿½ï¿½ï¿½ï¿½Ä¸ï¿½ï¿½å¡£
 %     being dominated by p.
-%   ?Initialize np = 0. This would be the number of individuals that      ³õÊ¼»¯np = 0¡£Õâ½«ÊÇÖ÷µ¼pµÄ¸öÌåÊıÁ¿¡£
+%   ?Initialize np = 0. This would be the number of individuals that      ï¿½ï¿½Ê¼ï¿½ï¿½np = 0ï¿½ï¿½ï¿½â½«ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½pï¿½Ä¸ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 %   dominate p.
 %            
-%   ?for each individual q in P                                           ¶ÔÓÚPÖĞµÄÃ¿¸ö¸öÌåq
+%   ?for each individual q in P                                           ï¿½ï¿½ï¿½ï¿½Pï¿½Ğµï¿½Ã¿ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½q
 %       * if p dominated q then 
-%           ?add q to the set Sp i.e. Sp = Sp ? {q}                       Èç¹ûpÖ§Åäq£¬Ôò½«q¼Óµ½¼¯ºÏSp
-%       * else if q dominates p then                                        Èç¹ûqÖ§Åäp
-%           ?increment the domination counter for p i.e. np = np + 1      Ôö¼ÓpµÄÖ§ÅäÊı£¬¼´np = np + 1
-%   ?if np = 0 i.e. no individuals dominate p then p belongs to the first Èç¹ûnp = 0£¬ÔòÃ»ÓĞ¸öÌåÖ÷µ¼p£¬ÔòpÊôÓÚµÚÒ»µÈ¼¶; 
-%     front; Set rank of individual p to one i.e prank = 1. Update the first  ½«¸öÌåpµÄÅÅÃûÉèÖÃÎª1£¬¼´prank= 1.
-%     front set by adding p to front one i.e F1 = F1 ? {p}                 Í¨¹ı½«pÌí¼Óµ½Ç°Ò»¸ö¼¯ºÏ£¬¼´F1 = F1À´¸üĞÂµÚÒ»¸öÇ°¶Ë¼¯ºÏ¡£{P}
-% ?This is carried out for all the individuals in main population P.      ÕâÊÇÕë¶ÔÖ÷ÒªPÖÖÈºÖĞµÄËùÓĞ¸öÌå½øĞĞµÄ¡£
-% ?Initialize the front counter to one. i = 1                             ³õÊ¼»¯front counter to one¡£ i = 1
-% ?following is carried out while the ith front is nonempty i.e. Fi != [] ÔÚµÚi¸öÇ°ÃæÊÇ¿ÕµÄÊ±ºòÖ´ĞĞÒÔÏÂ²Ù×÷£¬¼´Fi£¡= [] Q = []¡£ 
-%   ?Q = []. The set for storing the individuals for (i + 1)th front.     ÓÃÓÚ´æ´¢£¨i + 1£©¸öµÄ¸öÌåµÄ¼¯ºÏ¡£
-%   ?for each individual p in front Fi                                    ¶ÔÓÚFiÇ°ÃæµÄÃ¿¸ö¸öÌåp
-%       * for each individual q in Sp (Sp is the set of individuals        ¶ÔÓÚSpÖĞµÄÃ¿¸ö¸öÌåq£¨SpÊÇÓÉpÖ§ÅäµÄÒ»×é¸öÌå£©
+%           ?add q to the set Sp i.e. Sp = Sp ? {q}                       ï¿½ï¿½ï¿½pÖ§ï¿½ï¿½qï¿½ï¿½ï¿½ï¿½qï¿½Óµï¿½ï¿½ï¿½ï¿½ï¿½Sp
+%       * else if q dominates p then                                        ï¿½ï¿½ï¿½qÖ§ï¿½ï¿½p
+%           ?increment the domination counter for p i.e. np = np + 1      ï¿½ï¿½ï¿½ï¿½pï¿½ï¿½Ö§ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½np = np + 1
+%   ?if np = 0 i.e. no individuals dominate p then p belongs to the first ï¿½ï¿½ï¿½np = 0ï¿½ï¿½ï¿½ï¿½Ã»ï¿½Ğ¸ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½pï¿½ï¿½ï¿½ï¿½pï¿½ï¿½ï¿½Úµï¿½Ò»ï¿½È¼ï¿½; 
+%     front; Set rank of individual p to one i.e prank = 1. Update the first  ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½pï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Îª1ï¿½ï¿½ï¿½ï¿½prank= 1.
+%     front set by adding p to front one i.e F1 = F1 ? {p}                 Í¨ï¿½ï¿½ï¿½ï¿½pï¿½ï¿½ï¿½Óµï¿½Ç°Ò»ï¿½ï¿½ï¿½ï¿½ï¿½Ï£ï¿½ï¿½ï¿½F1 = F1ï¿½ï¿½ï¿½ï¿½ï¿½Âµï¿½Ò»ï¿½ï¿½Ç°ï¿½Ë¼ï¿½ï¿½Ï¡ï¿½{P}
+% ?This is carried out for all the individuals in main population P.      ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ÒªPï¿½ï¿½Èºï¿½Ğµï¿½ï¿½ï¿½ï¿½Ğ¸ï¿½ï¿½ï¿½ï¿½ï¿½ĞµÄ¡ï¿½
+% ?Initialize the front counter to one. i = 1                             ï¿½ï¿½Ê¼ï¿½ï¿½front counter to oneï¿½ï¿½ i = 1
+% ?following is carried out while the ith front is nonempty i.e. Fi != [] ï¿½Úµï¿½iï¿½ï¿½Ç°ï¿½ï¿½ï¿½Ç¿Õµï¿½Ê±ï¿½ï¿½Ö´ï¿½ï¿½ï¿½ï¿½ï¿½Â²ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Fiï¿½ï¿½= [] Q = []ï¿½ï¿½ 
+%   ?Q = []. The set for storing the individuals for (i + 1)th front.     ï¿½ï¿½ï¿½Ú´æ´¢ï¿½ï¿½i + 1ï¿½ï¿½ï¿½ï¿½ï¿½Ä¸ï¿½ï¿½ï¿½Ä¼ï¿½ï¿½Ï¡ï¿½
+%   ?for each individual p in front Fi                                    ï¿½ï¿½ï¿½ï¿½FiÇ°ï¿½ï¿½ï¿½Ã¿ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½p
+%       * for each individual q in Sp (Sp is the set of individuals        ï¿½ï¿½ï¿½ï¿½Spï¿½Ğµï¿½Ã¿ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½qï¿½ï¿½Spï¿½ï¿½ï¿½ï¿½pÖ§ï¿½ï¿½ï¿½Ò»ï¿½ï¿½ï¿½ï¿½å£©
 %         dominated by p)
-%           ?nq = nq+1, decrement the domination count for individual q.   nq = nq+1£¬¼õÉÙ¸öÌåqµÄÖ§ÅäÊı
-%           ?if nq = 0 then none of the individuals in the subsequent     Èç¹ûnq = 0£¬ÄÇÃ´ÔÚºóÃæµÄÈÎºÎÒ»¸öÌå¶¼²»»áÖ§Åäq¡£
-%             fronts would dominate q. Hence set qrank = i + 1. Update      Òò´ËÉèÖÃqrank = i + 1¡£ ÓÃ¸öÌåq¸üĞÂ¼¯ºÏQ
-%             the set Q with individual q i.e. Q = Q ? q.                  ¼´£ºQ = Q ? q
-%   ?Increment the front counter by one.                                  ½«¸ß²ã´ÎÔö¼ÓÒ»¸ö
-%   ?Now the set Q is the next front and hence Fi = Q.                    ÏÖÔÚ¼¯ºÏQÊÇÏÂÒ»¸ö¸ßµÈ¼¶£¬Òò´ËFi = Q.
+%           ?nq = nq+1, decrement the domination count for individual q.   nq = nq+1ï¿½ï¿½ï¿½ï¿½ï¿½Ù¸ï¿½ï¿½ï¿½qï¿½ï¿½Ö§ï¿½ï¿½ï¿½ï¿½
+%           ?if nq = 0 then none of the individuals in the subsequent     ï¿½ï¿½ï¿½nq = 0ï¿½ï¿½ï¿½ï¿½Ã´ï¿½Úºï¿½ï¿½ï¿½ï¿½ï¿½Îºï¿½Ò»ï¿½ï¿½ï¿½å¶¼ï¿½ï¿½ï¿½ï¿½Ö§ï¿½ï¿½qï¿½ï¿½
+%             fronts would dominate q. Hence set qrank = i + 1. Update      ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½qrank = i + 1ï¿½ï¿½ ï¿½Ã¸ï¿½ï¿½ï¿½qï¿½ï¿½ï¿½Â¼ï¿½ï¿½ï¿½Q
+%             the set Q with individual q i.e. Q = Q ? q.                  ï¿½ï¿½ï¿½ï¿½Q = Q ? q
+%   ?Increment the front counter by one.                                  ï¿½ï¿½ï¿½ß²ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ò»ï¿½ï¿½
+%   ?Now the set Q is the next front and hence Fi = Q.                    ï¿½ï¿½ï¿½Ú¼ï¿½ï¿½ï¿½Qï¿½ï¿½ï¿½ï¿½Ò»ï¿½ï¿½ï¿½ßµÈ¼ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Fi = Q.
 %
-% This algorithm is better than the original NSGA ([2]) since it utilize   ¸ÃËã·¨±ÈÔ­À´µÄNSGA£¨[2]£©¸üºÃ£¬
-% the informatoion about the set that an individual dominate (Sp) and      ÒòÎªËüÀûÓÃ¹ØÓÚ¸öÌåÖ§Åä£¨Sp£©ºÍÖ§Åä¸öÌå£¨np£©µÄ¸öÌåÊıÁ¿µÄ¼¯ºÏµÄĞÅÏ¢£¬
+% This algorithm is better than the original NSGA ([2]) since it utilize   ï¿½ï¿½ï¿½ã·¨ï¿½ï¿½Ô­ï¿½ï¿½ï¿½ï¿½NSGAï¿½ï¿½[2]ï¿½ï¿½ï¿½ï¿½ï¿½Ã£ï¿½
+% the informatoion about the set that an individual dominate (Sp) and      ï¿½ï¿½Îªï¿½ï¿½ï¿½ï¿½ï¿½Ã¹ï¿½ï¿½Ú¸ï¿½ï¿½ï¿½Ö§ï¿½ä£¨Spï¿½ï¿½ï¿½ï¿½Ö§ï¿½ï¿½ï¿½ï¿½å£¨npï¿½ï¿½ï¿½Ä¸ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ä¼ï¿½ï¿½Ïµï¿½ï¿½ï¿½Ï¢ï¿½ï¿½
 % number of individuals that dominate the individual (np).
 
 %
-for i = 1 : N     %ÖÖÈºÑ­»·
-    % Number of individuals that dominate this individual   Ö§ÅäÕâ¸ö¸öÌåµÄ¸öÌåÊı
+for i = 1 : N     %ï¿½ï¿½ÈºÑ­ï¿½ï¿½
+    % Number of individuals that dominate this individual   Ö§ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ä¸ï¿½ï¿½ï¿½ï¿½ï¿½
     individual(i).n = 0;
-    % Individuals which this individual dominate            ±»Õâ¸ö¸öÌåÖ§ÅäµÄ¸öÌå
+    % Individuals which this individual dominate            ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ö§ï¿½ï¿½Ä¸ï¿½ï¿½ï¿½
     individual(i).p = [];
-    for j = 1 : N    %ÖÖÈºÑ­»·
+    for j = 1 : N    %ï¿½ï¿½ÈºÑ­ï¿½ï¿½
         dom_less = 0;
         dom_equal = 0;
         dom_more = 0;
-        for k = 1 : M   %Ä¿±êº¯ÊıÑ­»·
-            if (x(i,V + k) < x(j,V + k))  %Èç¹û¸öÌåiµÄkÄ¿±ê±ÈjºÃ
+        for k = 1 : M   %Ä¿ï¿½êº¯ï¿½ï¿½Ñ­ï¿½ï¿½
+            if (x(i,V + k) < x(j,V + k))  %ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½iï¿½ï¿½kÄ¿ï¿½ï¿½ï¿½jï¿½ï¿½
                 dom_less = dom_less + 1;
-            elseif (x(i,V + k) == x(j,V + k))   %Èç¹û¸öÌåiµÄkÄ¿±êºÍjÏàÍ¬
+            elseif abs(x(i,V + k) - x(j,V + k)) < 1e-9   %ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½iï¿½ï¿½kÄ¿ï¿½ï¿½ï¿½jï¿½ï¿½Í¬
                 dom_equal = dom_equal + 1;
             else
-                dom_more = dom_more + 1;    %Èç¹û¸öÌåiµÄkÄ¿±ê±Èj²î
+                dom_more = dom_more + 1;    %ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½iï¿½ï¿½kÄ¿ï¿½ï¿½ï¿½jï¿½ï¿½
             end
         end
         if dom_less == 0 && dom_equal ~= M
@@ -84,8 +84,8 @@ for i = 1 : N     %ÖÖÈºÑ­»·
         F(front).f = [F(front).f i];
     end
 end
-% Find the subsequent fronts  ÕÒµ½ºóĞøµÄ
-while ~isempty(F(front).f) % ·´ isempty £º½á¹ûÎª¿ÕÈ¡0 ²»Îª¿ÕÈ¡1
+% Find the subsequent fronts  ï¿½Òµï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+while ~isempty(F(front).f) % ï¿½ï¿½ isempty ï¿½ï¿½ï¿½ï¿½ï¿½Îªï¿½ï¿½È¡0 ï¿½ï¿½Îªï¿½ï¿½È¡1
    Q = [];
    for i = 1 : length(F(front).f)
        if ~isempty(individual(F(front).f(i)).p)

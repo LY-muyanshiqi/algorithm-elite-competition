@@ -274,10 +274,12 @@ onMounted(async () => {
       {
         icon: "🌿",
         label: "新能源占比",
-        value: (
-          ((d.total_wind + d.total_solar + d.total_hydro) / total) *
-          100
-        ).toFixed(1),
+        value: total
+          ? (
+              ((d.total_wind + d.total_solar + d.total_hydro) / total) *
+              100
+            ).toFixed(1)
+          : "0.0",
         unit: "%",
         color: "#00d4ff",
         bg: "rgba(0,212,255,0.15)",
