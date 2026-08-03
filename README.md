@@ -1,94 +1,81 @@
-# 新型电力系统下抽水蓄能减碳效益优化核算系统
+# 智蓄减碳
 
-基于 NSLDE 多目标优化算法的火电深度调峰与抽水蓄能协同调度系统，用于评估和优化电力系统的碳减排效益。
+> 第八届全球校园人工智能算法精英大赛 · 算法创新赛参赛项目
+>
+> 西安理工大学 | 赛道：AI+创新创业 | 赛制：校赛→省赛→总决赛
 
-[![Run Tests](https://github.com/LY-muyanshiqi/thermal-peak-shaving-pumped-storage/actions/workflows/test.yml/badge.svg)](https://github.com/LY-muyanshiqi/thermal-peak-shaving-pumped-storage/actions/workflows/test.yml)
+## 一句话说清楚
 
-## 项目结构
+在风电光伏大规模并网、火电机组被迫深度调峰的背景下，用 **NSLDE 多目标进化算法** 求解抽水蓄能调度方案——同时压低火电调峰深度和系统碳排放，这两个天然冲突的目标。
 
-```
-├── 全年抽蓄减碳效益优化计算/   # MATLAB 优化算法核心
-│   ├── main.m                  # 主程序入口
-│   ├── nslde.m                 # NSLDE 多目标优化算法
-│   ├── evaluate_objective.m    # 目标函数评估
-│   ├── process.m               # 抽蓄功率后处理
-│   └── *.txt                   # 输入数据 (365×24)
-│
-├── 前端封装/frontend/          # Python Streamlit 前端
-│   ├── app.py                  # 应用主入口
-│   ├── config.py               # 集中配置 (参数预设、页面定义)
-│   ├── data_loader.py          # 数据加载与计算
-│   ├── charts.py               # 图表绘制模块
-│   ├── report.py               # 综合报告导出
-│   ├── styles.py               # CSS 样式
-│   ├── v2_features/            # 高级功能 (可视化/分析)
-│   ├── static/images/          # 静态图片资源
-│   ├── requirements.txt        # Python 依赖
-│   └── test_data_loader.py     # 单元测试 (pytest)
-│
-├── 建模/                       # Blender 3D 场景建模
-├── .github/workflows/          # CI/CD
-│   ├── test.yml                # 自动测试
-│   └── deploy-frontend.yml     # GitHub Pages 部署
-└── README.md
-```
-
-## 主要功能
-
-- **多目标优化**：最小化火电调峰深度 & 最小化系统碳排放
-- **NSLDE 算法**：基于非支配排序的差分进化，含 Lévy 飞行扰动
-- **抽水蓄能调度**：365 天 × 24 小时精细调度策略可视化
-- **高级分析**：敏感性分析、情景模拟、决策建议、统计分析
-- **A/B 参数对比**：多方案并行计算与指标对比
-- **交互式图表**：Plotly 驱动的桑基图、Pareto 前沿、3D 可视化
-
-## 快速开始
-
-### 1. 运行 MATLAB 优化
-
-```matlab
-cd('全年抽蓄减碳效益优化计算')
-main
-```
-
-### 2. 启动 Python 前端
+## 跑起来
 
 ```bash
-cd 前端封装/frontend
+# MATLAB 核心（365天×24小时优化）
+cd thermal-peak-shaving-pumped-storage/thermal-peak-shaving-pumped-storage/全年抽蓄减碳效益优化计算
+main
+
+# Python 前端（8页交互可视化）
+cd thermal-peak-shaving-pumped-storage/thermal-peak-shaving-pumped-storage/前端封装/frontend
 pip install -r requirements.txt
 streamlit run app.py
 ```
 
-浏览器打开 http://localhost:8501
+浏览器打开 `localhost:8501`，调整装机容量 / 蓄能时长 / 抽发效率，即时看 Pareto 前沿移动。
 
-### 3. 运行测试
+## 这东西到底干了什么
 
-```bash
-cd 前端封装/frontend
-python -m pytest test_data_loader.py -v
+```
+风电出力 ─┐
+光伏出力 ─┤
+水电出力 ─┼──→ NSLDE优化引擎 ──→ 8760小时调度方案 ──→ 碳减排效益核算
+负荷曲线 ─┘        │
+                   ├── Pareto前沿（100组非支配解）
+                   ├── TOPSIS折中解（推荐方案）
+                   └── 8维度可视化报告
 ```
 
-## 部署
+一句话：**输入四省电网数据，输出"火电少调峰多少、碳减排多少"的最优答案。**
 
-- **Streamlit Cloud**：推送代码后自动部署
-- **GitHub Pages**：自动部署项目落地页 [访问](https://LY-muyanshiqi.github.io/thermal-peak-shaving-pumped-storage/)
-- **Dev Container**：支持 GitHub Codespaces 一键开发环境
+## 核心看点
 
-## 技术参数
+**算法层面** — 不是套壳 NSGA-II。在标准差分进化上叠加了三个机制：
 
-| 参数 | 默认值 |
-|------|--------|
-| 抽水蓄能装机容量 | 1400 MW |
-| 蓄能时长 | 4 h |
-| 抽发效率 | 75% |
-| Pareto 解数量 | 100 |
-| 碳排放系数 | 0.5 吨CO₂/万kWh |
-| 数据粒度 | 365天 × 24小时 = 8760点 |
+| 改进点 | 方法 | 解决的问题 |
+|--------|------|-----------|
+| 混沌初始化 | Logistic 映射 (μ=4) | 种群初始分布更均匀，避免早熟 |
+| Lévy 扰动 | Mantegna 算法 (β=1.5) | 跳出局部最优，保持全局搜索能力 |
+| 非支配排序 | 快速 NDS + 拥挤距离 | 保证 Pareto 前沿分布质量 |
 
-## 许可证
+**工程层面** — 不是纯 MATLAB 脚本：
 
-MIT License
+- 17 个 pytest 测试用例 + GitHub Actions CI（唯一有真测试的项目）
+- GitHub Pages 自动部署落地页
+- Dev Container 支持，克隆即用
+- Blender 3D 抽水蓄能电站建模
 
-## 更新日期
+**领域层面** — 不是参数玩具：
+- 真实区域电网数据：甘肃 / 青海 / 宁夏 / 四川，365天×24小时
+- 碳排放核算链完整：煤耗分档 → 碳氧化率 → CO₂分子量比
+- 深度调峰三档分类：常规 (>50%) / 中度 (30-50%) / 深度 (<30%)
 
-2026-05-18
+## 技术栈
+
+MATLAB · Python (Streamlit, NumPy, SciPy) · GitHub Actions · Blender · Docker
+
+## 目录
+
+```
+├── 参赛方案书、答辩大纲、任务清单等    ← 算法精英大赛申报材料
+├── thermal-peak-shaving-pumped-storage/
+│   └── thermal-peak-shaving-pumped-storage/
+│       ├── 全年抽蓄减碳效益优化计算/   ← MATLAB NSLDE 核心
+│       ├── 前端封装/frontend/          ← Streamlit 平台
+│       ├── 建模/                       ← Blender 3D 场景
+│       └── backend/                    ← FastAPI 后端
+└── backend/                            ← 外层后端服务（FastAPI）
+```
+
+## 许可
+
+MIT
