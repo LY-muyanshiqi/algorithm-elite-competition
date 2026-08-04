@@ -19,11 +19,26 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from backend.models import SimulateParams, HealthResponse
 from backend.data_service import data_service
 
+
+# ==================== 生命周期 ====================
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """启动时预加载数据"""
+    try:
+        data_service.load_all()
+        print(f"[API] 数据加载完成，可通过 http://localhost:8000/api/health 检查状态")
+    except Exception as e:
+        print(f"[API] 数据加载失败: {e}")
+        print("[API] 请确保 MATLAB 数据文件 (.mat, .txt) 存在于 前端封装/frontend/ 目录")
+    yield
+
+
 app = FastAPI(
     title="抽水蓄能减碳效益优化 API",
     description="新型电力系统下抽水蓄能减碳效益优化核算系统 — 后端数据服务",
     version="1.0.0",
-    lifespan=startup_event,
+    lifespan=lifespan,
 )
 
 # ==================== CORS 配置 ====================
@@ -41,20 +56,6 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
-
-# ==================== 生命周期 ====================
-
-@asynccontextmanager
-async def startup_event(app: FastAPI):
-    """启动时预加载数据"""
-    try:
-        data_service.load_all()
-        print(f"[API] 数据加载完成，可通过 http://localhost:8000/api/health 检查状态")
-    except Exception as e:
-        print(f"[API] 数据加载失败: {e}")
-        print("[API] 请确保 MATLAB 数据文件 (.mat, .txt) 存在于 前端封装/frontend/ 目录")
-    yield
 
 
 # ==================== 健康检查 ====================

@@ -1,5 +1,6 @@
 <template>
   <div class="renewable-page">
+    <ScreenHeader title="西北五省区新能源资源分析" subtitle="风电 · 光伏 · 水电 / 365天 × 24小时出力监测" status-label="新能源数据在线" />
     <div class="page-header">
       <h2>🌤️ 新能源数据</h2>
       <p class="page-desc">风电、光伏、水电 365天×24小时出力数据可视化</p>
@@ -20,6 +21,11 @@
           }}</span>
           <span class="mini-unit">{{ item.unit }}</span>
         </div>
+      </div>
+
+      <div class="section-card regional-map-card">
+        <h3>西北五省区新能源资源与调度节点分布</h3>
+        <MapFlow :intensity="1.15" />
       </div>
 
       <!-- 时间范围选择 -->
@@ -81,6 +87,8 @@
 import { ref, computed, watch, onMounted, onBeforeUnmount, nextTick } from "vue";
 import * as echarts from "echarts";
 import { fetchAllData } from "../api";
+import ScreenHeader from "../components/ScreenHeader.vue";
+import MapFlow from "../components/MapFlow.vue";
 
 const loading = ref(true);
 const allData = ref(null);
@@ -398,6 +406,9 @@ onBeforeUnmount(() => {
 <style scoped>
 .renewable-page {
   animation: fadeIn 0.3s ease;
+  min-height: 100vh;
+  padding: 10px;
+  background: radial-gradient(circle at 50% 10%, rgba(20,241,190,.08), transparent 34%), repeating-linear-gradient(0deg, rgba(86,217,255,.018) 0 1px, transparent 1px 30px), #020d15;
 }
 @keyframes fadeIn {
   from {
@@ -410,7 +421,7 @@ onBeforeUnmount(() => {
   }
 }
 .page-header {
-  margin-bottom: 24px;
+  display: none;
 }
 .page-header h2 {
   font-size: 1.5rem;
@@ -446,7 +457,7 @@ onBeforeUnmount(() => {
 .kpi-row {
   display: flex;
   gap: 16px;
-  margin-bottom: 20px;
+  margin: 10px 0;
   flex-wrap: wrap;
 }
 .mini-card {
@@ -459,7 +470,7 @@ onBeforeUnmount(() => {
     rgba(0, 150, 255, 0.03)
   );
   border: 1px solid var(--border-color);
-  border-radius: 10px;
+  border-radius: 2px;
   padding: 14px 18px;
   flex: 1;
   min-width: 160px;
@@ -487,8 +498,9 @@ onBeforeUnmount(() => {
     rgba(0, 150, 255, 0.03)
   );
   border: 1px solid var(--border-color);
-  border-radius: 12px;
-  margin-bottom: 20px;
+  border-radius: 2px;
+  margin-bottom: 10px;
+  border-color: rgba(20,241,190,.3);
 }
 .ctrl-group {
   display: flex;
@@ -516,9 +528,10 @@ onBeforeUnmount(() => {
     rgba(0, 150, 255, 0.03)
   );
   border: 1px solid var(--border-color);
-  border-radius: 12px;
+  border-radius: 2px;
   padding: 20px;
-  margin-bottom: 20px;
+  margin-bottom: 10px;
+  box-shadow: inset 0 0 28px rgba(20,241,190,.025);
 }
 .section-card h3 {
   font-size: 1rem;
@@ -533,6 +546,9 @@ onBeforeUnmount(() => {
   width: 100%;
   height: 320px;
 }
+.regional-map-card { height: 520px; padding: 0; overflow: hidden; }
+.regional-map-card h3 { position: absolute; z-index: 5; margin: 16px; padding-left: 10px; border-left: 3px solid var(--color-accent); }
+.regional-map-card { position: relative; }
 .row-2col {
   display: grid;
   grid-template-columns: 1fr 1fr;

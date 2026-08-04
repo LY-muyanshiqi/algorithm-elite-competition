@@ -1,5 +1,6 @@
 <template>
   <div class="algo-compare">
+    <ScreenHeader title="多目标优化算法对比中心" subtitle="NSLDE · NSGA-II · MOEA/D / Pareto前沿与收敛性能" status-label="算法实验在线" />
     <div class="page-header">
       <h2>⚔️ NSLDE vs NSGA-II vs MOEA/D 算法对比</h2>
       <p class="page-desc">在相同数据和约束条件下，三种多目标进化算法的 Pareto 前沿、性能指标和收敛速度对比</p>
@@ -104,6 +105,7 @@
 import { ref, computed, onMounted, onBeforeUnmount, nextTick, watch } from 'vue'
 import * as echarts from 'echarts'
 import { fetchAllData } from '../api'
+import ScreenHeader from '../components/ScreenHeader.vue'
 
 const loading = ref(true)
 const compData = ref(null)
@@ -308,6 +310,9 @@ function buildComparisonData(data) {
 <style scoped>
 .algo-compare {
   animation: fadeIn 0.3s ease;
+  min-height: 100vh;
+  padding: 10px;
+  background: radial-gradient(circle at 50% 7%, rgba(86,217,255,.08), transparent 34%), repeating-linear-gradient(90deg, rgba(20,241,190,.016) 0 1px, transparent 1px 32px), #020d15;
 }
 
 @keyframes fadeIn {
@@ -315,7 +320,7 @@ function buildComparisonData(data) {
   to { opacity: 1; transform: translateY(0); }
 }
 
-.page-header { margin-bottom: 24px; }
+.page-header { display: none; }
 .page-header h2 { font-size: 1.5rem; color: var(--accent); margin-bottom: 8px; }
 .page-desc { color: var(--text-secondary); font-size: 0.9rem; }
 
@@ -334,16 +339,16 @@ function buildComparisonData(data) {
   border-radius: 8px; padding: 10px 16px; margin-bottom: 20px; font-size: 0.9rem; color: #00ff88;
 }
 
-.kpi-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 24px; }
+.kpi-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin: 10px 0; }
 .kpi-card {
   background: linear-gradient(135deg, rgba(0,212,255,0.1), rgba(0,150,255,0.05));
-  border: 1px solid var(--border-color); border-radius: 12px; padding: 24px; text-align: center;
+  border: 1px solid rgba(20,241,190,.26); border-radius: 2px; padding: 18px; text-align: center;
 }
 .kpi-label { font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 12px; }
 .kpi-value { font-size: 2rem; font-weight: 700; margin-bottom: 4px; }
 .kpi-unit { font-size: 0.8rem; color: var(--text-secondary); }
 
-.tabs { display: flex; gap: 4px; margin-bottom: 20px; background: rgba(0,212,255,0.05); border-radius: 10px; padding: 4px; }
+.tabs { display: flex; gap: 4px; margin-bottom: 10px; background: rgba(0,212,255,0.05); border:1px solid rgba(20,241,190,.2); border-radius: 2px; padding: 4px; }
 .tab-btn {
   flex: 1; padding: 10px 16px; border: none; border-radius: 8px;
   background: transparent; color: var(--text-secondary); cursor: pointer;
@@ -352,7 +357,7 @@ function buildComparisonData(data) {
 .tab-btn:hover { background: rgba(0,212,255,0.1); color: var(--text-primary); }
 .tab-active { background: rgba(0,212,255,0.15); color: var(--accent); }
 
-.tab-content { min-height: 400px; }
+.tab-content { min-height: 400px; padding:10px; border:1px solid rgba(20,241,190,.22); background:linear-gradient(145deg,rgba(5,32,43,.82),rgba(2,16,25,.92)); }
 .chart-body { width: 100%; height: 450px; }
 
 .metrics-explain { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-top: 24px; }

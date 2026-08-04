@@ -1,5 +1,6 @@
 <template>
   <div class="carbon-page">
+    <ScreenHeader title="西北五省区碳减排监测中心" subtitle="抽水蓄能协同调峰 · 碳排趋势 · 减排贡献分析" status-label="碳监测在线" />
     <div class="page-header">
       <h2>💨 碳减排分析</h2>
       <p class="page-desc">抽水蓄能对火电调峰和碳排放的全年影响分析</p>
@@ -41,6 +42,11 @@
           </div>
           <div class="kpi-unit">亿 kWh</div>
         </div>
+      </div>
+
+      <div class="section-card regional-carbon-map">
+        <h3>西北五省区减排协同网络</h3>
+        <MapFlow :intensity="0.9" />
       </div>
 
       <!-- ===== 碳中和当量换算（Streamlit没有的新功能） ===== -->
@@ -125,6 +131,8 @@
 import { ref, computed, onMounted, onBeforeUnmount, nextTick } from "vue";
 import * as echarts from "echarts";
 import { fetchCarbonAnalysis } from "../api";
+import ScreenHeader from "../components/ScreenHeader.vue";
+import MapFlow from "../components/MapFlow.vue";
 
 const loading = ref(true);
 const data = ref(null);
@@ -339,6 +347,9 @@ onBeforeUnmount(() => {
 <style scoped>
 .carbon-page {
   animation: fadeIn 0.3s ease;
+  min-height: 100vh;
+  padding: 10px;
+  background: radial-gradient(circle at 50% 8%, rgba(20,241,190,.08), transparent 32%), repeating-linear-gradient(90deg, rgba(86,217,255,.015) 0 1px, transparent 1px 32px), #020d15;
 }
 @keyframes fadeIn {
   from {
@@ -351,7 +362,7 @@ onBeforeUnmount(() => {
   }
 }
 .page-header {
-  margin-bottom: 24px;
+  display: none;
 }
 .page-header h2 {
   font-size: 1.5rem;
@@ -388,7 +399,7 @@ onBeforeUnmount(() => {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
   gap: 16px;
-  margin-bottom: 24px;
+  margin: 10px 0;
 }
 .kpi-card {
   background: linear-gradient(
@@ -397,7 +408,7 @@ onBeforeUnmount(() => {
     rgba(0, 150, 255, 0.03)
   );
   border: 1px solid var(--border-color);
-  border-radius: 12px;
+  border-radius: 2px;
   padding: 20px;
 }
 .kpi-card.big {
@@ -431,9 +442,11 @@ onBeforeUnmount(() => {
     rgba(0, 150, 255, 0.03)
   );
   border: 1px solid var(--border-color);
-  border-radius: 12px;
+  border-radius: 2px;
   padding: 20px;
-  margin-bottom: 20px;
+  margin-bottom: 10px;
+  border-color: rgba(20,241,190,.24);
+  box-shadow: inset 0 0 30px rgba(20,241,190,.025);
 }
 .section-card h3 {
   font-size: 1rem;
@@ -473,7 +486,7 @@ onBeforeUnmount(() => {
     rgba(255, 255, 255, 0.01)
   );
   border: 1px solid;
-  border-radius: 14px;
+  border-radius: 2px;
   transition: all 0.3s;
 }
 .equiv-item:hover {
@@ -513,4 +526,6 @@ onBeforeUnmount(() => {
   font-size: 0.85rem;
   margin-bottom: 16px;
 }
+.regional-carbon-map { position: relative; height: 500px; padding: 0; overflow: hidden; }
+.regional-carbon-map h3 { position: absolute; z-index: 5; margin: 16px; padding-left: 10px; border-left: 3px solid var(--color-accent); }
 </style>

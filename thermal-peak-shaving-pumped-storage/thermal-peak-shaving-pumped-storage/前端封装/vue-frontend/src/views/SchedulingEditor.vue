@@ -1,5 +1,6 @@
 <template>
   <div class="scheduling-editor">
+    <ScreenHeader title="抽水蓄能智能调度控制中心" subtitle="西北电网 · 日内调度 · 曲线拖拽 · 碳减排反馈" status-label="调度引擎在线" />
     <!-- 页面标题 -->
     <div class="page-header">
       <h2>🏭 抽水蓄能调度编辑器</h2>
@@ -159,6 +160,7 @@ import {
 } from "vue";
 import * as echarts from "echarts";
 import DragChart from "../components/DragChart.vue";
+import ScreenHeader from "../components/ScreenHeader.vue";
 import { fetchAllData, fetchNpump, fetchCarbon, simulate } from "../api";
 
 // ==================== 状态 ====================
@@ -411,6 +413,9 @@ onBeforeUnmount(() => {
 <style scoped>
 .scheduling-editor {
   animation: fadeIn 0.3s ease;
+  min-height: 100vh;
+  padding: 10px;
+  background: radial-gradient(circle at 50% 8%, rgba(20,241,190,.07), transparent 30%), repeating-linear-gradient(0deg, rgba(86,217,255,.018) 0 1px, transparent 1px 30px), #020d15;
 }
 
 @keyframes fadeIn {
@@ -425,7 +430,7 @@ onBeforeUnmount(() => {
 }
 
 .page-header {
-  margin-bottom: 24px;
+  display: none;
 }
 
 .page-header h2 {
@@ -450,8 +455,9 @@ onBeforeUnmount(() => {
     rgba(0, 150, 255, 0.03)
   );
   border: 1px solid var(--border-color);
-  border-radius: 12px;
-  margin-bottom: 20px;
+  border-radius: 2px;
+  margin: 10px 0;
+  border-color: rgba(20,241,190,.3);
 }
 
 .control-group {
@@ -541,7 +547,7 @@ onBeforeUnmount(() => {
     rgba(0, 150, 255, 0.05)
   );
   border: 1px solid var(--border-color);
-  border-radius: 12px;
+  border-radius: 2px;
   padding: 20px;
   transition: all 0.3s;
 }
@@ -587,7 +593,8 @@ onBeforeUnmount(() => {
     rgba(0, 150, 255, 0.02)
   );
   border: 1px solid var(--border-color);
-  border-radius: 12px;
+  border-radius: 2px;
+  border-color: rgba(20,241,190,.28);
   margin-bottom: 16px;
 }
 

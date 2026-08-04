@@ -14,19 +14,19 @@ const routes = [
   { path: '/scheduling',
     name: 'Scheduling',
     component: SchedulingEditor,
-    meta: { title: '抽水蓄能调度编辑器', navTitle: '调度编辑', icon: '🏭', order: 2 },
+    meta: { title: '抽水蓄能调度编辑器', navTitle: '调度编辑', icon: '🏭', order: 2, fullScreen: true },
   },
 
   { path: '/renewable',
     name: 'Renewable',
     component: () => import('../views/RenewableEnergy.vue'),
-    meta: { title: '新能源数据', navTitle: '新能源', icon: '🌤️', order: 3 },
+    meta: { title: '新能源数据', navTitle: '新能源', icon: '🌤️', order: 3, fullScreen: true },
   },
 
   { path: '/carbon',
     name: 'Carbon',
     component: () => import('../views/CarbonAnalysis.vue'),
-    meta: { title: '碳减排分析', navTitle: '碳分析', icon: '💨', order: 4 },
+    meta: { title: '碳减排分析', navTitle: '碳分析', icon: '💨', order: 4, fullScreen: true },
   },
 
   { path: '/simulation',
@@ -50,7 +50,7 @@ const routes = [
   { path: '/algorithm-compare',
     name: 'AlgorithmCompare',
     component: () => import('../views/AlgorithmComparison.vue'),
-    meta: { title: '算法对比', navTitle: '算法对比', icon: '⚔️', order: 6 },
+    meta: { title: '算法对比', navTitle: '算法对比', icon: '⚔️', order: 6, fullScreen: true },
   },
 
   { path: '/history',

@@ -1,7 +1,7 @@
 <template>
   <div class="dashboard-screen">
     <LoadingOverlay v-if="loading" />
-    <ScreenHeader title="零碳虚拟电厂智能调度系统" subtitle="广东区域 · 新能源消纳与抽水蓄能协同优化" :status="usingDemoData ? 'warning' : 'online'" :status-label="usingDemoData ? '演示数据模式' : '实时调度在线'" />
+    <ScreenHeader title="西北零碳虚拟电厂智能调度系统" subtitle="陕西 · 甘肃 · 青海 · 宁夏 · 新疆 / 新能源消纳与抽水蓄能协同优化" :status="usingDemoData ? 'warning' : 'online'" :status-label="usingDemoData ? '演示数据模式' : '实时调度在线'" />
 
     <div v-if="errorMessage" class="data-warning">{{ errorMessage }}<button type="button" @click="loadDashboard">重新连接</button></div>
 
@@ -16,7 +16,7 @@
 
       <div class="center-column">
         <TechPanel body-class="map-panel">
-          <div class="map-caption"><span>广东省能源协同网络</span><small>ENERGY COORDINATION NETWORK</small></div>
+          <div class="map-caption"><span>西北五省区能源协同网络</span><small>NORTHWEST ENERGY COORDINATION NETWORK</small></div>
           <MapFlow :intensity="flowIntensity" />
           <div class="map-legend"><span><i class="legend-dot"></i>抽蓄电站</span><span><i class="legend-dot legend-dot--cyan"></i>负荷中心</span><span><i class="legend-line"></i>实时能量流</span></div>
         </TechPanel>
