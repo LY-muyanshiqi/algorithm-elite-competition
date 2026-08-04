@@ -63,6 +63,7 @@ desktop.ini
 *.pdf
 
 # --- 生成的临时文件 ---
+tmp/
 *.log
 doc_images/
 doc_images_user/
@@ -76,6 +77,7 @@ Copy_of_*.m
 .claude/
 
 # --- 前端构建产物 ---
+node_modules/
 前端封装/frontend/用户手册_*.html
 前端封装/frontend/用户手册_*.pdf
 前端封装/frontend/用户手册_*.docx

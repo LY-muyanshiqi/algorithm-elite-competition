@@ -1,45 +1,50 @@
 <template>
-  <div class="app-container">
-    <!-- 顶部导航栏 -->
-    <header class="app-header">
-      <div class="header-left">
-        <span class="logo">⚡</span>
-        <h1 class="title">抽水蓄能减碳效益优化系统</h1>
-      </div>
-      <nav class="header-nav">
+  <div class="app-shell">
+    <div v-if="runtimeError" class="global-error" role="alert">
+      <span>页面运行异常：{{ runtimeError }}</span>
+      <button type="button" @click="reloadPage">重新加载</button>
+    </div>
+
+    <header v-if="!isFullScreen" class="app-header">
+      <router-link to="/dashboard" class="brand" aria-label="返回系统总览">
+        <span class="brand-mark">⚡</span>
+        <span>
+          <strong>智蓄减碳</strong>
+          <small>NSLDE · PUMPED STORAGE</small>
+        </span>
+      </router-link>
+
+      <nav class="main-nav" aria-label="主导航">
         <router-link
-          v-for="route in routes"
+          v-for="route in primaryRoutes"
           :key="route.path"
           :to="route.path"
           class="nav-link"
           active-class="nav-link--active"
         >
-          <span class="nav-icon">{{ route.meta.icon }}</span>
-          <span class="nav-text">{{
-            route.meta.navTitle || route.meta.title
-          }}</span>
+          {{ route.meta.navTitle || route.meta.title }}
         </router-link>
         <a
           href="http://localhost:8501"
-          class="nav-link nav-link--back"
+          class="nav-link nav-link--streamlit"
           target="_blank"
-          title="返回 Streamlit 仪表盘"
+          rel="noopener noreferrer"
+          title="打开 Streamlit 调试仪表盘"
         >
-          <span class="nav-icon">📊</span>
-          <span class="nav-text">返回仪表盘</span>
+          Streamlit 仪表盘
         </a>
       </nav>
-      <div class="header-right">
-        <span
-          class="api-status"
-          :class="apiOnline ? 'status-online' : 'status-offline'"
-        >
-          {{ apiOnline ? "API 已连接" : "API 断开" }}
-        </span>
-      </div>
+
+      <StatusIndicator
+        :status="apiOnline ? 'online' : 'offline'"
+        :label="apiOnline ? '数据服务在线' : '数据服务离线'"
+      />
     </header>
 
-    <!-- 主内容 -->
+    <div v-if="!isFullScreen && !apiOnline" class="offline-banner">
+      FastAPI 暂未连接，页面将显示演示数据；启动后端后会自动恢复实时数据。
+    </div>
+
     <main class="app-main">
       <router-view />
     </main>
@@ -47,191 +52,190 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onBeforeUnmount } from "vue";
-import { useRouter } from "vue-router";
-import { checkHealth } from "./api";
+import { computed, onBeforeUnmount, onErrorCaptured, onMounted, ref } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+import { checkHealth } from './api'
+import StatusIndicator from './components/StatusIndicator.vue'
 
-const router = useRouter();
-const routes = router.getRoutes().filter((r) => r.name);
-const apiOnline = ref(false);
-const _healthTimer = ref(null);
+const router = useRouter()
+const route = useRoute()
+const apiOnline = ref(false)
+const runtimeError = ref('')
+const isFullScreen = computed(() => route.meta.fullScreen === true)
+let healthTimer
 
-onMounted(async () => {
-  const health = await checkHealth();
-  apiOnline.value = health.status === "ok";
-  _healthTimer.value = setInterval(async () => {
-    const h = await checkHealth();
-    apiOnline.value = h.status === "ok";
-  }, 30000);
-});
+const primaryRoutes = computed(() =>
+  router
+    .getRoutes()
+    .filter((route) => route.name && route.meta?.primary !== false)
+    .sort((a, b) => (a.meta.order ?? 99) - (b.meta.order ?? 99)),
+)
 
-onBeforeUnmount(() => {
-  if (_healthTimer.value) clearInterval(_healthTimer.value);
-});
+async function refreshHealth() {
+  const health = await checkHealth()
+  apiOnline.value = health.status === 'ok'
+}
+
+function reloadPage() {
+  window.location.reload()
+}
+
+onErrorCaptured((error) => {
+  runtimeError.value = error?.message || '未知错误'
+  return false
+})
+
+onMounted(() => {
+  refreshHealth()
+  healthTimer = window.setInterval(refreshHealth, 30000)
+})
+
+onBeforeUnmount(() => window.clearInterval(healthTimer))
 </script>
 
 <style>
-/* ========== 全局样式（深色科技风） ========== */
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
-}
+@import './styles/theme.css';
 
-:root {
-  --bg-primary: #0a1628;
-  --bg-secondary: #0d1f3c;
-  --bg-card: rgba(0, 212, 255, 0.08);
-  --border-color: rgba(0, 212, 255, 0.25);
-  --text-primary: #e0e6ed;
-  --text-secondary: #8ba4c4;
-  --accent: #00d4ff;
-  --accent2: #00ff88;
-  --danger: #ff6b6b;
-  --warning: #ffcc00;
-}
-
-body {
-  font-family:
-    "Microsoft YaHei",
-    -apple-system,
-    sans-serif;
-  background: var(--bg-primary);
-  color: var(--text-primary);
+.app-shell {
   min-height: 100vh;
+  background: var(--color-bg);
 }
 
-.app-container {
-  display: flex;
-  flex-direction: column;
-  min-height: 100vh;
-}
-
-/* ========== 顶部导航 ========== */
 .app-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 10px 24px;
-  background: linear-gradient(
-    135deg,
-    rgba(0, 212, 255, 0.1),
-    rgba(0, 150, 255, 0.05)
-  );
-  border-bottom: 1px solid var(--border-color);
-  backdrop-filter: blur(10px);
   position: sticky;
   top: 0;
   z-index: 100;
-  flex-wrap: nowrap;
+  min-height: 62px;
+  display: grid;
+  grid-template-columns: minmax(230px, 1fr) auto minmax(190px, 1fr);
+  align-items: center;
+  gap: 20px;
+  padding: 8px clamp(16px, 2vw, 36px);
+  background: rgba(3, 20, 31, 0.94);
+  border-bottom: 1px solid var(--color-border-strong);
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.28);
+  backdrop-filter: blur(16px);
 }
 
-.header-left {
+.brand {
   display: flex;
   align-items: center;
-  gap: 10px;
-  flex-shrink: 0;
+  gap: 12px;
+  color: var(--color-text);
+  text-decoration: none;
 }
 
-.logo {
-  font-size: 1.4rem;
-  line-height: 1;
+.brand-mark {
+  width: 38px;
+  height: 38px;
+  display: grid;
+  place-items: center;
+  color: var(--color-accent);
+  border: 1px solid var(--color-border-strong);
+  border-radius: 10px;
+  background: rgba(20, 241, 190, 0.08);
 }
 
-.title {
-  font-size: 1rem;
-  font-weight: 700;
-  letter-spacing: 1px;
-  white-space: nowrap;
-  background: linear-gradient(90deg, var(--accent), #0096ff);
-  -webkit-background-clip: text;
-  background-clip: text;
-  -webkit-text-fill-color: transparent;
+.brand strong,
+.brand small {
+  display: block;
 }
 
-.header-nav {
+.brand strong {
+  font-size: 17px;
+  letter-spacing: 0.16em;
+}
+
+.brand small {
+  margin-top: 2px;
+  color: var(--color-muted);
+  font-size: 9px;
+  letter-spacing: 0.12em;
+}
+
+.main-nav {
   display: flex;
-  gap: 4px;
-  align-items: center;
-  flex: 1;
   justify-content: center;
-  padding: 0 16px;
-  min-width: 0;
+  gap: 4px;
 }
 
 .nav-link {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  padding: 7px 14px;
-  border-radius: 8px;
-  color: var(--text-secondary);
+  padding: 8px 11px;
+  color: var(--color-muted);
+  border-bottom: 2px solid transparent;
   text-decoration: none;
-  font-size: 0.85rem;
-  font-weight: 500;
-  letter-spacing: 0.5px;
-  transition: all 0.2s;
-  border: 1px solid transparent;
+  font-size: 13px;
   white-space: nowrap;
+  transition: 180ms ease;
 }
 
-.nav-link:hover {
-  background: rgba(0, 212, 255, 0.1);
-  color: var(--text-primary);
-}
-
+.nav-link:hover,
 .nav-link--active {
-  background: rgba(0, 212, 255, 0.15);
-  color: var(--accent);
-  border-color: rgba(0, 212, 255, 0.3);
+  color: var(--color-accent);
+  border-bottom-color: var(--color-accent);
+  background: linear-gradient(180deg, transparent, rgba(20, 241, 190, 0.08));
 }
 
-.nav-link--back {
-  flex-shrink: 0;
-  margin-left: 8px;
-  border-color: rgba(255, 255, 255, 0.1);
-  font-size: 0.8rem;
-  padding: 7px 12px;
+.nav-link--streamlit {
+  margin-left: 6px;
+  color: var(--color-cyan);
+  border: 1px solid rgba(86, 217, 255, 0.2);
+  border-radius: 3px;
 }
 
-.nav-icon {
-  font-size: 1rem;
-  line-height: 1;
+.nav-link--streamlit:hover {
+  color: #d9f8ff;
+  border-color: rgba(86, 217, 255, 0.55);
+  background: rgba(86, 217, 255, 0.1);
 }
 
-.nav-text {
-  font-size: 0.85rem;
+.app-header > :last-child {
+  justify-self: end;
 }
 
-.header-right {
-  display: flex;
-  align-items: center;
+.offline-banner,
+.global-error {
+  padding: 8px 24px;
+  text-align: center;
+  font-size: 12px;
 }
 
-.api-status {
-  font-size: 0.75rem;
-  padding: 4px 12px;
-  border-radius: 12px;
+.offline-banner {
+  color: #ffd27a;
+  background: rgba(255, 170, 44, 0.12);
+  border-bottom: 1px solid rgba(255, 170, 44, 0.25);
 }
 
-.status-online {
-  background: rgba(0, 255, 136, 0.15);
-  color: var(--accent2);
-  border: 1px solid rgba(0, 255, 136, 0.3);
+.global-error {
+  position: relative;
+  z-index: 200;
+  color: #ffd3d3;
+  background: #501c27;
 }
 
-.status-offline {
-  background: rgba(255, 107, 107, 0.15);
-  color: var(--danger);
-  border: 1px solid rgba(255, 107, 107, 0.3);
+.global-error button {
+  margin-left: 12px;
+  color: white;
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  border-radius: 4px;
+  background: transparent;
+  cursor: pointer;
 }
 
-/* ========== 主内容 ========== */
 .app-main {
-  flex: 1;
-  padding: 24px;
-  max-width: 1400px;
-  margin: 0 auto;
-  width: 100%;
+  min-height: calc(100vh - 62px);
+}
+
+@media (max-width: 1180px) {
+  .app-header {
+    grid-template-columns: 1fr auto;
+  }
+
+  .main-nav {
+    grid-column: 1 / -1;
+    justify-content: flex-start;
+    overflow-x: auto;
+    order: 3;
+  }
 }
 </style>

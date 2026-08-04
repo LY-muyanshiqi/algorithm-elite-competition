@@ -1,549 +1,157 @@
 <template>
-  <div class="dashboard">
-    <div class="page-header">
-      <h2>📊 系统总览</h2>
-      <p class="page-desc">
-        基于 NSLDE 多目标优化算法的火电深度调峰与抽水蓄能协同调度系统关键指标
-      </p>
-    </div>
+  <div class="dashboard-screen">
+    <LoadingOverlay v-if="loading" />
+    <ScreenHeader title="零碳虚拟电厂智能调度系统" subtitle="广东区域 · 新能源消纳与抽水蓄能协同优化" :status="usingDemoData ? 'warning' : 'online'" :status-label="usingDemoData ? '演示数据模式' : '实时调度在线'" />
 
-    <!-- 加载中 -->
-    <div v-if="loading" class="loading-state">
-      <div class="spinner"></div>
-      <p>加载数据中...</p>
-    </div>
+    <div v-if="errorMessage" class="data-warning">{{ errorMessage }}<button type="button" @click="loadDashboard">重新连接</button></div>
 
-    <template v-if="!loading">
-      <!-- KPI 卡片 -->
-      <div class="kpi-grid">
-        <div class="kpi-card" v-for="kpi in kpiList" :key="kpi.label">
-          <div class="kpi-icon" :style="{ background: kpi.bg }">
-            {{ kpi.icon }}
-          </div>
-          <div class="kpi-body">
-            <div class="kpi-label">{{ kpi.label }}</div>
-            <div class="kpi-value" :style="{ color: kpi.color }">
-              {{ kpi.value }}
-            </div>
-            <div class="kpi-unit">{{ kpi.unit }}</div>
-          </div>
+    <section class="dashboard-grid">
+      <div class="left-column">
+        <TechPanel title="实时碳排放" english="REAL-TIME CARBON">
+          <div class="carbon-gauge"><div ref="carbonGaugeRef" class="chart chart--gauge"></div><dl><div><dt>当前减排</dt><dd>{{ metrics.carbonReduction }} 万吨</dd></div><div><dt>剩余碳配额</dt><dd>{{ metrics.carbonQuota }} tCO₂</dd></div></dl></div>
+        </TechPanel>
+        <TechPanel title="碳排放趋势" english="CARBON TREND"><div ref="carbonTrendRef" class="chart"></div></TechPanel>
+        <TechPanel title="减排贡献" english="CARBON REDUCTION"><div ref="contributionRef" class="chart"></div></TechPanel>
+      </div>
+
+      <div class="center-column">
+        <TechPanel body-class="map-panel">
+          <div class="map-caption"><span>广东省能源协同网络</span><small>ENERGY COORDINATION NETWORK</small></div>
+          <MapFlow :intensity="flowIntensity" />
+          <div class="map-legend"><span><i class="legend-dot"></i>抽蓄电站</span><span><i class="legend-dot legend-dot--cyan"></i>负荷中心</span><span><i class="legend-line"></i>实时能量流</span></div>
+        </TechPanel>
+        <div class="kpi-strip">
+          <KpiCard label="今日碳减排" :value="metrics.todayCarbon" unit="tCO₂" trend="↓ 3.2%" />
+          <KpiCard label="绿电消纳率" :value="metrics.renewableRate" unit="%" trend="↑ 1.8%" tone="cyan" />
+          <KpiCard label="虚拟电厂收益" :value="metrics.revenue" unit="万元" trend="↑ 5.6%" />
+          <KpiCard label="剩余碳配额" :value="metrics.carbonQuota" unit="tCO₂" trend="↓ 12.4%" tone="warning" />
+          <KpiCard label="抽发综合效率" :value="metrics.efficiency" unit="%" tone="cyan" />
         </div>
       </div>
 
-      <!-- 发电构成 -->
-      <div class="section-card">
-        <h3>⚡ 年度发电量构成</h3>
-        <div ref="pieChartRef" class="chart-lg"></div>
+      <div class="right-column">
+        <TechPanel title="实时电力负荷" english="REAL-TIME LOAD"><div ref="loadBarRef" class="chart"></div></TechPanel>
+        <TechPanel title="负荷预测曲线" english="LOAD FORECAST"><div ref="forecastRef" class="chart"></div></TechPanel>
+        <TechPanel title="分时电价调度建议" english="TOU PRICING">
+          <div class="dispatch-table-wrap"><table class="dispatch-table"><thead><tr><th>时段</th><th>时间范围</th><th>电价</th><th>调度建议</th></tr></thead><tbody><tr v-for="item in dispatchAdvice" :key="item.period"><td>{{ item.period }}</td><td>{{ item.time }}</td><td>{{ item.price }}</td><td>{{ item.action }}</td></tr></tbody></table></div>
+        </TechPanel>
       </div>
-
-      <!-- 年排放 vs 逐日 -->
-      <div class="row-2col">
-        <div class="section-card">
-          <h3>📈 有/无抽蓄火电负荷对比</h3>
-          <div ref="thermalChartRef" class="chart-md"></div>
-        </div>
-        <div class="section-card">
-          <h3>📆 每日碳减排量</h3>
-          <div ref="dailyCarbonChartRef" class="chart-md"></div>
-        </div>
-      </div>
-
-      <!-- 抽蓄调度概览 -->
-      <div class="section-card">
-        <h3>🏭 抽水蓄能调度统计</h3>
-        <div class="ps-stats">
-          <div class="stat-bar">
-            <span class="stat-label">发电</span>
-            <div class="bar-track">
-              <div
-                class="bar-fill bar-gen"
-                :style="{ width: psPct + '%' }"
-              ></div>
-            </div>
-            <span class="stat-num">{{ psStats.generating_hours }}h</span>
-          </div>
-          <div class="stat-bar">
-            <span class="stat-label">抽水</span>
-            <div class="bar-track">
-              <div
-                class="bar-fill bar-pump"
-                :style="{ width: pumpPct + '%' }"
-              ></div>
-            </div>
-            <span class="stat-num">{{ psStats.pumping_hours }}h</span>
-          </div>
-          <div class="stat-bar">
-            <span class="stat-label">停机</span>
-            <div class="bar-track">
-              <div
-                class="bar-fill bar-idle"
-                :style="{ width: idlePct + '%' }"
-              ></div>
-            </div>
-            <span class="stat-num">{{ psStats.idle_hours }}h</span>
-          </div>
-          <div class="ps-meta">
-            <span
-              >总发电量:
-              <strong>{{
-                (psStats.total_generation / 10000).toFixed(1)
-              }}</strong>
-              万MWh</span
-            >
-            <span
-              >总抽水耗电:
-              <strong>{{ (psStats.total_pumping / 10000).toFixed(1) }}</strong>
-              万MWh</span
-            >
-            <span
-              >综合效率:
-              <strong>{{ psStats.efficiency.toFixed(1) }}%</strong></span
-            >
-          </div>
-        </div>
-      </div>
-    </template>
+    </section>
   </div>
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onBeforeUnmount, nextTick } from "vue";
-import * as echarts from "echarts";
-import { fetchDashboard } from "../api";
+import { computed, nextTick, onBeforeUnmount, onMounted, reactive, ref } from 'vue'
+import * as echarts from 'echarts'
+import { fetchDashboard } from '../api'
+import KpiCard from '../components/KpiCard.vue'
+import LoadingOverlay from '../components/LoadingOverlay.vue'
+import MapFlow from '../components/MapFlow.vue'
+import ScreenHeader from '../components/ScreenHeader.vue'
+import TechPanel from '../components/TechPanel.vue'
 
-const loading = ref(true);
-const dash = ref(null);
-const pieChartRef = ref(null);
-const thermalChartRef = ref(null);
-const dailyCarbonChartRef = ref(null);
-const pieChart = ref(null);
-const thermalChart = ref(null);
-const dailyCarbonChart = ref(null);
+const loading = ref(true)
+const usingDemoData = ref(false)
+const errorMessage = ref('')
+const dashboardData = ref(null)
+const carbonGaugeRef = ref(null)
+const carbonTrendRef = ref(null)
+const contributionRef = ref(null)
+const loadBarRef = ref(null)
+const forecastRef = ref(null)
+const chartInstances = []
+let resizeObserver
 
-const kpiList = ref([]);
-const psStats = ref({
-  generating_hours: 0,
-  pumping_hours: 0,
-  idle_hours: 0,
-  total_generation: 0,
-  total_pumping: 0,
-  efficiency: 0,
-});
-
-const psPct = computed(() =>
-  ((psStats.value.generating_hours / 8760) * 100).toFixed(1),
-);
-const pumpPct = computed(() =>
-  ((psStats.value.pumping_hours / 8760) * 100).toFixed(1),
-);
-const idlePct = computed(() =>
-  ((psStats.value.idle_hours / 8760) * 100).toFixed(1),
-);
-
-function initPieChart() {
-  if (!pieChartRef.value || !dash.value) return;
-  pieChart.value = echarts.init(pieChartRef.value);
-  const s = dash.value;
-  pieChart.value.setOption({
-    backgroundColor: "transparent",
-    tooltip: { trigger: "item", formatter: "{b}: {c} 亿kWh ({d}%)" },
-    series: [
-      {
-        type: "pie",
-        radius: ["40%", "70%"],
-        center: ["50%", "50%"],
-        data: [
-          {
-            value: s.total_wind,
-            name: "风电",
-            itemStyle: { color: "#00c8ff" },
-          },
-          {
-            value: s.total_solar,
-            name: "光伏",
-            itemStyle: { color: "#ffb400" },
-          },
-          {
-            value: s.total_hydro,
-            name: "水电",
-            itemStyle: { color: "#00ff88" },
-          },
-          { value: s.total_fh, name: "火电", itemStyle: { color: "#ff6b6b" } },
-        ],
-        label: { color: "#8ba4c4", fontSize: 12 },
-        labelLine: { lineStyle: { color: "rgba(255,255,255,0.1)" } },
-      },
-    ],
-  });
+const demoData = {
+  total_wind: 1860, total_solar: 1240, total_hydro: 890, total_fh: 2840,
+  Nt_first30: Array.from({ length: 168 }, (_, i) => 510 + Math.sin(i / 10) * 82 + Math.sin(i / 3) * 15),
+  daily_carbon: Array.from({ length: 30 }, (_, i) => 1320 - i * 4 + Math.sin(i / 2) * 22),
+  carbon_result: { carbon_change: 119.5 },
+  ps_stats: { efficiency: 82.5, generating_hours: 2410, pumping_hours: 2120 },
 }
 
-function initThermalChart() {
-  if (!thermalChartRef.value || !dash.value) return;
-  thermalChart.value = echarts.init(thermalChartRef.value);
-  const d = dash.value;
-  const hours = Array.from({ length: 720 }, (_, i) => i + 1);
-  thermalChart.value.setOption({
-    backgroundColor: "transparent",
-    tooltip: { trigger: "axis" },
-    legend: {
-      data: ["有抽蓄火电", "无抽蓄火电"],
-      textStyle: { color: "#8ba4c4" },
-    },
-    grid: { left: 50, right: 20, top: 40, bottom: 40 },
-    xAxis: {
-      type: "category",
-      data: hours.slice(0, 720),
-      axisLabel: { color: "#8ba4c4", interval: 120 },
-      name: "小时",
-    },
-    yAxis: {
-      type: "value",
-      axisLabel: { color: "#8ba4c4" },
-      name: "MW",
-      splitLine: { lineStyle: { color: "rgba(255,255,255,0.05)" } },
-    },
-    series: [
-      {
-        name: "有抽蓄火电",
-        type: "line",
-        data: d.Nt_first30,
-        lineStyle: { color: "#00d4ff", width: 1 },
-        smooth: true,
-        symbol: "none",
-      },
-      {
-        name: "无抽蓄火电",
-        type: "line",
-        data: d.Nt2_first30,
-        lineStyle: { color: "#ff6b6b", width: 1, type: "dashed" },
-        smooth: true,
-        symbol: "none",
-      },
-    ],
-  });
+const metrics = reactive({ carbonReduction: '119.50', carbonQuota: '2,340', todayCarbon: '1,195', renewableRate: '82.5', revenue: '157', efficiency: '82.5' })
+const flowIntensity = computed(() => Math.max(0.7, Number(metrics.renewableRate) / 80))
+const dispatchAdvice = [
+  { period: '尖峰', time: '11:00–15:00', price: '1.28', action: '储能放电 · 削峰增效' },
+  { period: '高峰', time: '08:00–11:00', price: '0.96', action: '优先放电 · 负荷跟踪' },
+  { period: '平段', time: '06:00–08:00', price: '0.58', action: '维持水位 · 灵活响应' },
+  { period: '低谷', time: '22:00–06:00', price: '0.28', action: '抽水蓄能 · 消纳绿电' },
+]
+const chartBase = { textStyle: { color: '#779aa0', fontFamily: 'Microsoft YaHei' }, tooltip: { trigger: 'axis', className: 'chart-tooltip' }, grid: { left: 42, right: 12, top: 26, bottom: 30 } }
+
+function createChart(element, option) {
+  if (!element) return
+  const instance = echarts.init(element)
+  instance.setOption(option)
+  chartInstances.push(instance)
 }
 
-function initDailyCarbonChart() {
-  if (!dailyCarbonChartRef.value || !dash.value) return;
-  dailyCarbonChart.value = echarts.init(dailyCarbonChartRef.value);
-  const daily = dash.value.daily_carbon;
-  const days = Array.from({ length: 365 }, (_, i) => `第${i + 1}天`);
-  dailyCarbonChart.value.setOption({
-    backgroundColor: "transparent",
-    tooltip: { trigger: "axis" },
-    grid: { left: 60, right: 20, top: 20, bottom: 40 },
-    xAxis: {
-      type: "category",
-      data: days,
-      axisLabel: { color: "#8ba4c4", interval: 60 },
-    },
-    yAxis: {
-      type: "value",
-      axisLabel: { color: "#8ba4c4" },
-      name: "万吨",
-      splitLine: { lineStyle: { color: "rgba(255,255,255,0.05)" } },
-    },
-    series: [
-      {
-        type: "bar",
-        data: daily,
-        itemStyle: {
-          color: (p) =>
-            p.value >= 0 ? "rgba(0,212,255,0.7)" : "rgba(0,255,136,0.7)",
-        },
-      },
-    ],
-  });
+function categoryAxis(data = []) { return { type: 'category', data, axisLine: { lineStyle: { color: '#16454b' } }, axisLabel: { color: '#6f9298', fontSize: 9 } } }
+function valueAxis() { return { type: 'value', axisLine: { show: false }, splitLine: { lineStyle: { color: 'rgba(78,150,151,.13)' } }, axisLabel: { color: '#6f9298', fontSize: 9 } } }
+
+function renderCharts() {
+  chartInstances.splice(0).forEach((chart) => chart.dispose())
+  const data = dashboardData.value
+  const trend = (data.daily_carbon || demoData.daily_carbon).slice(-7)
+  const thermal = (data.Nt_first30 || demoData.Nt_first30).slice(0, 24)
+  const mixTotal = data.total_wind + data.total_solar + data.total_hydro + data.total_fh
+  const renewable = data.total_wind + data.total_solar + data.total_hydro
+  metrics.renewableRate = ((renewable / Math.max(1, mixTotal)) * 100).toFixed(1)
+
+  createChart(carbonGaugeRef.value, { series: [{ type: 'gauge', startAngle: 90, endAngle: -270, radius: '88%', progress: { show: true, roundCap: true, width: 16, itemStyle: { color: '#14f1be' } }, axisLine: { lineStyle: { width: 16, color: [[1, 'rgba(20,241,190,.1)']] } }, pointer: { show: false }, axisTick: { show: false }, splitLine: { show: false }, axisLabel: { show: false }, detail: { formatter: '{value}%', color: '#e8fff9', fontSize: 24, offsetCenter: [0, '2%'] }, title: { offsetCenter: [0, '28%'], color: '#779aa0', fontSize: 9 }, data: [{ value: Number(metrics.renewableRate), name: '绿电消纳率' }] }] })
+  createChart(carbonTrendRef.value, { ...chartBase, xAxis: categoryAxis(['07-29','07-30','07-31','08-01','08-02','08-03','08-04']), yAxis: valueAxis(), series: [{ type: 'line', smooth: true, symbolSize: 5, data: trend, lineStyle: { color: '#14f1be', width: 2 }, itemStyle: { color: '#54ffd4' }, areaStyle: { color: new echarts.graphic.LinearGradient(0,0,0,1,[{ offset:0,color:'rgba(20,241,190,.28)'},{ offset:1,color:'rgba(20,241,190,0)' }]) } }] })
+  createChart(contributionRef.value, { ...chartBase, grid: { left: 64, right: 24, top: 10, bottom: 20 }, xAxis: valueAxis(), yAxis: { ...categoryAxis(['光伏消纳','储能削峰','负荷优化']), axisLine: { show: false }, axisLabel: { color: '#d5ebe7', fontSize: 10 } }, series: [{ type: 'bar', data: [data.total_solar, data.ps_stats?.pumping_hours || 1240, Math.round(renewable / 4)], barWidth: 12, itemStyle: { color: '#14f1be', borderRadius: [0,5,5,0] }, label: { show: true, position: 'right', color: '#d8fdf4', fontSize: 9 } }] })
+  createChart(loadBarRef.value, { ...chartBase, grid: { left: 52, right: 35, top: 10, bottom: 20 }, xAxis: valueAxis(), yAxis: { ...categoryAxis(['A公司','B公司','C公司']), axisLine: { show: false }, axisLabel: { color: '#d5ebe7', fontSize: 10 } }, series: [{ type: 'bar', data: [284,196,147], barWidth: 13, itemStyle: { color: new echarts.graphic.LinearGradient(0,0,1,0,[{ offset:0,color:'#09cfa2'},{ offset:1,color:'#54ffd4'}]), borderRadius: [0,2,2,0] }, label: { show: true, position: 'right', formatter: '{c} MW', color: '#d8fdf4', fontSize: 9 } }] })
+  createChart(forecastRef.value, { ...chartBase, xAxis: categoryAxis(Array.from({length:24},(_,i)=>String(i).padStart(2,'0'))), yAxis: valueAxis(), series: [{ type: 'line', smooth: true, symbol: 'none', data: thermal, lineStyle: { color: '#14f1be', width: 2 }, areaStyle: { color: new echarts.graphic.LinearGradient(0,0,0,1,[{offset:0,color:'rgba(20,241,190,.24)'},{offset:1,color:'rgba(20,241,190,0)'}]) } }] })
+}
+
+function applyMetrics(data) {
+  const carbon = Math.abs(Number(data.carbon_result?.carbon_change || 119.5))
+  metrics.carbonReduction = carbon.toFixed(2)
+  metrics.todayCarbon = Math.round(carbon * 10).toLocaleString('zh-CN')
+  metrics.efficiency = Number(data.ps_stats?.efficiency || 82.5).toFixed(1)
+  metrics.revenue = Math.round(carbon * 1.31).toLocaleString('zh-CN')
+}
+
+async function loadDashboard() {
+  loading.value = true
+  errorMessage.value = ''
+  try {
+    dashboardData.value = await fetchDashboard()
+    usingDemoData.value = false
+  } catch (error) {
+    dashboardData.value = demoData
+    usingDemoData.value = true
+    errorMessage.value = '实时接口暂不可用，当前使用内置演示数据。'
+    console.warn('Dashboard API unavailable, using demo data.', error)
+  }
+  applyMetrics(dashboardData.value)
+  loading.value = false
+  await nextTick()
+  renderCharts()
 }
 
 onMounted(async () => {
-  try {
-    dash.value = await fetchDashboard();
-    const d = dash.value;
-    psStats.value = d.ps_stats;
-    const total = d.total_wind + d.total_solar + d.total_hydro + d.total_fh;
-    kpiList.value = [
-      {
-        icon: "🌍",
-        label: "碳减排量",
-        value: d.carbon_result.carbon_change.toFixed(2),
-        unit: "万吨",
-        color: "#00ff88",
-        bg: "rgba(0,255,136,0.15)",
-      },
-      {
-        icon: "🌿",
-        label: "新能源占比",
-        value: total
-          ? (
-              ((d.total_wind + d.total_solar + d.total_hydro) / total) *
-              100
-            ).toFixed(1)
-          : "0.0",
-        unit: "%",
-        color: "#00d4ff",
-        bg: "rgba(0,212,255,0.15)",
-      },
-      {
-        icon: "💧",
-        label: "抽水小时",
-        value: psStats.value.pumping_hours,
-        unit: "h",
-        color: "#00d4ff",
-        bg: "rgba(0,212,255,0.15)",
-      },
-      {
-        icon: "⚡",
-        label: "发电小时",
-        value: psStats.value.generating_hours,
-        unit: "h",
-        color: "#00ff88",
-        bg: "rgba(0,255,136,0.15)",
-      },
-      {
-        icon: "🔄",
-        label: "抽发效率",
-        value: psStats.value.efficiency.toFixed(1),
-        unit: "%",
-        color: "#ffcc00",
-        bg: "rgba(255,204,0,0.15)",
-      },
-      {
-        icon: "🌬️",
-        label: "风电总量",
-        value: d.total_wind.toFixed(1),
-        unit: "亿kWh",
-        color: "#00c8ff",
-        bg: "rgba(0,200,255,0.15)",
-      },
-    ];
-    loading.value = false;
-    await nextTick();
-    initPieChart();
-    initThermalChart();
-    initDailyCarbonChart();
-    window.addEventListener("resize", handleResize);
-  } catch (e) {
-    console.error(e);
-    loading.value = false;
-  }
-});
-
-function handleResize() {
-  echarts.getInstanceByDom(pieChartRef.value)?.resize();
-  echarts.getInstanceByDom(thermalChartRef.value)?.resize();
-  echarts.getInstanceByDom(dailyCarbonChartRef.value)?.resize();
-}
-
-onBeforeUnmount(() => {
-  window.removeEventListener("resize", handleResize);
-  [pieChart, thermalChart, dailyCarbonChart].forEach((ref) => {
-    ref.value?.dispose();
-    ref.value = null;
-  });
-});
+  await loadDashboard()
+  resizeObserver = new ResizeObserver(() => chartInstances.forEach((chart) => chart.resize()))
+  resizeObserver.observe(document.querySelector('.dashboard-grid'))
+})
+onBeforeUnmount(() => { resizeObserver?.disconnect(); chartInstances.forEach((chart) => chart.dispose()) })
 </script>
 
 <style scoped>
-.dashboard {
-  animation: fadeIn 0.3s ease;
-}
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-.page-header {
-  margin-bottom: 24px;
-}
-.page-header h2 {
-  font-size: 1.5rem;
-  color: var(--accent);
-  margin-bottom: 8px;
-}
-.page-desc {
-  color: var(--text-secondary);
-  font-size: 0.9rem;
-}
-
-.loading-state {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding: 80px 0;
-  color: var(--text-secondary);
-}
-.spinner {
-  width: 40px;
-  height: 40px;
-  border: 3px solid rgba(0, 212, 255, 0.2);
-  border-top-color: var(--accent);
-  border-radius: 50%;
-  animation: spin 0.8s linear infinite;
-  margin-bottom: 16px;
-}
-@keyframes spin {
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-.kpi-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-  gap: 16px;
-  margin-bottom: 24px;
-}
-.kpi-card {
-  display: flex;
-  gap: 16px;
-  align-items: center;
-  background: linear-gradient(
-    135deg,
-    rgba(0, 212, 255, 0.08),
-    rgba(0, 150, 255, 0.03)
-  );
-  border: 1px solid var(--border-color);
-  border-radius: 12px;
-  padding: 20px;
-  transition: all 0.3s;
-}
-.kpi-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(0, 212, 255, 0.15);
-}
-.kpi-icon {
-  width: 48px;
-  height: 48px;
-  border-radius: 12px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 1.4rem;
-  flex-shrink: 0;
-}
-.kpi-body {
-  flex: 1;
-  min-width: 0;
-}
-.kpi-label {
-  font-size: 0.78rem;
-  color: var(--text-secondary);
-  margin-bottom: 4px;
-}
-.kpi-value {
-  font-size: 1.5rem;
-  font-weight: 700;
-}
-.kpi-unit {
-  font-size: 0.75rem;
-  color: var(--text-secondary);
-  margin-top: 2px;
-}
-
-.section-card {
-  background: linear-gradient(
-    135deg,
-    rgba(0, 212, 255, 0.08),
-    rgba(0, 150, 255, 0.03)
-  );
-  border: 1px solid var(--border-color);
-  border-radius: 12px;
-  padding: 20px;
-  margin-bottom: 20px;
-}
-.section-card h3 {
-  font-size: 1rem;
-  color: var(--accent);
-  margin-bottom: 16px;
-}
-.chart-lg {
-  width: 100%;
-  height: 360px;
-}
-.chart-md {
-  width: 100%;
-  height: 300px;
-}
-
-.row-2col {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 20px;
-  margin-bottom: 20px;
-}
-
-.ps-stats {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-.stat-bar {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-.stat-label {
-  width: 40px;
-  font-size: 0.85rem;
-  color: var(--text-secondary);
-  flex-shrink: 0;
-}
-.bar-track {
-  flex: 1;
-  height: 20px;
-  background: rgba(255, 255, 255, 0.05);
-  border-radius: 10px;
-  overflow: hidden;
-}
-.bar-fill {
-  height: 100%;
-  border-radius: 10px;
-  transition: width 0.5s;
-}
-.bar-gen {
-  background: linear-gradient(
-    90deg,
-    rgba(0, 255, 136, 0.6),
-    rgba(0, 255, 136, 0.3)
-  );
-}
-.bar-pump {
-  background: linear-gradient(
-    90deg,
-    rgba(0, 212, 255, 0.6),
-    rgba(0, 212, 255, 0.3)
-  );
-}
-.bar-idle {
-  background: linear-gradient(
-    90deg,
-    rgba(255, 255, 255, 0.2),
-    rgba(255, 255, 255, 0.1)
-  );
-}
-.stat-num {
-  width: 50px;
-  text-align: right;
-  font-size: 0.85rem;
-  color: var(--text-primary);
-  flex-shrink: 0;
-}
-.ps-meta {
-  display: flex;
-  gap: 24px;
-  padding-top: 8px;
-  border-top: 1px solid var(--border-color);
-  font-size: 0.8rem;
-  color: var(--text-secondary);
-  flex-wrap: wrap;
-}
-.ps-meta strong {
-  color: var(--text-primary);
-}
+.dashboard-screen { position: relative; min-height: calc(100vh - 62px); padding: 10px; background: linear-gradient(rgba(2,12,18,.3),rgba(2,12,18,.86)),repeating-linear-gradient(0deg,rgba(20,241,190,.018) 0 1px,transparent 1px 28px); }
+.data-warning { display:flex; justify-content:center; gap:12px; padding:6px; color:var(--color-warning); font-size:11px; background:rgba(255,170,44,.08); }
+.data-warning button { color:inherit; border:0; border-bottom:1px solid currentColor; background:transparent; cursor:pointer; }
+.dashboard-grid { height:clamp(760px,calc(100vh - 164px),1000px); display:grid; grid-template-columns:minmax(220px,22%) minmax(480px,1fr) minmax(240px,23%); gap:9px; margin-top:9px; }
+.left-column,.right-column,.center-column { min-width:0; min-height:0; display:grid; gap:9px; }
+.left-column { grid-template-rows:1.02fr .98fr .9fr; }.right-column { grid-template-rows:.9fr 1.05fr 1.05fr; }.center-column { grid-template-rows:minmax(0,1fr) auto; }
+.chart { width:100%; height:100%; min-height:155px; }.chart--gauge { min-height:145px; }
+.carbon-gauge { height:100%; display:grid; grid-template-columns:58% 42%; align-items:center; }.carbon-gauge dl { margin:0; padding-left:8px; border-left:1px solid var(--color-border); }.carbon-gauge dl div+div { margin-top:18px; }.carbon-gauge dt { color:var(--color-muted); font-size:9px; }.carbon-gauge dd { margin:4px 0 0; color:var(--color-accent); font:700 12px monospace; }
+:deep(.map-panel) { position:relative; height:100%; padding:0; }.map-caption { position:absolute; z-index:5; top:16px; left:18px; display:grid; gap:3px; }.map-caption span { font-size:13px; font-weight:700; letter-spacing:.1em; }.map-caption small { color:var(--color-muted); font-size:8px; letter-spacing:.12em; }
+.map-legend { position:absolute; z-index:5; bottom:14px; left:18px; display:flex; gap:15px; padding:7px 10px; color:var(--color-muted); background:rgba(2,13,20,.72); font-size:9px; }.map-legend span { display:flex; align-items:center; gap:5px; }.legend-dot { width:6px; height:6px; border-radius:50%; background:var(--color-accent); box-shadow:0 0 8px currentColor; }.legend-dot--cyan { color:var(--color-cyan); background:currentColor; }.legend-line { width:14px; height:1px; background:var(--color-cyan); }
+.kpi-strip { display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); gap:7px; }.dispatch-table-wrap { height:100%; overflow:auto; }.dispatch-table { width:100%; border-collapse:collapse; table-layout:fixed; font-size:9px; }.dispatch-table th,.dispatch-table td { padding:8px 5px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; text-align:left; border-bottom:1px solid rgba(119,154,160,.16); }.dispatch-table th { color:var(--color-muted); background:rgba(119,154,160,.08); }.dispatch-table td:first-child { color:var(--color-accent); font-weight:700; }.dispatch-table th:nth-child(1){width:15%}.dispatch-table th:nth-child(2){width:25%}.dispatch-table th:nth-child(3){width:14%}
+@media(max-width:1100px){.dashboard-grid{height:auto;grid-template-columns:1fr 1fr}.center-column{grid-column:1/-1;grid-row:1;min-height:620px}.left-column,.right-column{min-height:720px}}
+@media(max-width:720px){.dashboard-screen{padding:6px}.dashboard-grid{grid-template-columns:1fr}.center-column,.left-column,.right-column{grid-column:1;min-height:720px}.kpi-strip{grid-template-columns:repeat(2,minmax(0,1fr))}}
 </style>

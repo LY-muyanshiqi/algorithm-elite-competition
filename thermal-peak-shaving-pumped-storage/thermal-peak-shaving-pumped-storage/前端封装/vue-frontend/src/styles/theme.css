@@ -1,0 +1,57 @@
+:root {
+  color-scheme: dark;
+  --color-bg: #03131e;
+  --color-bg-deep: #020b12;
+  --color-panel: rgba(4, 27, 38, 0.88);
+  --color-panel-strong: rgba(5, 35, 47, 0.96);
+  --color-border: rgba(20, 241, 190, 0.2);
+  --color-border-strong: rgba(20, 241, 190, 0.48);
+  --color-accent: #14f1be;
+  --color-accent-soft: #54ffd4;
+  --color-cyan: #56d9ff;
+  --color-warning: #ffaa2c;
+  --color-danger: #ff647c;
+  --color-text: #e8fff9;
+  --color-muted: #779aa0;
+  --font-display: "Microsoft YaHei", "PingFang SC", sans-serif;
+  --panel-radius: 2px;
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  font-family: var(--font-display);
+  background: var(--color-bg);
+  color: var(--color-text);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#app {
+  min-width: 320px;
+  min-height: 100%;
+  margin: 0;
+}
+
+body {
+  min-height: 100vh;
+  background:
+    radial-gradient(circle at 50% 20%, rgba(17, 113, 111, 0.16), transparent 40%),
+    linear-gradient(180deg, #041721 0%, #020b12 100%);
+}
+
+button,
+input,
+select {
+  font: inherit;
+}
+
+.chart-tooltip {
+  color: var(--color-text) !important;
+  background: rgba(2, 15, 22, 0.94) !important;
+  border: 1px solid var(--color-border-strong) !important;
+}
