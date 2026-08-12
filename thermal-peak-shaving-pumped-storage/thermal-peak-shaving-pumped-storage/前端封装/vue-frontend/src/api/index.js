@@ -121,4 +121,24 @@ export async function saveHistory(params) {
   return data
 }
 
+// ==================== 实验分析 ====================
+
+/** 获取消融实验结果 */
+export async function fetchAblationResults() {
+  const { data } = await api.get('/experiments/ablation')
+  return data
+}
+
+/** 获取Benchmark对比结果 */
+export async function fetchBenchmarkResults() {
+  const { data } = await api.get('/experiments/benchmark')
+  return data
+}
+
+/** 获取统计显著性检验结果 */
+export async function fetchExperimentStatistics() {
+  const { data } = await api.get('/experiments/statistics')
+  return data
+}
+
 export default api

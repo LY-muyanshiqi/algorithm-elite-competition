@@ -70,6 +70,18 @@ const routes = [
     component: () => import('../views/StorageComparison.vue'),
     meta: { title: '储能对比', navTitle: '储能对比', icon: '🔋', primary: false },
   },
+
+  { path: '/experiments',
+    name: 'Experiments',
+    component: () => import('../views/ExperimentResults.vue'),
+    meta: { title: '实验分析', navTitle: '实验分析', icon: '🧪' },
+  },
+
+  { path: '/strategy',
+    name: 'Strategy',
+    component: () => import('../views/StrategyContributions.vue'),
+    meta: { title: '策略贡献', navTitle: '策略贡献', icon: '🎯' },
+  },
 ]
 
 const router = createRouter({

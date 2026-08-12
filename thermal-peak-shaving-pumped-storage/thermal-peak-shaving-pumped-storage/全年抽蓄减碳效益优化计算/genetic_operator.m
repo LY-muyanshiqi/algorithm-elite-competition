@@ -2,9 +2,9 @@ function f  = genetic_operator(parent_chromosome, chromosome, M, V,  l_limit, u_
 
 %% function f  = genetic_operator(parent_chromosome, M, V, mu, mum, l_limit, u_limit)
 % 
-% This function is utilized(±»ÓÃÀ´) to produce offsprings from parent chromosomes.
+% This function is utilized(ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½) to produce offsprings from parent chromosomes.
 % The genetic operators corssover and mutation which are carried out with
-% slight modifications£¨ÇáÎ¢ÐÞ¸Ä£© from the original design. For more information read
+% slight modificationsï¿½ï¿½ï¿½ï¿½Î¢ï¿½Þ¸Ä£ï¿½ from the original design. For more information read
 % the document enclosed. 
 %
 % parent_chromosome - the set of selected chromosomes.
@@ -16,7 +16,7 @@ function f  = genetic_operator(parent_chromosome, chromosome, M, V,  l_limit, u_
 % u_limit - a vector of upper limit for the corresponding decsion variables
 %
 % The genetic operation is performed only on the decision variables, that
-% is the first V elements in the chromosome vector£¨ÔØÌå£©. 
+% is the first V elements in the chromosome vectorï¿½ï¿½ï¿½ï¿½ï¿½å£©. 
 
 [N,m] = size(parent_chromosome);
 
@@ -50,36 +50,27 @@ for i = 1 : N
         u.string=normrnd(0,0.6966,1,V);
         v.string=normrnd(0,1,1,V);
         r.string=-1+2*rand(1,V);
-        % Perform corssover for each decision variable in the chromosome.
+        pc = 0.7;
+        F = 0.3;
+        alpha_levy = 0.5;
+        beta_levy = 1.5;
+        sigma_u = 0.6966;
+
         for j = 1 : V
-            % Generate the jth element of first child
-            if rand(1)<0.7
-                child_1(j) = ...
-                    parent_chromosome(i,j)+0.3*(parent_1(j)-parent_2(j));
+            if rand(1) < pc
+                child_1(j) = parent_chromosome(i,j) + F * (parent_1(j) - parent_2(j));
             else
-                child_1(j)= parent_chromosome(i,j);
+                child_1(j) = parent_chromosome(i,j);
             end
-            
-            if rand(1)<0.5
-                child_2(j) = ...
-                    child_1(j)+50*(u.string(1,j))/(abs(v.string(1,j)))^(1/1.5);
+
+            if rand(1) < 0.5
+                child_2(j) = child_1(j) + alpha_levy * u.string(1,j) / (abs(v.string(1,j)))^(1/beta_levy);
             else
-                child_2(j) = ...
-                    child_1(j)+50*r.string(1,j);
+                child_2(j) = child_1(j) + alpha_levy * r.string(1,j);
             end
-            % Make sure that the generated element is within the
-            % specified£¨È·±£×Ó´úµÄ·¶Î§£©
-            % decision space else set it to the appropriate extrema.
-            if child_1(j) > u_limit(j)
-                child_1(j) = u_limit(j);
-            elseif child_1(j) < l_limit(j)
-                child_1(j) = l_limit(j);
-            end
-            if child_2(j) > u_limit(j)
-                child_2(j) = u_limit(j);
-            elseif child_2(j) < l_limit(j)
-                child_2(j) = l_limit(j);
-            end
+
+            child_1(j) = reflect_bounds(child_1(j), l_limit(j), u_limit(j));
+            child_2(j) = reflect_bounds(child_2(j), l_limit(j), u_limit(j));
         end
         % Evaluate the objective function for the offsprings and as before
         % concatenate the offspring chromosome with objective value.
@@ -92,3 +83,13 @@ for i = 1 : N
 end
 
 f = child;
+
+function x = reflect_bounds(x, lb, ub)
+    while x > ub || x < lb
+        if x > ub
+            x = 2 * ub - x;
+        elseif x < lb
+            x = 2 * lb - x;
+        end
+    end
+end

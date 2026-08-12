@@ -28,3 +28,16 @@ class ErrorResponse(BaseModel):
     """错误响应"""
     error: str
     detail: Optional[str] = None
+
+
+class ExperimentData(BaseModel):
+    """实验分析数据"""
+    ablation_results: Optional[list] = None
+    benchmark_results: Optional[list] = None
+    generalization_results: Optional[list] = None
+
+
+class StrategyData(BaseModel):
+    """策略贡献数据"""
+    strategy_history: Optional[list] = None
+    strategy_use_count: Optional[list] = None

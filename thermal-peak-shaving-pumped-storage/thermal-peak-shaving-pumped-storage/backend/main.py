@@ -8,6 +8,7 @@ FastAPI 主应用 — 抽水蓄能减碳效益优化 API 服务
 """
 import sys
 import os
+import json
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
@@ -16,7 +17,7 @@ from contextlib import asynccontextmanager
 # 确保 backend 包可被找到
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from backend.models import SimulateParams, HealthResponse
+from backend.models import SimulateParams, HealthResponse, ExperimentData, StrategyData
 from backend.data_service import data_service
 
 
@@ -246,6 +247,59 @@ async def save_history(params: dict):
             note=params.get("note", ""),
         )
         return {"run_id": run_id, "status": "saved"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# ==================== 实验分析接口 ====================
+
+@app.get("/api/experiments/ablation")
+async def get_ablation_results():
+    """获取消融实验结果"""
+    try:
+        json_path = os.path.join(
+            os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+            '全年抽蓄减碳效益优化计算', 'experiment_results', 'ablation_results.json'
+        )
+        if os.path.exists(json_path):
+            with open(json_path, 'r') as f:
+                data = json.load(f)
+            return {"status": "ok", "data": data}
+        return {"status": "pending", "data": None, "message": "请先在MATLAB运行 run_ablation.m 生成实验数据"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/api/experiments/benchmark")
+async def get_benchmark_results():
+    """获取Benchmark对比结果"""
+    try:
+        json_path = os.path.join(
+            os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+            '全年抽蓄减碳效益优化计算', 'experiment_results', 'benchmark_results.json'
+        )
+        if os.path.exists(json_path):
+            with open(json_path, 'r') as f:
+                data = json.load(f)
+            return {"status": "ok", "data": data}
+        return {"status": "pending", "data": None, "message": "请先在MATLAB运行 compare_algorithms.m"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/api/experiments/statistics")
+async def get_statistics():
+    """获取统计显著性检验结果"""
+    try:
+        json_path = os.path.join(
+            os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+            '全年抽蓄减碳效益优化计算', 'experiment_results', 'ablation_statistics.json'
+        )
+        if os.path.exists(json_path):
+            with open(json_path, 'r') as f:
+                data = json.load(f)
+            return {"status": "ok", "data": data}
+        return {"status": "pending", "data": None}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 

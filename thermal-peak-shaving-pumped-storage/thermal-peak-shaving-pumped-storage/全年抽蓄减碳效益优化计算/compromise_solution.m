@@ -1,25 +1,27 @@
-function m=compromise_solution(s)
-a(:,1)=s(:,24);
-b(:,1)=s(:,25);
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-a_max=[];a_min=[];b_max=[];b_min=[];
-a_max=max(max(a)); a_min=min(min(a)); 
-b_max=max(max(b)); b_min=min(min(b)); 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-for i=1:length(a(:,1))
-    x(i,1)=(a_max-a(i,1))/(a_max-a_min);
-    x(i,2)=(b_max-b(i,1))/(b_max-b_min); 
+function m = compromise_solution(s, M, V)
+if nargin < 2
+    M = 2;
+    V = 23;
 end
-X=sum(x');
-[maxX,m]=max(X); 
-best=s(m,1:23);
-% [maxY,n]=max(Y); 
-% X=X';Y=Y';
-% Z(:,1)=sort(X);
-% Z(:,2)=sort(Y);
-% aaaaa=std(Nwp);
-% figure 
-% plot(Z)
+
+obj_cols = (V+1):(V+M);
+f1 = s(:, V+1);
+f2 = s(:, V+2);
+
+f1_max = max(f1); f1_min = min(f1);
+f2_max = max(f2); f2_min = min(f2);
+
+for i = 1:size(s, 1)
+    if isinf(f1(i)) || isinf(f2(i))
+        x(i, 1) = 0;
+        x(i, 2) = 0;
+    else
+        x(i, 1) = (f1_max - f1(i)) / (f1_max - f1_min);
+        x(i, 2) = (f2_max - f2(i)) / (f2_max - f2_min);
+    end
+end
+X = sum(x, 2);
+[~, m] = max(X);
 
 
 
