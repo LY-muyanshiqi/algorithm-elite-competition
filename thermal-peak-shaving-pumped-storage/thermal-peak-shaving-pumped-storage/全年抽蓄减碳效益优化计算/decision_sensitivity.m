@@ -1,7 +1,7 @@
 function sensitivity = decision_sensitivity(best_solution, V, Zpump, h, Nh, Nw, Np, L, Cprice)
-% decision_sensitivity - å†³ç­–å˜é‡One-at-a-timeæ•æ„Ÿæ€§åˆ†æ
+% decision_sensitivity - ¾ö²ß±äÁ¿One-at-a-timeÃô¸ĞĞÔ·ÖÎö
 %
-% å¯¹æœ€ä¼˜è§£çš„æ¯ä¸ªå†³ç­–å˜é‡æ–½åŠ  +/-10% æ‰°åŠ¨, è§‚å¯Ÿç›®æ ‡å‡½æ•°å˜åŒ–
+% ¶Ô×îÓÅ½âµÄÃ¿¸ö¾ö²ß±äÁ¿Ê©¼Ó +/-10% ÈÅ¶¯, ¹Û²ìÄ¿±êº¯Êı±ä»¯
 
 if nargin < 9, Cprice = 0.05; end
 
@@ -13,8 +13,8 @@ sensitivity.f1_sensitivity = zeros(V, 1);
 sensitivity.f2_sensitivity = zeros(V, 1);
 sensitivity.total_sensitivity = zeros(V, 1);
 
-fprintf('=== å†³ç­–å˜é‡æ•æ„Ÿæ€§åˆ†æ ===\n');
-fprintf('åŸºå‡†å€¼: f1=%.1f, f2=%.1f\n\n', f0(1), f0(2));
+fprintf('=== ¾ö²ß±äÁ¿Ãô¸ĞĞÔ·ÖÎö ===\n');
+fprintf('»ù×¼Öµ: f1=%.1f, f2=%.1f\n\n', f0(1), f0(2));
 fprintf('%-6s %-12s %-12s %-12s\n', 'Var', 'delta_f1', 'delta_f2', 'total');
 
 for j = 1:V
@@ -53,13 +53,13 @@ for j = 1:V
 end
 
 [~, rank_order] = sort(sensitivity.total_sensitivity, 'descend');
-fprintf('\n--- æ•æ„Ÿåº¦ Top10 å†³ç­–å˜é‡ ---\n');
-fprintf('Rank  Var    Total_Sens  ä¸»è¦å½±å“ç›®æ ‡\n');
+fprintf('\n--- Ãô¸Ğ¶È Top10 ¾ö²ß±äÁ¿ ---\n');
+fprintf('Rank  Var    Total_Sens  Ö÷ÒªÓ°ÏìÄ¿±ê\n');
 for r = 1:min(10, V)
     j = rank_order(r);
-    target = 'f1(è°ƒå³°)';
+    target = 'f1(µ÷·å)';
     if sensitivity.f2_sensitivity(j) > sensitivity.f1_sensitivity(j)
-        target = 'f2(ç¢³æ’)';
+        target = 'f2(Ì¼ÅÅ)';
     end
     fprintf('%-5d %-6d %-12.4f %s\n', r, j, sensitivity.total_sensitivity(j), target);
 end

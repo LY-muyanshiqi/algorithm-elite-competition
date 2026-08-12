@@ -1,24 +1,24 @@
 function [chromosome, history] = nslde_enhanced(Nh, Nw, Np, L, Zpump, h, Cprice, options)
-% nslde_enhanced - NSLDE å¢å¼ºç‰ˆ: å¤šç®—å­è‡ªé€‚åº” + è¿­ä»£å†å²è®°å½•
+% nslde_enhanced - NSLDE ÔöÇ¿°æ: ¶àËã×Ó×ÔÊÊÓ¦ + µü´úÀúÊ·¼ÇÂ¼
 %
-% ç›¸è¾ƒäºåŸ nslde.m:
-%   1. æ”¯æŒå¤šç®—å­è‡ªé€‚åº”é€‰æ‹© (é€šè¿‡ options.op_probs)
-%   2. è®°å½•å®Œæ•´è¿›åŒ–è½¨è¿¹ (æ¯50ä»£çš„HVã€IGDã€ç§ç¾¤ç†µç­‰)
-%   3. æ”¯æŒå¤šç§åˆå§‹åŒ–ç­–ç•¥ (é€šè¿‡ options.init_method)
-%   4. å¯é…ç½®ç§ç¾¤å¤§å°å’Œä»£æ•°
+% Ïà½ÏÓÚÔ­ nslde.m:
+%   1. Ö§³Ö¶àËã×Ó×ÔÊÊÓ¦Ñ¡Ôñ (Í¨¹ı options.op_probs)
+%   2. ¼ÇÂ¼ÍêÕû½ø»¯¹ì¼£ (Ã¿50´úµÄHV¡¢IGD¡¢ÖÖÈºìØµÈ)
+%   3. Ö§³Ö¶àÖÖ³õÊ¼»¯²ßÂÔ (Í¨¹ı options.init_method)
+%   4. ¿ÉÅäÖÃÖÖÈº´óĞ¡ºÍ´úÊı
 %
-% è¾“å…¥:
-%   options.init_method - 'logistic'|'tent'|'sobol'|'random' (é»˜è®¤'logistic')
-%   options.op_probs    - 7ç»´ç®—å­æ¦‚ç‡å‘é‡ (é»˜è®¤å‡åŒ€)
-%   options.pop         - ç§ç¾¤å¤§å° (é»˜è®¤100)
-%   options.gen         - è¿›åŒ–ä»£æ•° (é»˜è®¤3000)
-%   options.track_hv    - æ˜¯å¦è¿½è¸ªHV (é»˜è®¤true)
-%   options.use_qlearning - æ˜¯å¦ä½¿ç”¨Q-Learningè‡ªé€‚åº” (é»˜è®¤false)
-%   options.track_strategy - æ˜¯å¦è¿½è¸ªç­–ç•¥ä½¿ç”¨ (é»˜è®¤false)
+% ÊäÈë:
+%   options.init_method - 'logistic'|'tent'|'sobol'|'random' (Ä¬ÈÏ'logistic')
+%   options.op_probs    - 7Î¬Ëã×Ó¸ÅÂÊÏòÁ¿ (Ä¬ÈÏ¾ùÔÈ)
+%   options.pop         - ÖÖÈº´óĞ¡ (Ä¬ÈÏ100)
+%   options.gen         - ½ø»¯´úÊı (Ä¬ÈÏ3000)
+%   options.track_hv    - ÊÇ·ñ×·×ÙHV (Ä¬ÈÏtrue)
+%   options.use_qlearning - ÊÇ·ñÊ¹ÓÃQ-Learning×ÔÊÊÓ¦ (Ä¬ÈÏfalse)
+%   options.track_strategy - ÊÇ·ñ×·×Ù²ßÂÔÊ¹ÓÃ (Ä¬ÈÏfalse)
 %
-% è¾“å‡º:
-%   chromosome - æœ€ç»ˆç§ç¾¤
-%   history    - è¿›åŒ–å†å²ç»“æ„ä½“
+% Êä³ö:
+%   chromosome - ×îÖÕÖÖÈº
+%   history    - ½ø»¯ÀúÊ·½á¹¹Ìå
 
 if nargin < 8
     options = struct();

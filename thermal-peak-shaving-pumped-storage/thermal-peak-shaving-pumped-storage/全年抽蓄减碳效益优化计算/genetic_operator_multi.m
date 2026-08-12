@@ -1,23 +1,23 @@
 function f = genetic_operator_multi(parent_chromosome, chromosome, M, V, l_limit, u_limit, Nh, Nw, Np, L, Zpump, h, Cprice, op_probs)
-% genetic_operator_multi - å¤šç®—å­è‡ªé€‚åº”é€‰æ‹©é—ä¼ ç®—å­
+% genetic_operator_multi - ¶àËã×Ó×ÔÊÊÓ¦Ñ¡ÔñÒÅ´«Ëã×Ó
 %
-% ç›¸è¾ƒäºŽåŽŸ genetic_operator.m çš„æ”¹è¿›:
-%   1. ç®—å­æ± æ”¯æŒ7ç§ç®—å­ï¼Œé€šè¿‡ op_probs æ¦‚çŽ‡é€‰æ‹©
-%   2. æ¯ä¸ªçˆ¶ä»£ç‹¬ç«‹é€‰æ‹©ç®—å­ï¼Œå®žçŽ°ä¸ªä½“çº§åˆ«çš„è‡ªé€‚åº”
-%   3. ä¿æŒä¸ŽåŽŸå‡½æ•°å®Œå…¨å…¼å®¹çš„æŽ¥å£ï¼ˆé¢å¤–å‚æ•° op_probs å¯é€‰ï¼‰
+% Ïà½ÏÓÚÔ­ genetic_operator.m µÄ¸Ä½ø:
+%   1. Ëã×Ó³ØÖ§³Ö7ÖÖËã×Ó£¬Í¨¹ý op_probs ¸ÅÂÊÑ¡Ôñ
+%   2. Ã¿¸ö¸¸´ú¶ÀÁ¢Ñ¡ÔñËã×Ó£¬ÊµÏÖ¸öÌå¼¶±ðµÄ×ÔÊÊÓ¦
+%   3. ±£³ÖÓëÔ­º¯ÊýÍêÈ«¼æÈÝµÄ½Ó¿Ú£¨¶îÍâ²ÎÊý op_probs ¿ÉÑ¡£©
 %
-% è¾“å…¥:
-%   op_probs - 7ç»´å‘é‡ï¼Œå„ç®—å­çš„é€‰æ‹©æ¦‚çŽ‡ï¼Œç¼ºçœæ—¶ä½¿ç”¨å‡åŒ€æ¦‚çŽ‡
+% ÊäÈë:
+%   op_probs - 7Î¬ÏòÁ¿£¬¸÷Ëã×ÓµÄÑ¡Ôñ¸ÅÂÊ£¬È±Ê¡Ê±Ê¹ÓÃ¾ùÔÈ¸ÅÂÊ
 %              [DE_rand_1, DE_rand_2, DE_current_to_best, PM, SBX, Levy, Cauchy]
 %
-% ç®—å­ç´¢å¼•:
-%   1: DE/rand/1      - æ–¹å‘è‡ªé€‚åº”å…¨å±€æœç´¢
-%   2: DE/rand/2      - åŒå·®åˆ†å‘é‡å¢žå¼ºæŽ¢ç´¢
-%   3: DE/current-to-best/1 - ç²¾è‹±å¼•å¯¼æŽ¢ç´¢
-%   4: PM (å¤šé¡¹å¼å˜å¼‚) - å±€éƒ¨ç²¾ç»†å¾®è°ƒ
-%   5: SBX (æ¨¡æ‹ŸäºŒè¿›åˆ¶äº¤å‰) - é‚»åŸŸæœç´¢ï¼Œç»´æŒå¤šæ ·æ€§
-%   6: Levy å˜å¼‚       - é•¿è·³è·ƒè·³å‡ºå±€éƒ¨æœ€ä¼˜
-%   7: Cauchy å˜å¼‚     - ä¸­è·ç¦»è·³è·ƒ
+% Ëã×ÓË÷Òý:
+%   1: DE/rand/1      - ·½Ïò×ÔÊÊÓ¦È«¾ÖËÑË÷
+%   2: DE/rand/2      - Ë«²î·ÖÏòÁ¿ÔöÇ¿Ì½Ë÷
+%   3: DE/current-to-best/1 - ¾«Ó¢Òýµ¼Ì½Ë÷
+%   4: PM (¶àÏîÊ½±äÒì) - ¾Ö²¿¾«Ï¸Î¢µ÷
+%   5: SBX (Ä£Äâ¶þ½øÖÆ½»²æ) - ÁÚÓòËÑË÷£¬Î¬³Ö¶àÑùÐÔ
+%   6: Levy ±äÒì       - ³¤ÌøÔ¾Ìø³ö¾Ö²¿×îÓÅ
+%   7: Cauchy ±äÒì     - ÖÐ¾àÀëÌøÔ¾
 
 if nargin < 16
     op_probs = ones(1,7) / 7;
@@ -73,7 +73,7 @@ end
 f = child;
 end
 
-%% ====== ç®—å­1: DE/rand/1 ======
+%% ====== Ëã×Ó1: DE/rand/1 ======
 function [c1, c2] = op_de_rand_1(target, p1, p2, V, l_limit, u_limit)
     F = 0.5;
     CR = 0.9;
@@ -88,7 +88,7 @@ function [c1, c2] = op_de_rand_1(target, p1, p2, V, l_limit, u_limit)
     c2 = target(1:V);
 end
 
-%% ====== ç®—å­2: DE/rand/2 ======
+%% ====== Ëã×Ó2: DE/rand/2 ======
 function [c1, c2] = op_de_rand_2(target, p1, p2, pop, V, l_limit, u_limit)
     N = size(pop, 1);
     idx3 = randi(N);
@@ -110,7 +110,7 @@ function [c1, c2] = op_de_rand_2(target, p1, p2, pop, V, l_limit, u_limit)
     c2 = target(1:V);
 end
 
-%% ====== ç®—å­3: DE/current-to-best/1 ======
+%% ====== Ëã×Ó3: DE/current-to-best/1 ======
 function [c1, c2] = op_de_current_to_best(target, p1, p2, pop, V, l_limit, u_limit)
     [~, best_idx] = sort(pop(:, V+1));
     best = pop(best_idx(1), 1:V);
@@ -129,7 +129,7 @@ function [c1, c2] = op_de_current_to_best(target, p1, p2, pop, V, l_limit, u_lim
     c2 = target(1:V);
 end
 
-%% ====== ç®—å­4: å¤šé¡¹å¼å˜å¼‚ PM ======
+%% ====== Ëã×Ó4: ¶àÏîÊ½±äÒì PM ======
 function [c1, c2] = op_pm(parent, V, l_limit, u_limit)
     eta_m = 20;
     pm = 1/V;
@@ -166,7 +166,7 @@ function [c1, c2] = op_pm(parent, V, l_limit, u_limit)
     c2 = clip_bounds(c2, l_limit, u_limit);
 end
 
-%% ====== ç®—å­5: SBX æ¨¡æ‹ŸäºŒè¿›åˆ¶äº¤å‰ ======
+%% ====== Ëã×Ó5: SBX Ä£Äâ¶þ½øÖÆ½»²æ ======
 function [c1, c2] = op_sbx(p1, p2_parent, p3, V, l_limit, u_limit)
     eta_c = 20;
     pc = 0.9;
@@ -212,7 +212,7 @@ function [c1, c2] = op_sbx(p1, p2_parent, p3, V, l_limit, u_limit)
     c2 = clip_bounds(c2, l_limit, u_limit);
 end
 
-%% ====== ç®—å­6: Levy é£žè¡Œå˜å¼‚ ======
+%% ====== Ëã×Ó6: Levy ·ÉÐÐ±äÒì ======
 function [c1, c2] = op_levy(target, V, l_limit, u_limit)
     beta = 1.5;
     sigma_u = (gamma(1+beta)*sin(pi*beta/2) / (gamma((1+beta)/2)*beta*2^((beta-1)/2)))^(1/beta);
@@ -231,7 +231,7 @@ function [c1, c2] = op_levy(target, V, l_limit, u_limit)
     c2 = clip_bounds(c2, l_limit, u_limit);
 end
 
-%% ====== ç®—å­7: Cauchy å˜å¼‚ ======
+%% ====== Ëã×Ó7: Cauchy ±äÒì ======
 function [c1, c2] = op_cauchy(target, V, l_limit, u_limit)
     alpha = 0.01;
     cauchy_noise1 = tan(pi*(rand(1,V) - 0.5));
@@ -244,7 +244,7 @@ function [c1, c2] = op_cauchy(target, V, l_limit, u_limit)
     c2 = clip_bounds(c2, l_limit, u_limit);
 end
 
-%% ====== è¾¹ç•Œå¤„ç† ======
+%% ====== ±ß½ç´¦Àí ======
 function x = clip_bounds(x, l_limit, u_limit)
     for j = 1:length(x)
         while x(j) > u_limit(j) || x(j) < l_limit(j)

@@ -1,7 +1,7 @@
 function chromosome = nsga3_standard(Nh, Nw, Np, L, Zpump, h, Cprice, pop, gen)
-% nsga3_standard - æ ‡å‡† NSGA-III å®ç°
+% nsga3_standard - ±ê×¼ NSGA-III ÊµÏÖ
 %
-% åœ¨ NSGA-II åŸºç¡€ä¸Šä½¿ç”¨å‚è€ƒç‚¹å¼•å¯¼é€‰æ‹©æ›¿ä»£æ‹¥æŒ¤è·ç¦»
+% ÔÚ NSGA-II »ù´¡ÉÏÊ¹ÓÃ²Î¿¼µãÒıµ¼Ñ¡ÔñÌæ´úÓµ¼·¾àÀë
 
 if nargin < 8, pop = 100; end
 if nargin < 9, gen = 200; end

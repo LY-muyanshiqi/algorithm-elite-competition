@@ -1,13 +1,13 @@
 function verify_levy_jump(n_samples, n_dims)
-% verify_levy_jump - éªŒè¯Levyé£è¡Œvsé«˜æ–¯å˜å¼‚çš„è·³å‡ºå±€éƒ¨æœ€ä¼˜èƒ½åŠ›
+% verify_levy_jump - ÑéÖ¤Levy·ÉĞĞvs¸ßË¹±äÒìµÄÌø³ö¾Ö²¿×îÓÅÄÜÁ¦
 %
-% å¯¹æ¯”Levyé£è¡Œ(Paretoå°¾)ä¸é«˜æ–¯å˜å¼‚(æŒ‡æ•°è¡°å‡)åœ¨å¤šæ¨¡æ€æµ‹è¯•å‡½æ•°ä¸Šçš„è¡¨ç°
+% ¶Ô±ÈLevy·ÉĞĞ(ParetoÎ²)Óë¸ßË¹±äÒì(Ö¸ÊıË¥¼õ)ÔÚ¶àÄ£Ì¬²âÊÔº¯ÊıÉÏµÄ±íÏÖ
 
 if nargin < 1, n_samples = 10000; end
 if nargin < 2, n_dims = 10; end
 
-fprintf('=== Levyé£è¡Œè·³è·ƒç‰¹æ€§éªŒè¯ ===\n');
-fprintf('æ ·æœ¬: %d, ç»´åº¦: %d\n\n', n_samples, n_dims);
+fprintf('=== Levy·ÉĞĞÌøÔ¾ÌØĞÔÑéÖ¤ ===\n');
+fprintf('Ñù±¾: %d, Î¬¶È: %d\n\n', n_samples, n_dims);
 
 beta = 1.5;
 alpha = 0.01;
@@ -26,13 +26,13 @@ end
 levy_norms = sqrt(sum(levy_steps.^2, 2));
 gauss_norms = sqrt(sum(gauss_steps.^2, 2));
 
-fprintf('--- æ­¥é•¿ç»Ÿè®¡ ---\n');
+fprintf('--- ²½³¤Í³¼Æ ---\n');
 fprintf('  Levy:  mean=%.3f, std=%.3f, max=%.3f, skewness=%.3f\n', ...
     mean(levy_norms), std(levy_norms), max(levy_norms), skewness(levy_norms));
 fprintf('  Gauss: mean=%.3f, std=%.3f, max=%.3f, skewness=%.3f\n', ...
     mean(gauss_norms), std(gauss_norms), max(gauss_norms), skewness(gauss_norms));
 
-fprintf('\n--- å°¾éƒ¨æ¦‚ç‡å¯¹æ¯” (>3sigmaçš„å¤§è·³è·ƒæ¦‚ç‡) ---\n');
+fprintf('\n--- Î²²¿¸ÅÂÊ¶Ô±È (>3sigmaµÄ´óÌøÔ¾¸ÅÂÊ) ---\n');
 thresholds = [1, 2, 3, 5, 10, 20];
 for t = thresholds
     p_levy = mean(levy_norms > t * mean(gauss_norms));
@@ -41,7 +41,7 @@ for t = thresholds
     fprintf('  > %d sigma: Levy=%.6f, Gauss=%.6f, Ratio=%.0fx\n', t, p_levy, p_gauss, ratio);
 end
 
-fprintf('\n--- Rastriginå‡½æ•°: è·³å‡ºå±€éƒ¨æœ€ä¼˜æµ‹è¯• ---\n');
+fprintf('\n--- Rastriginº¯Êı: Ìø³ö¾Ö²¿×îÓÅ²âÊÔ ---\n');
 n_tests = 100;
 escape_success_levy = zeros(n_tests, 1);
 escape_success_gauss = zeros(n_tests, 1);
@@ -59,14 +59,14 @@ for test = 1:n_tests
     n_evals_gauss(test) = n_evals;
 end
 
-fprintf('  Levyå˜å¼‚:  è·³å‡ºæˆåŠŸç‡=%.2f%%, å¹³å‡è¯„ä¼°æ¬¡æ•°=%.1f\n', ...
+fprintf('  Levy±äÒì:  Ìø³ö³É¹¦ÂÊ=%.2f%%, Æ½¾ùÆÀ¹À´ÎÊı=%.1f\n', ...
     mean(escape_success_levy)*100, mean(n_evals_levy(n_evals_levy>0)));
-fprintf('  Gausså˜å¼‚: è·³å‡ºæˆåŠŸç‡=%.2f%%, å¹³å‡è¯„ä¼°æ¬¡æ•°=%.1f\n', ...
+fprintf('  Gauss±äÒì: Ìø³ö³É¹¦ÂÊ=%.2f%%, Æ½¾ùÆÀ¹À´ÎÊı=%.1f\n', ...
     mean(escape_success_gauss)*100, mean(n_evals_gauss(n_evals_gauss>0)));
 
-fprintf('\nç»“è®º:\n');
-fprintf('  Levyé£è¡Œçš„é‡å°¾åˆ†å¸ƒä½¿å¾—é•¿è·³è·ƒæ¦‚ç‡è¿œé«˜äºé«˜æ–¯åˆ†å¸ƒ(P(step>t) âˆ t^(-beta) vs exp(-t^2))\n');
-fprintf('  åœ¨å¤šæ¨¡æ€åœºæ™¯ä¸‹, Levyå˜å¼‚çš„é•¿è·³è·ƒç‰¹æ€§å¯ä»¥è·¨è¿‡å±€éƒ¨æœ€ä¼˜çš„å¸å¼•ç›†, å®ç°è·³å‡º.\n');
+fprintf('\n½áÂÛ:\n');
+fprintf('  Levy·ÉĞĞµÄÖØÎ²·Ö²¼Ê¹µÃ³¤ÌøÔ¾¸ÅÂÊÔ¶¸ßÓÚ¸ßË¹·Ö²¼(P(step>t) ¡Ø t^(-beta) vs exp(-t^2))\n');
+fprintf('  ÔÚ¶àÄ£Ì¬³¡¾°ÏÂ, Levy±äÒìµÄ³¤ÌøÔ¾ÌØĞÔ¿ÉÒÔ¿ç¹ı¾Ö²¿×îÓÅµÄÎüÒıÅè, ÊµÏÖÌø³ö.\n');
 end
 
 function [success, n_evals] = test_escape_levy(x0, alpha, beta, sigma_u, n_dims)

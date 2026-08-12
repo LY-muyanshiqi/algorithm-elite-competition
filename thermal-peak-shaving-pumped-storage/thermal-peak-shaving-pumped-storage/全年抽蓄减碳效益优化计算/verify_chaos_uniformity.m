@@ -1,15 +1,15 @@
 function verify_chaos_uniformity(n_pop, n_dim, n_trials)
-% verify_chaos_uniformity - éªŒè¯Logisticæ··æ²Œæ˜ å°„çš„åˆ†å¸ƒå‡åŒ€æ€§
+% verify_chaos_uniformity - ÑéÖ¤Logistic»ìãçÓ³ÉäµÄ·Ö²¼¾ùÔÈÐÔ
 %
-% å¯¹æ¯”Logisticæ˜ å°„ã€Tentæ˜ å°„ã€Sobolåºåˆ—ã€å‡åŒ€éšæœºå››ç§åˆå§‹åŒ–ç­–ç•¥
-% æŒ‡æ ‡: ç§ç¾¤è¦†ç›–çŽ‡ï¼ˆè¶…çƒä½“å¡«å……ä½“ç§¯ï¼‰ã€KSæ£€éªŒpå€¼ã€ç§ç¾¤ç†µ
+% ¶Ô±ÈLogisticÓ³Éä¡¢TentÓ³Éä¡¢SobolÐòÁÐ¡¢¾ùÔÈËæ»úËÄÖÖ³õÊ¼»¯²ßÂÔ
+% Ö¸±ê: ÖÖÈº¸²¸ÇÂÊ£¨³¬ÇòÌåÌî³äÌå»ý£©¡¢KS¼ìÑépÖµ¡¢ÖÖÈºìØ
 
 if nargin < 1, n_pop = 100; end
 if nargin < 2, n_dim = 23; end
 if nargin < 3, n_trials = 1000; end
 
-fprintf('=== Logisticæ··æ²Œæ˜ å°„å‡åŒ€æ€§éªŒè¯ ===\n');
-fprintf('ç§ç¾¤: %d, ç»´åº¦: %d, é‡å¤: %d\n\n', n_pop, n_dim, n_trials);
+fprintf('=== Logistic»ìãçÓ³Éä¾ùÔÈÐÔÑéÖ¤ ===\n');
+fprintf('ÖÖÈº: %d, Î¬¶È: %d, ÖØ¸´: %d\n\n', n_pop, n_dim, n_trials);
 
 methods = {'logistic', 'tent', 'sobol', 'random'};
 n_methods = length(methods);
@@ -43,28 +43,28 @@ for t = 1:n_trials
     end
 end
 
-fprintf('\n--- è¦†ç›–çŽ‡ (è¶…çƒä½“å¡«å……ä½“ç§¯, è¶Šé«˜è¶Šå¥½) ---\n');
+fprintf('\n--- ¸²¸ÇÂÊ (³¬ÇòÌåÌî³äÌå»ý, Ô½¸ßÔ½ºÃ) ---\n');
 for m = 1:n_methods
     fprintf('  %-12s: mean=%.3f, std=%.3f\n', methods{m}, mean(coverage(:,m)), std(coverage(:,m)));
 end
 
-fprintf('\n--- æœ€å°è·ç¦» (è¶Šå¤§è¶Šå‡åŒ€) ---\n');
+fprintf('\n--- ×îÐ¡¾àÀë (Ô½´óÔ½¾ùÔÈ) ---\n');
 for m = 1:n_methods
     fprintf('  %-12s: mean=%.4f, std=%.4f\n', methods{m}, mean(min_dist(:,m)), std(min_dist(:,m)));
 end
 
-fprintf('\n--- ç§ç¾¤ç†µ (è¶Šé«˜å¤šæ ·æ€§è¶Šå¥½) ---\n');
+fprintf('\n--- ÖÖÈºìØ (Ô½¸ß¶àÑùÐÔÔ½ºÃ) ---\n');
 for m = 1:n_methods
     fprintf('  %-12s: mean=%.3f, std=%.3f\n', methods{m}, mean(entropy_vals(:,m)), std(entropy_vals(:,m)));
 end
 
-fprintf('\n--- KSæ£€éªŒpå€¼åˆ†å¸ƒ (p>0.05æ¯”ä¾‹, è¶Šé«˜è¶Šå‡åŒ€) ---\n');
+fprintf('\n--- KS¼ìÑépÖµ·Ö²¼ (p>0.05±ÈÀý, Ô½¸ßÔ½¾ùÔÈ) ---\n');
 for m = 1:n_methods
     pass_rate = mean(ks_pvals(:,m) > 0.05);
     fprintf('  %-12s: p>0.05 rate = %.3f\n', methods{m}, pass_rate);
 end
 
-fprintf('\n--- Logistic vs å‡åŒ€éšæœº: KSæ£€éªŒpå€¼ (LyapunovæŒ‡æ•°éªŒè¯) ---\n');
+fprintf('\n--- Logistic vs ¾ùÔÈËæ»ú: KS¼ìÑépÖµ (LyapunovÖ¸ÊýÑéÖ¤) ---\n');
 logistic_samples = zeros(n_pop * n_dim, n_trials);
 random_samples = zeros(n_pop * n_dim, n_trials);
 for t = 1:n_trials
@@ -78,14 +78,14 @@ random_all = random_samples(:);
 [~, p_val] = kstest2(logistic_all, random_all);
 fprintf('  Logistic vs Random KS test p-value: %.4f\n', p_val);
 if p_val > 0.05
-    fprintf('  Conclusion: ä¸èƒ½æ‹’ç»ä¸¤è€…æ¥è‡ªåŒä¸€åˆ†å¸ƒçš„å‡è®¾ (Logisticæ··æ²Œæ›¿ä»£randçš„å‡åŒ€æ€§å¾—åˆ°ç»Ÿè®¡æ”¯æŒ)\n');
+    fprintf('  Conclusion: ²»ÄÜ¾Ü¾øÁ½ÕßÀ´×ÔÍ¬Ò»·Ö²¼µÄ¼ÙÉè (Logistic»ìãçÌæ´úrandµÄ¾ùÔÈÐÔµÃµ½Í³¼ÆÖ§³Ö)\n');
 else
-    fprintf('  Conclusion: Logisticåˆ†å¸ƒä¸Žå‡åŒ€åˆ†å¸ƒæœ‰æ˜¾è‘—å·®å¼‚ (éœ€è¦åˆ†æžå·®å¼‚çš„æ–¹å‘å’Œå¹…åº¦)\n');
+    fprintf('  Conclusion: Logistic·Ö²¼Óë¾ùÔÈ·Ö²¼ÓÐÏÔÖø²îÒì (ÐèÒª·ÖÎö²îÒìµÄ·½ÏòºÍ·ù¶È)\n');
 end
 
-fprintf('\nç»“æžœè¯´æ˜Ž:\n');
-fprintf('  Logisticæ··æ²Œæ˜ å°„åœ¨mu=4æ—¶LyapunovæŒ‡æ•°=ln(2)>0, å…·æœ‰éåŽ†æ€§å’Œä¼ªéšæœºæ€§.\n');
-fprintf('  è¦†ç›–çŽ‡å’Œç†µè¶ŠæŽ¥è¿‘å‡åŒ€éšæœº, è¯´æ˜Žæ··æ²Œåˆå§‹åŒ–å¯ä»¥æ›¿ä»£rand()ä¸”å¯èƒ½æ›´å‡åŒ€.\n');
+fprintf('\n½á¹ûËµÃ÷:\n');
+fprintf('  Logistic»ìãçÓ³ÉäÔÚmu=4Ê±LyapunovÖ¸Êý=ln(2)>0, ¾ßÓÐ±éÀúÐÔºÍÎ±Ëæ»úÐÔ.\n');
+fprintf('  ¸²¸ÇÂÊºÍìØÔ½½Ó½ü¾ùÔÈËæ»ú, ËµÃ÷»ìãç³õÊ¼»¯¿ÉÒÔÌæ´úrand()ÇÒ¿ÉÄÜ¸ü¾ùÔÈ.\n');
 end
 
 function pop = generate_population(N, D, method)

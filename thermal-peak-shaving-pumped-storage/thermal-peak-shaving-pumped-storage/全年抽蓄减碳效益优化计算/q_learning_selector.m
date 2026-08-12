@@ -1,33 +1,33 @@
 function [op_probs, q_table, epsilon] = q_learning_selector(state_features, q_table, epsilon, action, reward, gen, max_gen)
-% q_learning_selector - Q-Learning è‡ªé€‚åº”ç®—å­é€‰æ‹©å™¨
+% q_learning_selector - Q-Learning ×ÔÊÊÓ¦Ëã×ÓÑ¡ÔñÆ÷
 %
-% çŠ¶æ€ç©ºé—´ (6ç»´, æ¯ç»´ç¦»æ•£åŒ–ä¸º3-5ä¸ªæ¡¶):
-%   1. ç§ç¾¤ç†µ (0-1)          -> 3 bins
-%   2. ä»£æ•°è¿›åº¦ (0-1)         -> 5 bins
-%   3. åœæ»è®¡æ•° (log scale)   -> 3 bins
-%   4. HVå¢é‡ (normalized)    -> 3 bins
-%   5. çº¦æŸè¿åç‡ (0-1)       -> 3 bins
-%   6. æ‹¥æŒ¤è·ç¦»æ–¹å·® (0-1)     -> 3 bins
+% ×´Ì¬¿Õ¼ä (6Î¬, Ã¿Î¬ÀëÉ¢»¯Îª3-5¸öÍ°):
+%   1. ÖÖÈºìØ (0-1)          -> 3 bins
+%   2. ´úÊı½ø¶È (0-1)         -> 5 bins
+%   3. Í£ÖÍ¼ÆÊı (log scale)   -> 3 bins
+%   4. HVÔöÁ¿ (normalized)    -> 3 bins
+%   5. Ô¼ÊøÎ¥·´ÂÊ (0-1)       -> 3 bins
+%   6. Óµ¼·¾àÀë·½²î (0-1)     -> 3 bins
 %
-% æ€»çŠ¶æ€æ•°: 3*5*3*3*3*3 = 1215
+% ×Ü×´Ì¬Êı: 3*5*3*3*3*3 = 1215
 %
-% åŠ¨ä½œç©ºé—´ (7ç§ç®—å­):
+% ¶¯×÷¿Õ¼ä (7ÖÖËã×Ó):
 %   1: DE/rand/1, 2: DE/rand/2, 3: DE/current-to-best/1
 %   4: PM, 5: SBX, 6: Levy, 7: Cauchy
 %
-% è¾“å…¥:
-%   state_features - 6ç»´ç‰¹å¾å‘é‡ [entropy, gen_ratio, stagnation, hv_delta, cv_rate, crowd_var]
-%   q_table        - Qè¡¨ (states x actions)
-%   epsilon        - å½“å‰æ¢ç´¢ç‡
-%   action         - ä¸Šä¸€æ­¥é€‰æ‹©çš„åŠ¨ä½œ (1-7), é¦–æ¬¡è°ƒç”¨ä¼ 0
-%   reward         - ä¸Šä¸€æ­¥çš„å¥–åŠ±, é¦–æ¬¡è°ƒç”¨ä¼ 0
-%   gen            - å½“å‰ä»£æ•°
-%   max_gen        - æœ€å¤§ä»£æ•°
+% ÊäÈë:
+%   state_features - 6Î¬ÌØÕ÷ÏòÁ¿ [entropy, gen_ratio, stagnation, hv_delta, cv_rate, crowd_var]
+%   q_table        - Q±í (states x actions)
+%   epsilon        - µ±Ç°Ì½Ë÷ÂÊ
+%   action         - ÉÏÒ»²½Ñ¡ÔñµÄ¶¯×÷ (1-7), Ê×´Îµ÷ÓÃ´«0
+%   reward         - ÉÏÒ»²½µÄ½±Àø, Ê×´Îµ÷ÓÃ´«0
+%   gen            - µ±Ç°´úÊı
+%   max_gen        - ×î´ó´úÊı
 %
-% è¾“å‡º:
-%   op_probs  - 7ç»´ç®—å­é€‰æ‹©æ¦‚ç‡å‘é‡
-%   q_table   - æ›´æ–°åçš„Qè¡¨
-%   epsilon   - æ›´æ–°åçš„æ¢ç´¢ç‡
+% Êä³ö:
+%   op_probs  - 7Î¬Ëã×ÓÑ¡Ôñ¸ÅÂÊÏòÁ¿
+%   q_table   - ¸üĞÂºóµÄQ±í
+%   epsilon   - ¸üĞÂºóµÄÌ½Ë÷ÂÊ
 
 persistent n_bins n_states prev_state prev_action alpha gamma
 

@@ -1,16 +1,16 @@
 function run_ablation(day_idx, province, n_runs, output_dir)
-% run_ablation - NSLDEæ¶ˆèå®éªŒMATLABå…¥å£
+% run_ablation - NSLDEÏûÈÚÊµÑéMATLABÈë¿Ú
 %
-% 7ç»„é…ç½® Ã— n_runsæ¬¡é‡å¤, éªŒè¯æ¯ä¸ªæ¨¡å—çš„ç‹¬ç«‹è´¡çŒ®
+% 7×éÅäÖÃ ¡Á n_runs´ÎÖØ¸´, ÑéÖ¤Ã¿¸öÄ£¿éµÄ¶ÀÁ¢¹±Ï×
 %
-% è¾“å…¥:
-%   day_idx   - æ•°æ®ä¸­çš„æ—¥ç´¢å¼• (1-365)
-%   province  - çœä»½å ('shaanxi'|'gansu'|'qinghai'|'ningxia')
-%   n_runs    - æ¯ç»„é…ç½®çš„é‡å¤æ¬¡æ•° (é»˜è®¤5)
-%   output_dir - è¾“å‡ºç›®å½• (é»˜è®¤'./experiment_results')
+% ÊäÈë:
+%   day_idx   - Êı¾İÖĞµÄÈÕË÷Òı (1-365)
+%   province  - Ê¡·İÃû ('shaanxi'|'gansu'|'qinghai'|'ningxia')
+%   n_runs    - Ã¿×éÅäÖÃµÄÖØ¸´´ÎÊı (Ä¬ÈÏ5)
+%   output_dir - Êä³öÄ¿Â¼ (Ä¬ÈÏ'./experiment_results')
 %
-% è¾“å‡º: {output_dir}/ablation_{province}_day{day_idx}.mat
-%   åŒ…å«ç»“æ„ä½“æ•°ç»„ results(7, n_runs), æ¯ä¸ªå…ƒç´ å«:
+% Êä³ö: {output_dir}/ablation_{province}_day{day_idx}.mat
+%   °üº¬½á¹¹ÌåÊı×é results(7, n_runs), Ã¿¸öÔªËØº¬:
 %     .config_name, .run_id, .chromosome, .metrics, .history
 
 if nargin < 3, n_runs = 5; end
