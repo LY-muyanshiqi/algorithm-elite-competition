@@ -1,15 +1,15 @@
 function verify_chaos_uniformity(n_pop, n_dim, n_trials)
-% verify_chaos_uniformity - 验证Logistic混沌映射的分布均匀性
+% verify_chaos_uniformity - Logistic
 %
-% 对比Logistic映射、Tent映射、Sobol序列、均匀随机四种初始化策略
-% 指标: 种群覆盖率（超球体填充体积）、KS检验p值、种群熵
+% LogisticTentSobol
+% : KSp
 
 if nargin < 1, n_pop = 100; end
 if nargin < 2, n_dim = 23; end
 if nargin < 3, n_trials = 1000; end
 
-fprintf('=== Logistic混沌映射均匀性验证 ===\n');
-fprintf('种群: %d, 维度: %d, 重复: %d\n\n', n_pop, n_dim, n_trials);
+fprintf('=== Logistic ===\n');
+fprintf(': %d, : %d, : %d\n\n', n_pop, n_dim, n_trials);
 
 methods = {'logistic', 'tent', 'sobol', 'random'};
 n_methods = length(methods);
@@ -43,28 +43,28 @@ for t = 1:n_trials
     end
 end
 
-fprintf('\n--- 覆盖率 (超球体填充体积, 越高越好) ---\n');
+fprintf('\n---  (, ) ---\n');
 for m = 1:n_methods
     fprintf('  %-12s: mean=%.3f, std=%.3f\n', methods{m}, mean(coverage(:,m)), std(coverage(:,m)));
 end
 
-fprintf('\n--- 最小距离 (越大越均匀) ---\n');
+fprintf('\n---  () ---\n');
 for m = 1:n_methods
     fprintf('  %-12s: mean=%.4f, std=%.4f\n', methods{m}, mean(min_dist(:,m)), std(min_dist(:,m)));
 end
 
-fprintf('\n--- 种群熵 (越高多样性越好) ---\n');
+fprintf('\n---  () ---\n');
 for m = 1:n_methods
     fprintf('  %-12s: mean=%.3f, std=%.3f\n', methods{m}, mean(entropy_vals(:,m)), std(entropy_vals(:,m)));
 end
 
-fprintf('\n--- KS检验p值分布 (p>0.05比例, 越高越均匀) ---\n');
+fprintf('\n--- KSp (p>0.05, ) ---\n');
 for m = 1:n_methods
     pass_rate = mean(ks_pvals(:,m) > 0.05);
     fprintf('  %-12s: p>0.05 rate = %.3f\n', methods{m}, pass_rate);
 end
 
-fprintf('\n--- Logistic vs 均匀随机: KS检验p值 (Lyapunov指数验证) ---\n');
+fprintf('\n--- Logistic vs : KSp (Lyapunov) ---\n');
 logistic_samples = zeros(n_pop * n_dim, n_trials);
 random_samples = zeros(n_pop * n_dim, n_trials);
 for t = 1:n_trials
@@ -78,14 +78,14 @@ random_all = random_samples(:);
 [~, p_val] = kstest2(logistic_all, random_all);
 fprintf('  Logistic vs Random KS test p-value: %.4f\n', p_val);
 if p_val > 0.05
-    fprintf('  Conclusion: 不能拒绝两者来自同一分布的假设 (Logistic混沌替代rand的均匀性得到统计支持)\n');
+    fprintf('  Conclusion:  (Logisticrand)\n');
 else
-    fprintf('  Conclusion: Logistic分布与均匀分布有显著差异 (需要分析差异的方向和幅度)\n');
+    fprintf('  Conclusion: Logistic ()\n');
 end
 
-fprintf('\n结果说明:\n');
-fprintf('  Logistic混沌映射在mu=4时Lyapunov指数=ln(2)>0, 具有遍历性和伪随机性.\n');
-fprintf('  覆盖率和熵越接近均匀随机, 说明混沌初始化可以替代rand()且可能更均匀.\n');
+fprintf('\n:\n');
+fprintf('  Logisticmu=4Lyapunov=ln(2)>0, .\n');
+fprintf('  , rand().\n');
 end
 
 function pop = generate_population(N, D, method)

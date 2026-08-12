@@ -1,24 +1,24 @@
 function [chromosome, history] = nslde_enhanced(Nh, Nw, Np, L, Zpump, h, Cprice, options)
-% nslde_enhanced - NSLDE 增强版: 多算子自适应 + 迭代历史记录
+% nslde_enhanced - NSLDE :  + 
 %
-% 相较于原 nslde.m:
-%   1. 支持多算子自适应选择 (通过 options.op_probs)
-%   2. 记录完整进化轨迹 (每50代的HV、IGD、种群熵等)
-%   3. 支持多种初始化策略 (通过 options.init_method)
-%   4. 可配置种群大小和代数
+%  nslde.m:
+%   1.  ( options.op_probs)
+%   2.  (50HVIGD)
+%   3.  ( options.init_method)
+%   4. 
 %
-% 输入:
-%   options.init_method - 'logistic'|'tent'|'sobol'|'random' (默认'logistic')
-%   options.op_probs    - 7维算子概率向量 (默认均匀)
-%   options.pop         - 种群大小 (默认100)
-%   options.gen         - 进化代数 (默认3000)
-%   options.track_hv    - 是否追踪HV (默认true)
-%   options.use_qlearning - 是否使用Q-Learning自适应 (默认false)
-%   options.track_strategy - 是否追踪策略使用 (默认false)
+% :
+%   options.init_method - 'logistic'|'tent'|'sobol'|'random' ('logistic')
+%   options.op_probs    - 7 ()
+%   options.pop         -  (100)
+%   options.gen         -  (3000)
+%   options.track_hv    - HV (true)
+%   options.use_qlearning - Q-Learning (false)
+%   options.track_strategy -  (false)
 %
-% 输出:
-%   chromosome - 最终种群
-%   history    - 进化历史结构体
+% :
+%   chromosome - 
+%   history    - 
 
 if nargin < 8
     options = struct();

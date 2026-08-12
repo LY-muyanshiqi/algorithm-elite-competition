@@ -1,9 +1,11 @@
 <template>
   <div class="algo-compare">
-    <ScreenHeader title="多目标优化算法对比中心" subtitle="NSLDE · NSGA-II · MOEA/D / Pareto前沿与收敛性能" status-label="算法实验在线" />
     <div class="page-header">
       <h2>⚔️ NSLDE vs NSGA-II vs MOEA/D 算法对比</h2>
-      <p class="page-desc">在相同数据和约束条件下，三种多目标进化算法的 Pareto 前沿、性能指标和收敛速度对比</p>
+      <p class="page-desc">
+        在相同数据和约束条件下，三种多目标进化算法的 Pareto
+        前沿、性能指标和收敛速度对比
+      </p>
     </div>
 
     <div v-if="loading" class="loading-state">
@@ -14,7 +16,8 @@
     <template v-if="!loading && compData">
       <!-- 数据来源 -->
       <div class="info-banner" v-if="compData.is_real">
-        ✅ 使用真实 MATLAB 对比实验数据（{{ compData.days_used?.length || 5 }} 个代表日）
+        ✅ 使用真实 MATLAB 对比实验数据（{{ compData.days_used?.length || 5 }}
+        个代表日）
       </div>
 
       <!-- KPI 卡片 -->
@@ -44,13 +47,19 @@
           class="tab-btn"
           :class="{ 'tab-active': activeTab === tab.key }"
           @click="activeTab = tab.key"
-        >{{ tab.label }}</button>
+        >
+          {{ tab.label }}
+        </button>
       </div>
 
       <!-- Tab 内容 -->
       <div class="tab-content">
         <!-- Pareto 前沿 -->
-        <div v-show="activeTab === 'pareto'" ref="paretoChart" class="chart-body"></div>
+        <div
+          v-show="activeTab === 'pareto'"
+          ref="paretoChart"
+          class="chart-body"
+        ></div>
 
         <!-- 性能指标 -->
         <div v-show="activeTab === 'metrics'" class="metrics-section">
@@ -74,15 +83,15 @@
             <h3>⏱️ 平均运行时间</h3>
             <div class="timing-grid">
               <div class="timing-card">
-                <span class="timing-algo" style="color:#00d4ff">NSLDE</span>
+                <span class="timing-algo" style="color: #00d4ff">NSLDE</span>
                 <span class="timing-val">{{ timing[0] }}s</span>
               </div>
               <div class="timing-card">
-                <span class="timing-algo" style="color:#ff9800">NSGA-II</span>
+                <span class="timing-algo" style="color: #ff9800">NSGA-II</span>
                 <span class="timing-val">{{ timing[1] }}s</span>
               </div>
               <div class="timing-card">
-                <span class="timing-algo" style="color:#e040fb">MOEA/D</span>
+                <span class="timing-algo" style="color: #e040fb">MOEA/D</span>
                 <span class="timing-val">{{ timing[2] }}s</span>
               </div>
             </div>
@@ -90,7 +99,11 @@
         </div>
 
         <!-- 收敛曲线 -->
-        <div v-show="activeTab === 'convergence'" ref="convChart" class="chart-body"></div>
+        <div
+          v-show="activeTab === 'convergence'"
+          ref="convChart"
+          class="chart-body"
+        ></div>
       </div>
     </template>
 
@@ -102,196 +115,302 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onBeforeUnmount, nextTick, watch } from 'vue'
-import * as echarts from 'echarts'
-import { fetchAllData } from '../api'
-import ScreenHeader from '../components/ScreenHeader.vue'
+import {
+  ref,
+  computed,
+  onMounted,
+  onBeforeUnmount,
+  nextTick,
+  watch,
+} from "vue";
+import * as echarts from "echarts";
+import { fetchAllData } from "../api";
 
-const loading = ref(true)
-const compData = ref(null)
-const activeTab = ref('pareto')
+const loading = ref(true);
+const compData = ref(null);
+const activeTab = ref("pareto");
 
 const tabs = [
-  { key: 'pareto', label: '🎯 Pareto 前沿对比' },
-  { key: 'metrics', label: '📊 性能指标 (HV / IGD / Spacing)' },
-  { key: 'convergence', label: '📉 收敛曲线对比' },
-]
+  { key: "pareto", label: "🎯 Pareto 前沿对比" },
+  { key: "metrics", label: "📊 性能指标 (HV / IGD / Spacing)" },
+  { key: "convergence", label: "📉 收敛曲线对比" },
+];
 
-const paretoChart = ref(null)
-const metricsChart = ref(null)
-const convChart = ref(null)
+const paretoChart = ref(null);
+const metricsChart = ref(null);
+const convChart = ref(null);
 
-let paretoInstance = null
-let metricsInstance = null
-let convInstance = null
+let paretoInstance = null;
+let metricsInstance = null;
+let convInstance = null;
 
 const nsldeMean = computed(() => {
-  if (!compData.value?.z_nslde) return '-'
-  const m = compData.value.z_nslde.map(r => r[0]).reduce((a, b) => a + b, 0) / compData.value.z_nslde.length
-  return m.toFixed(1)
-})
+  if (!compData.value?.z_nslde) return "-";
+  const m =
+    compData.value.z_nslde.map((r) => r[0]).reduce((a, b) => a + b, 0) /
+    compData.value.z_nslde.length;
+  return m.toFixed(1);
+});
 
 const nsga2Mean = computed(() => {
-  if (!compData.value?.z_nsga2) return '-'
-  const m = compData.value.z_nsga2.map(r => r[0]).reduce((a, b) => a + b, 0) / compData.value.z_nsga2.length
-  return m.toFixed(1)
-})
+  if (!compData.value?.z_nsga2) return "-";
+  const m =
+    compData.value.z_nsga2.map((r) => r[0]).reduce((a, b) => a + b, 0) /
+    compData.value.z_nsga2.length;
+  return m.toFixed(1);
+});
 
 const moeadMean = computed(() => {
-  if (!compData.value?.z_moead) return '-'
-  const m = compData.value.z_moead.map(r => r[0]).reduce((a, b) => a + b, 0) / compData.value.z_moead.length
-  return m.toFixed(1)
-})
+  if (!compData.value?.z_moead) return "-";
+  const m =
+    compData.value.z_moead.map((r) => r[0]).reduce((a, b) => a + b, 0) /
+    compData.value.z_moead.length;
+  return m.toFixed(1);
+});
 
 const nsga2Delta = computed(() => {
-  if (!compData.value) return ''
-  const n = nsldeMean.value, ns = nsga2Mean.value
-  if (n === '-') return ''
-  const d = ((ns - n) / n * 100)
-  return (d >= 0 ? '+' : '') + d.toFixed(1) + '%'
-})
+  if (!compData.value) return "";
+  const n = nsldeMean.value,
+    ns = nsga2Mean.value;
+  if (n === "-") return "";
+  const d = ((ns - n) / n) * 100;
+  return (d >= 0 ? "+" : "") + d.toFixed(1) + "%";
+});
 
 const moeadDelta = computed(() => {
-  if (!compData.value) return ''
-  const n = nsldeMean.value, m = moeadMean.value
-  if (n === '-') return ''
-  const d = ((m - n) / n * 100)
-  return (d >= 0 ? '+' : '') + d.toFixed(1) + '%'
-})
+  if (!compData.value) return "";
+  const n = nsldeMean.value,
+    m = moeadMean.value;
+  if (n === "-") return "";
+  const d = ((m - n) / n) * 100;
+  return (d >= 0 ? "+" : "") + d.toFixed(1) + "%";
+});
 
 const timing = computed(() => {
-  if (!compData.value?.timing) return ['-', '-', '-']
-  return compData.value.timing.map(v => v.toFixed(1))
-})
+  if (!compData.value?.timing) return ["-", "-", "-"];
+  return compData.value.timing.map((v) => v.toFixed(1));
+});
 
 function initParetoChart() {
-  if (!paretoChart.value || !compData.value) return
-  if (paretoInstance) paretoInstance.dispose()
-  paretoInstance = echarts.init(paretoChart.value)
-  const d = compData.value
+  if (!paretoChart.value || !compData.value) return;
+  if (paretoInstance) paretoInstance.dispose();
+  paretoInstance = echarts.init(paretoChart.value);
+  const d = compData.value;
 
   paretoInstance.setOption({
-    tooltip: { trigger: 'item' },
-    legend: { data: ['NSLDE', 'NSGA-II', 'MOEA/D'], textStyle: { color: '#8ba4c4' }, top: 10 },
+    tooltip: { trigger: "item" },
+    legend: {
+      data: ["NSLDE", "NSGA-II", "MOEA/D"],
+      textStyle: { color: "#8ba4c4" },
+      top: 10,
+    },
     grid: { left: 70, right: 30, top: 60, bottom: 60 },
-    xAxis: { name: 'f₁: 火电调峰容量', nameTextStyle: { color: '#8ba4c4' }, axisLabel: { color: '#8ba4c4' } },
-    yAxis: { name: 'f₂: 碳排放', nameTextStyle: { color: '#8ba4c4' }, axisLabel: { color: '#8ba4c4' }, splitLine: { lineStyle: { color: 'rgba(255,255,255,0.05)' } } },
+    xAxis: {
+      name: "f₁: 火电调峰容量",
+      nameTextStyle: { color: "#8ba4c4" },
+      axisLabel: { color: "#8ba4c4" },
+    },
+    yAxis: {
+      name: "f₂: 碳排放",
+      nameTextStyle: { color: "#8ba4c4" },
+      axisLabel: { color: "#8ba4c4" },
+      splitLine: { lineStyle: { color: "rgba(255,255,255,0.05)" } },
+    },
     series: [
-      { name: 'NSLDE', type: 'scatter', data: d.z_nslde, symbolSize: 8, itemStyle: { color: '#00d4ff' } },
-      { name: 'NSGA-II', type: 'scatter', data: d.z_nsga2, symbolSize: 8, itemStyle: { color: '#ff9800' } },
-      { name: 'MOEA/D', type: 'scatter', data: d.z_moead, symbolSize: 8, itemStyle: { color: '#e040fb' } },
+      {
+        name: "NSLDE",
+        type: "scatter",
+        data: d.z_nslde,
+        symbolSize: 8,
+        itemStyle: { color: "#00d4ff" },
+      },
+      {
+        name: "NSGA-II",
+        type: "scatter",
+        data: d.z_nsga2,
+        symbolSize: 8,
+        itemStyle: { color: "#ff9800" },
+      },
+      {
+        name: "MOEA/D",
+        type: "scatter",
+        data: d.z_moead,
+        symbolSize: 8,
+        itemStyle: { color: "#e040fb" },
+      },
     ],
-  })
+  });
 }
 
 function initMetricsChart() {
-  if (!metricsChart.value || !compData.value) return
-  if (metricsInstance) metricsInstance.dispose()
-  metricsInstance = echarts.init(metricsChart.value)
-  const d = compData.value
-  const algos = ['NSLDE', 'NSGA-II', 'MOEA/D']
-  const colors = ['#00d4ff', '#ff9800', '#e040fb']
+  if (!metricsChart.value || !compData.value) return;
+  if (metricsInstance) metricsInstance.dispose();
+  metricsInstance = echarts.init(metricsChart.value);
+  const d = compData.value;
+  const algos = ["NSLDE", "NSGA-II", "MOEA/D"];
+  const colors = ["#00d4ff", "#ff9800", "#e040fb"];
 
   metricsInstance.setOption({
-    tooltip: { trigger: 'axis' },
+    tooltip: { trigger: "axis" },
     grid: [
-      { left: 60, right: 20, top: 40, bottom: 40, width: '30%' },
-      { left: '38%', right: 20, top: 40, bottom: 40, width: '30%' },
-      { left: '68%', right: 20, top: 40, bottom: 40, width: '30%' },
+      { left: 60, right: 20, top: 40, bottom: 40, width: "30%" },
+      { left: "38%", right: 20, top: 40, bottom: 40, width: "30%" },
+      { left: "68%", right: 20, top: 40, bottom: 40, width: "30%" },
     ],
     xAxis: [
-      { gridIndex: 0, data: algos, axisLabel: { color: '#8ba4c4' } },
-      { gridIndex: 1, data: algos, axisLabel: { color: '#8ba4c4' } },
-      { gridIndex: 2, data: algos, axisLabel: { color: '#8ba4c4' } },
+      { gridIndex: 0, data: algos, axisLabel: { color: "#8ba4c4" } },
+      { gridIndex: 1, data: algos, axisLabel: { color: "#8ba4c4" } },
+      { gridIndex: 2, data: algos, axisLabel: { color: "#8ba4c4" } },
     ],
     yAxis: [
-      { gridIndex: 0, axisLabel: { color: '#8ba4c4' }, splitLine: { lineStyle: { color: 'rgba(255,255,255,0.05)' } } },
-      { gridIndex: 1, axisLabel: { color: '#8ba4c4' }, splitLine: { lineStyle: { color: 'rgba(255,255,255,0.05)' } } },
-      { gridIndex: 2, axisLabel: { color: '#8ba4c4' }, splitLine: { lineStyle: { color: 'rgba(255,255,255,0.05)' } } },
+      {
+        gridIndex: 0,
+        axisLabel: { color: "#8ba4c4" },
+        splitLine: { lineStyle: { color: "rgba(255,255,255,0.05)" } },
+      },
+      {
+        gridIndex: 1,
+        axisLabel: { color: "#8ba4c4" },
+        splitLine: { lineStyle: { color: "rgba(255,255,255,0.05)" } },
+      },
+      {
+        gridIndex: 2,
+        axisLabel: { color: "#8ba4c4" },
+        splitLine: { lineStyle: { color: "rgba(255,255,255,0.05)" } },
+      },
     ],
     series: [
-      { name: 'HV', type: 'bar', xAxisIndex: 0, yAxisIndex: 0, data: d.hv, itemStyle: { color: '#00d4ff' } },
-      { name: 'IGD', type: 'bar', xAxisIndex: 1, yAxisIndex: 1, data: d.igd, itemStyle: { color: '#ff9800' } },
-      { name: 'Spacing', type: 'bar', xAxisIndex: 2, yAxisIndex: 2, data: d.spacing, itemStyle: { color: '#e040fb' } },
+      {
+        name: "HV",
+        type: "bar",
+        xAxisIndex: 0,
+        yAxisIndex: 0,
+        data: d.hv,
+        itemStyle: { color: "#00d4ff" },
+      },
+      {
+        name: "IGD",
+        type: "bar",
+        xAxisIndex: 1,
+        yAxisIndex: 1,
+        data: d.igd,
+        itemStyle: { color: "#ff9800" },
+      },
+      {
+        name: "Spacing",
+        type: "bar",
+        xAxisIndex: 2,
+        yAxisIndex: 2,
+        data: d.spacing,
+        itemStyle: { color: "#e040fb" },
+      },
     ],
-  })
+  });
 }
 
 function initConvChart() {
-  if (!convChart.value) return
-  if (convInstance) convInstance.dispose()
-  convInstance = echarts.init(convChart.value)
+  if (!convChart.value) return;
+  if (convInstance) convInstance.dispose();
+  convInstance = echarts.init(convChart.value);
 
-  const gens = Array.from({ length: 31 }, (_, i) => i * 100)
-  const seed = 42
+  const gens = Array.from({ length: 31 }, (_, i) => i * 100);
+  const seed = 42;
   const series = [
-    { name: 'NSLDE', color: '#00d4ff', factor: 0.7 },
-    { name: 'NSGA-II', color: '#ff9800', factor: 1.0 },
-    { name: 'MOEA/D', color: '#e040fb', factor: 1.3 },
+    { name: "NSLDE", color: "#00d4ff", factor: 0.7 },
+    { name: "NSGA-II", color: "#ff9800", factor: 1.0 },
+    { name: "MOEA/D", color: "#e040fb", factor: 1.3 },
   ].map((s, si) => {
-    const data = gens.map((g, i) => [g, Math.exp(-(g / 1000)) * s.factor + ((Math.sin(i * 3.7 + si * 2.1 + seed) * 0.5 + 0.5) * 0.04)])
-    return { name: s.name, type: 'line', data, smooth: true, lineStyle: { color: s.color, width: 2 }, symbol: 'none' }
-  })
+    const data = gens.map((g, i) => [
+      g,
+      Math.exp(-(g / 1000)) * s.factor +
+        (Math.sin(i * 3.7 + si * 2.1 + seed) * 0.5 + 0.5) * 0.04,
+    ]);
+    return {
+      name: s.name,
+      type: "line",
+      data,
+      smooth: true,
+      lineStyle: { color: s.color, width: 2 },
+      symbol: "none",
+    };
+  });
 
   convInstance.setOption({
-    tooltip: { trigger: 'axis' },
-    legend: { data: series.map(s => s.name), textStyle: { color: '#8ba4c4' }, top: 10 },
+    tooltip: { trigger: "axis" },
+    legend: {
+      data: series.map((s) => s.name),
+      textStyle: { color: "#8ba4c4" },
+      top: 10,
+    },
     grid: { left: 70, right: 30, top: 60, bottom: 60 },
-    xAxis: { name: '迭代代数', nameTextStyle: { color: '#8ba4c4' }, axisLabel: { color: '#8ba4c4' }, splitLine: { lineStyle: { color: 'rgba(255,255,255,0.05)' } } },
-    yAxis: { name: 'f₁ (归一化)', nameTextStyle: { color: '#8ba4c4' }, axisLabel: { color: '#8ba4c4' } },
+    xAxis: {
+      name: "迭代代数",
+      nameTextStyle: { color: "#8ba4c4" },
+      axisLabel: { color: "#8ba4c4" },
+      splitLine: { lineStyle: { color: "rgba(255,255,255,0.05)" } },
+    },
+    yAxis: {
+      name: "f₁ (归一化)",
+      nameTextStyle: { color: "#8ba4c4" },
+      axisLabel: { color: "#8ba4c4" },
+    },
     series,
-  })
+  });
 }
 
 watch(activeTab, async () => {
-  await nextTick()
-  if (activeTab.value === 'pareto') initParetoChart()
-  else if (activeTab.value === 'metrics') initMetricsChart()
-  else if (activeTab.value === 'convergence') initConvChart()
-})
+  await nextTick();
+  if (activeTab.value === "pareto") initParetoChart();
+  else if (activeTab.value === "metrics") initMetricsChart();
+  else if (activeTab.value === "convergence") initConvChart();
+});
 
 onMounted(async () => {
   try {
-    const data = await fetchAllData()
+    const data = await fetchAllData();
     // 从后端获取对比数据（通过 carbon-analysis 端点携带额外字段）
     // 如果没有专门端点，我们构建前端模拟的对比数据（后续接真实API）
-    compData.value = buildComparisonData(data)
+    compData.value = buildComparisonData(data);
   } catch (e) {
-    console.error('加载失败:', e)
+    console.error("加载失败:", e);
   }
-  loading.value = false
-  await nextTick()
-  initParetoChart()
-})
+  loading.value = false;
+  await nextTick();
+  initParetoChart();
+});
 
 onBeforeUnmount(() => {
-  paretoInstance?.dispose()
-  metricsInstance?.dispose()
-  convInstance?.dispose()
-})
+  paretoInstance?.dispose();
+  metricsInstance?.dispose();
+  convInstance?.dispose();
+});
 
 // 临时构建对比数据（后端目前没有专门的 comparison API，用 z_gain 生成模拟对比）
 // 后续可接入 /api/data/comparison 端点返回真实 MATLAB 结果
 function buildComparisonData(data) {
-  const z = data.z_gain || []
-  const n = z.length
-  if (n === 0) return null
+  const z = data.z_gain || [];
+  const n = z.length;
+  if (n === 0) return null;
 
   // 只用前100个点作为展示
-  const take = Math.min(n, 100)
-  const nslde = z.slice(0, take)
+  const take = Math.min(n, 100);
+  const nslde = z.slice(0, take);
 
   // 模拟 NSGA-II（偏移5-12%）
-  const nsga2 = nslde.map(([x, y]) => [
-    x * (1 + 0.08 + Math.random() * 0.04),
-    y * (1 + 0.06 + Math.random() * 0.03),
-  ]).sort((a, b) => a[0] - b[0])
+  const nsga2 = nslde
+    .map(([x, y]) => [
+      x * (1 + 0.08 + Math.random() * 0.04),
+      y * (1 + 0.06 + Math.random() * 0.03),
+    ])
+    .sort((a, b) => a[0] - b[0]);
 
   // 模拟 MOEA/D（偏移3-6%）
-  const moead = nslde.map(([x, y]) => [
-    x * (1 + 0.04 + Math.random() * 0.03),
-    y * (1 + 0.03 + Math.random() * 0.02),
-  ]).sort((a, b) => a[0] - b[0])
+  const moead = nslde
+    .map(([x, y]) => [
+      x * (1 + 0.04 + Math.random() * 0.03),
+      y * (1 + 0.03 + Math.random() * 0.02),
+    ])
+    .sort((a, b) => a[0] - b[0]);
 
   return {
     z_nslde: nslde,
@@ -303,7 +422,7 @@ function buildComparisonData(data) {
     timing: [85.8, 31.7, 12.6],
     days_used: [75, 98, 182, 323, 356],
     is_real: false,
-  }
+  };
 }
 </script>
 
@@ -312,71 +431,213 @@ function buildComparisonData(data) {
   animation: fadeIn 0.3s ease;
   min-height: 100vh;
   padding: 10px;
-  background: radial-gradient(circle at 50% 7%, rgba(86,217,255,.08), transparent 34%), repeating-linear-gradient(90deg, rgba(20,241,190,.016) 0 1px, transparent 1px 32px), #020d15;
+  background:
+    radial-gradient(
+      circle at 50% 7%,
+      rgba(86, 217, 255, 0.08),
+      transparent 34%
+    ),
+    repeating-linear-gradient(
+      90deg,
+      rgba(20, 241, 190, 0.016) 0 1px,
+      transparent 1px 32px
+    ),
+    #020d15;
 }
 
 @keyframes fadeIn {
-  from { opacity: 0; transform: translateY(10px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
-.page-header { display: none; }
-.page-header h2 { font-size: 1.5rem; color: var(--accent); margin-bottom: 8px; }
-.page-desc { color: var(--text-secondary); font-size: 0.9rem; }
+.page-header {
+  display: none;
+}
+.page-header h2 {
+  font-size: 1.5rem;
+  color: var(--accent);
+  margin-bottom: 8px;
+}
+.page-desc {
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+}
 
 .loading-state {
-  display: flex; flex-direction: column; align-items: center; padding: 80px 0; color: var(--text-secondary);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 80px 0;
+  color: var(--text-secondary);
 }
 .spinner {
-  width: 40px; height: 40px; border: 3px solid rgba(0,212,255,0.2);
-  border-top-color: var(--accent); border-radius: 50%;
-  animation: spin 0.8s linear infinite; margin-bottom: 16px;
+  width: 40px;
+  height: 40px;
+  border: 3px solid rgba(0, 212, 255, 0.2);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  margin-bottom: 16px;
 }
-@keyframes spin { to { transform: rotate(360deg); } }
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
 
 .info-banner {
-  background: rgba(0,255,136,0.1); border: 1px solid rgba(0,255,136,0.3);
-  border-radius: 8px; padding: 10px 16px; margin-bottom: 20px; font-size: 0.9rem; color: #00ff88;
+  background: rgba(0, 255, 136, 0.1);
+  border: 1px solid rgba(0, 255, 136, 0.3);
+  border-radius: 8px;
+  padding: 10px 16px;
+  margin-bottom: 20px;
+  font-size: 0.9rem;
+  color: #00ff88;
 }
 
-.kpi-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin: 10px 0; }
+.kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  margin: 10px 0;
+}
 .kpi-card {
-  background: linear-gradient(135deg, rgba(0,212,255,0.1), rgba(0,150,255,0.05));
-  border: 1px solid rgba(20,241,190,.26); border-radius: 2px; padding: 18px; text-align: center;
+  background: linear-gradient(
+    135deg,
+    rgba(0, 212, 255, 0.1),
+    rgba(0, 150, 255, 0.05)
+  );
+  border: 1px solid rgba(20, 241, 190, 0.26);
+  border-radius: 2px;
+  padding: 18px;
+  text-align: center;
 }
-.kpi-label { font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 12px; }
-.kpi-value { font-size: 2rem; font-weight: 700; margin-bottom: 4px; }
-.kpi-unit { font-size: 0.8rem; color: var(--text-secondary); }
+.kpi-label {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  margin-bottom: 12px;
+}
+.kpi-value {
+  font-size: 2rem;
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+.kpi-unit {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+}
 
-.tabs { display: flex; gap: 4px; margin-bottom: 10px; background: rgba(0,212,255,0.05); border:1px solid rgba(20,241,190,.2); border-radius: 2px; padding: 4px; }
+.tabs {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 10px;
+  background: rgba(0, 212, 255, 0.05);
+  border: 1px solid rgba(20, 241, 190, 0.2);
+  border-radius: 2px;
+  padding: 4px;
+}
 .tab-btn {
-  flex: 1; padding: 10px 16px; border: none; border-radius: 8px;
-  background: transparent; color: var(--text-secondary); cursor: pointer;
-  font-size: 0.85rem; font-weight: 500; transition: all 0.2s;
+  flex: 1;
+  padding: 10px 16px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+  font-size: 0.85rem;
+  font-weight: 500;
+  transition: all 0.2s;
 }
-.tab-btn:hover { background: rgba(0,212,255,0.1); color: var(--text-primary); }
-.tab-active { background: rgba(0,212,255,0.15); color: var(--accent); }
+.tab-btn:hover {
+  background: rgba(0, 212, 255, 0.1);
+  color: var(--text-primary);
+}
+.tab-active {
+  background: rgba(0, 212, 255, 0.15);
+  color: var(--accent);
+}
 
-.tab-content { min-height: 400px; padding:10px; border:1px solid rgba(20,241,190,.22); background:linear-gradient(145deg,rgba(5,32,43,.82),rgba(2,16,25,.92)); }
-.chart-body { width: 100%; height: 450px; }
+.tab-content {
+  min-height: 400px;
+  padding: 10px;
+  border: 1px solid rgba(20, 241, 190, 0.22);
+  background: linear-gradient(
+    145deg,
+    rgba(5, 32, 43, 0.82),
+    rgba(2, 16, 25, 0.92)
+  );
+}
+.chart-body {
+  width: 100%;
+  height: 450px;
+}
 
-.metrics-explain { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-top: 24px; }
+.metrics-explain {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  margin-top: 24px;
+}
 .explain-card {
-  background: rgba(0,212,255,0.05); border: 1px solid var(--border-color);
-  border-radius: 8px; padding: 16px;
+  background: rgba(0, 212, 255, 0.05);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 16px;
 }
-.explain-card strong { color: var(--accent); display: block; margin-bottom: 6px; font-size: 0.9rem; }
-.explain-card p { color: var(--text-secondary); font-size: 0.8rem; line-height: 1.5; }
+.explain-card strong {
+  color: var(--accent);
+  display: block;
+  margin-bottom: 6px;
+  font-size: 0.9rem;
+}
+.explain-card p {
+  color: var(--text-secondary);
+  font-size: 0.8rem;
+  line-height: 1.5;
+}
 
-.timing-section { margin-top: 24px; }
-.timing-section h3 { color: var(--accent); font-size: 1rem; margin-bottom: 12px; }
-.timing-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+.timing-section {
+  margin-top: 24px;
+}
+.timing-section h3 {
+  color: var(--accent);
+  font-size: 1rem;
+  margin-bottom: 12px;
+}
+.timing-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+}
 .timing-card {
-  background: rgba(0,212,255,0.05); border: 1px solid var(--border-color);
-  border-radius: 8px; padding: 16px; text-align: center; display: flex; flex-direction: column; gap: 6px;
+  background: rgba(0, 212, 255, 0.05);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 16px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
 }
-.timing-algo { font-size: 0.9rem; font-weight: 600; }
-.timing-val { font-size: 1.4rem; font-weight: 700; color: var(--text-primary); }
+.timing-algo {
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+.timing-val {
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
 
-.empty-state { text-align: center; padding: 80px 0; color: var(--text-secondary); }
+.empty-state {
+  text-align: center;
+  padding: 80px 0;
+  color: var(--text-secondary);
+}
 </style>

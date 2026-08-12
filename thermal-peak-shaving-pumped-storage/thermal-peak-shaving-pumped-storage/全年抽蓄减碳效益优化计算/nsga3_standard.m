@@ -1,7 +1,7 @@
 function chromosome = nsga3_standard(Nh, Nw, Np, L, Zpump, h, Cprice, pop, gen)
-% nsga3_standard - 标准 NSGA-III 实现
+% nsga3_standard -  NSGA-III 
 %
-% 在 NSGA-II 基础上使用参考点引导选择替代拥挤距离
+%  NSGA-II 
 
 if nargin < 8, pop = 100; end
 if nargin < 9, gen = 200; end

@@ -1,7 +1,7 @@
 function chromosome = moead_de(Nh, Nw, Np, L, Zpump, h, Cprice, pop, gen)
 % moead_de - MOEA/D with DE operator (MOEA/D-DE)
 %
-% 标准 MOEA/D 框架 + DE/rand/1 交叉替代 SBX
+%  MOEA/D  + DE/rand/1  SBX
 
 if nargin < 8, pop = 100; end
 if nargin < 9, gen = 200; end

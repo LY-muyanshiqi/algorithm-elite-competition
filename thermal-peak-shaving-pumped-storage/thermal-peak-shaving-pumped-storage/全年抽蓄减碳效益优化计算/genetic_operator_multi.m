@@ -1,23 +1,23 @@
 function f = genetic_operator_multi(parent_chromosome, chromosome, M, V, l_limit, u_limit, Nh, Nw, Np, L, Zpump, h, Cprice, op_probs)
-% genetic_operator_multi - 多算子自适应选择遗传算子
+% genetic_operator_multi - 
 %
-% 相较于原 genetic_operator.m 的改进:
-%   1. 算子池支持7种算子，通过 op_probs 概率选择
-%   2. 每个父代独立选择算子，实现个体级别的自适应
-%   3. 保持与原函数完全兼容的接口（额外参数 op_probs 可选）
+%  genetic_operator.m :
+%   1. 7 op_probs 
+%   2. 
+%   3.  op_probs 
 %
-% 输入:
-%   op_probs - 7维向量，各算子的选择概率，缺省时使用均匀概率
+% :
+%   op_probs - 7
 %              [DE_rand_1, DE_rand_2, DE_current_to_best, PM, SBX, Levy, Cauchy]
 %
-% 算子索引:
-%   1: DE/rand/1      - 方向自适应全局搜索
-%   2: DE/rand/2      - 双差分向量增强探索
-%   3: DE/current-to-best/1 - 精英引导探索
-%   4: PM (多项式变异) - 局部精细微调
-%   5: SBX (模拟二进制交叉) - 邻域搜索，维持多样性
-%   6: Levy 变异       - 长跳跃跳出局部最优
-%   7: Cauchy 变异     - 中距离跳跃
+% :
+%   1: DE/rand/1      - 
+%   2: DE/rand/2      - 
+%   3: DE/current-to-best/1 - 
+%   4: PM () - 
+%   5: SBX () - 
+%   6: Levy        - 
+%   7: Cauchy      - 
 
 if nargin < 16
     op_probs = ones(1,7) / 7;
@@ -73,7 +73,7 @@ end
 f = child;
 end
 
-%% ====== 算子1: DE/rand/1 ======
+%% ====== 1: DE/rand/1 ======
 function [c1, c2] = op_de_rand_1(target, p1, p2, V, l_limit, u_limit)
     F = 0.5;
     CR = 0.9;
@@ -88,7 +88,7 @@ function [c1, c2] = op_de_rand_1(target, p1, p2, V, l_limit, u_limit)
     c2 = target(1:V);
 end
 
-%% ====== 算子2: DE/rand/2 ======
+%% ====== 2: DE/rand/2 ======
 function [c1, c2] = op_de_rand_2(target, p1, p2, pop, V, l_limit, u_limit)
     N = size(pop, 1);
     idx3 = randi(N);
@@ -110,7 +110,7 @@ function [c1, c2] = op_de_rand_2(target, p1, p2, pop, V, l_limit, u_limit)
     c2 = target(1:V);
 end
 
-%% ====== 算子3: DE/current-to-best/1 ======
+%% ====== 3: DE/current-to-best/1 ======
 function [c1, c2] = op_de_current_to_best(target, p1, p2, pop, V, l_limit, u_limit)
     [~, best_idx] = sort(pop(:, V+1));
     best = pop(best_idx(1), 1:V);
@@ -129,7 +129,7 @@ function [c1, c2] = op_de_current_to_best(target, p1, p2, pop, V, l_limit, u_lim
     c2 = target(1:V);
 end
 
-%% ====== 算子4: 多项式变异 PM ======
+%% ====== 4:  PM ======
 function [c1, c2] = op_pm(parent, V, l_limit, u_limit)
     eta_m = 20;
     pm = 1/V;
@@ -166,7 +166,7 @@ function [c1, c2] = op_pm(parent, V, l_limit, u_limit)
     c2 = clip_bounds(c2, l_limit, u_limit);
 end
 
-%% ====== 算子5: SBX 模拟二进制交叉 ======
+%% ====== 5: SBX  ======
 function [c1, c2] = op_sbx(p1, p2_parent, p3, V, l_limit, u_limit)
     eta_c = 20;
     pc = 0.9;
@@ -212,7 +212,7 @@ function [c1, c2] = op_sbx(p1, p2_parent, p3, V, l_limit, u_limit)
     c2 = clip_bounds(c2, l_limit, u_limit);
 end
 
-%% ====== 算子6: Levy 飞行变异 ======
+%% ====== 6: Levy  ======
 function [c1, c2] = op_levy(target, V, l_limit, u_limit)
     beta = 1.5;
     sigma_u = (gamma(1+beta)*sin(pi*beta/2) / (gamma((1+beta)/2)*beta*2^((beta-1)/2)))^(1/beta);
@@ -231,7 +231,7 @@ function [c1, c2] = op_levy(target, V, l_limit, u_limit)
     c2 = clip_bounds(c2, l_limit, u_limit);
 end
 
-%% ====== 算子7: Cauchy 变异 ======
+%% ====== 7: Cauchy  ======
 function [c1, c2] = op_cauchy(target, V, l_limit, u_limit)
     alpha = 0.01;
     cauchy_noise1 = tan(pi*(rand(1,V) - 0.5));
@@ -244,15 +244,13 @@ function [c1, c2] = op_cauchy(target, V, l_limit, u_limit)
     c2 = clip_bounds(c2, l_limit, u_limit);
 end
 
-%% ====== 边界处理 ======
+%% ====== Boundary handling ======
 function x = clip_bounds(x, l_limit, u_limit)
     for j = 1:length(x)
-        while x(j) > u_limit(j) || x(j) < l_limit(j)
-            if x(j) > u_limit(j)
-                x(j) = 2 * u_limit(j) - x(j);
-            elseif x(j) < l_limit(j)
-                x(j) = 2 * l_limit(j) - x(j);
-            end
+        if x(j) > u_limit(j)
+            x(j) = u_limit(j);
+        elseif x(j) < l_limit(j)
+            x(j) = l_limit(j);
         end
     end
 end

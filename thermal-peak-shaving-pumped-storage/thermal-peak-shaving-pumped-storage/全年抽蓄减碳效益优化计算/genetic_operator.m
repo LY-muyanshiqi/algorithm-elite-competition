@@ -2,9 +2,9 @@ function f  = genetic_operator(parent_chromosome, chromosome, M, V,  l_limit, u_
 
 %% function f  = genetic_operator(parent_chromosome, M, V, mu, mum, l_limit, u_limit)
 % 
-% This function is utilized(������) to produce offsprings from parent chromosomes.
+% This function is utilized() to produce offsprings from parent chromosomes.
 % The genetic operators corssover and mutation which are carried out with
-% slight modifications����΢�޸ģ� from the original design. For more information read
+% slight modifications from the original design. For more information read
 % the document enclosed. 
 %
 % parent_chromosome - the set of selected chromosomes.
@@ -16,7 +16,7 @@ function f  = genetic_operator(parent_chromosome, chromosome, M, V,  l_limit, u_
 % u_limit - a vector of upper limit for the corresponding decsion variables
 %
 % The genetic operation is performed only on the decision variables, that
-% is the first V elements in the chromosome vector�����壩. 
+% is the first V elements in the chromosome vector. 
 
 [N,m] = size(parent_chromosome);
 

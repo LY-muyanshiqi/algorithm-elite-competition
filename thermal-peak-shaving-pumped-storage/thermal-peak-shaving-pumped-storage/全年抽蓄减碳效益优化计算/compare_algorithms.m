@@ -1,9 +1,9 @@
-% compare_algorithms.m - 多算法对比实验脚本 v2.0
-% 选取 5 个代表日运行 NSLDE / NSGA-II / NSGA-III / MOEA/D / MOEA/D-DE
-% 保存结果到 .mat 文件
+% compare_algorithms.m -  v2.0
+%  5  NSLDE / NSGA-II / NSGA-III / MOEA/D / MOEA/D-DE
+%  .mat 
 clear; clc;
 
-data_dir = '../前端封装/frontend/';
+data_dir = '..//frontend/';
 
 NH = load('hydro.txt');
 NW = load('wind.txt');
@@ -128,7 +128,7 @@ for alg = 1:n_algs
         algorithm_names{alg}, mean(hv(:, alg)), mean(spacing(:, alg)), mean(timing(:, alg)));
 end
 
-% === 辅助函数 ===
+% ===  ===
 function hv = compute_hv(points, ref_point)
     points = sortrows(points, 1);
     hv = 0;

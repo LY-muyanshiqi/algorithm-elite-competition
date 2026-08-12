@@ -1,20 +1,24 @@
-function run_ablation(day_idx, province, n_runs, output_dir)
-% run_ablation - NSLDE消融实验MATLAB入口
+function run_ablation(day_idx, province, n_runs, output_dir, pop_size, n_gen)
+% run_ablation - NSLDE ablation experiment entry
 %
-% 7组配置 × n_runs次重复, 验证每个模块的独立贡献
+% 7 configs x n_runs repeats, validate each module's contribution
 %
-% 输入:
-%   day_idx   - 数据中的日索引 (1-365)
-%   province  - 省份名 ('shaanxi'|'gansu'|'qinghai'|'ningxia')
-%   n_runs    - 每组配置的重复次数 (默认5)
-%   output_dir - 输出目录 (默认'./experiment_results')
+% Input:
+%   day_idx   - day index in data (1-365)
+%   province  - province name ('shaanxi'|'gansu'|'qinghai'|'ningxia')
+%   n_runs    - repeats per config (default 5)
+%   output_dir - output directory (default './experiment_results')
+%   pop_size  - population size (default 100)
+%   n_gen     - number of generations (default 2000)
 %
-% 输出: {output_dir}/ablation_{province}_day{day_idx}.mat
-%   包含结构体数组 results(7, n_runs), 每个元素含:
+% Output: {output_dir}/ablation_{province}_day{day_idx}.mat
+%    structure array results(7, n_runs), each element:
 %     .config_name, .run_id, .chromosome, .metrics, .history
 
 if nargin < 3, n_runs = 5; end
 if nargin < 4, output_dir = './experiment_results'; end
+if nargin < 5, pop_size = 100; end
+if nargin < 6, n_gen = 2000; end
 
 if ~exist(output_dir, 'dir'), mkdir(output_dir); end
 
@@ -33,7 +37,8 @@ Cprice = data.Cprice;
 
 configs = ablation_configs();
 
-fprintf('=== Ablation Study: %s day %d, %d runs ===\n', province, day_idx, n_runs);
+fprintf('=== Ablation Study: %s day %d, %d runs, pop=%d, gen=%d ===\n', ...
+    province, day_idx, n_runs, pop_size, n_gen);
 
 for c = 1:length(configs)
     cfg = configs(c);
@@ -43,8 +48,8 @@ for c = 1:length(configs)
         rng(c * 1000 + r);
 
         options = struct();
-        options.pop = 100;
-        options.gen = 2000;
+        options.pop = pop_size;
+        options.gen = n_gen;
         options.init_method = cfg.init;
         options.track_hv = true;
 
@@ -53,7 +58,10 @@ for c = 1:length(configs)
         elseif strcmp(cfg.op_mode, 'uniform')
             options.op_probs = ones(1, 7) / 7;
         elseif strcmp(cfg.op_mode, 'learned')
+            % Q-Learning  + 
             options.op_probs = ones(1, 7) / 7;
+            options.use_qlearning = true;
+            options.track_strategy = true;
         end
 
         [chromosome, history] = nslde_enhanced(Nh, Nw, Np, L, Zpump, h, Cprice, options);

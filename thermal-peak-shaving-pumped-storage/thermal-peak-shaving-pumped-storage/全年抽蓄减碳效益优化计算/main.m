@@ -1,14 +1,14 @@
 clear; clc;
-NH=load('hydro.txt');  %ˮ��
-NW=load('wind.txt');   %���
-NP=load('solar.txt');  %���
-FH=load('FH.txt');    %��������
+NH=load('hydro.txt');  %
+NW=load('wind.txt');   %
+NP=load('solar.txt');  %
+FH=load('FH.txt');    %
 N=length(NH(:,1));
-Zpump=1400; %抽蓄规模
-h=4;        %抽蓄运行小时
-Cprice=0.05; %碳价格(万元/吨CO2)
+Zpump=1400; %
+h=4;        %
+Cprice=0.05; %(/CO2)
 
-core_number= 8;   %计算核心
+core_number= 8;   %
 parpool('local',core_number);
 % for i=1:10
 parfor i=1:N
@@ -30,16 +30,16 @@ end
 save AA.mat
 
 for i=1:N
-    [F1(i,:),F2(i,:),Npump(i,:),Nt(i,:),Nt2(i,:),L(i,:)]=process(AA(i,1:23),i);  %F1:�г����µĻ�������������̼�ŷ�ǿ�ȡ���̼�ŷ���  F2:�޳����µĻ�������������̼�ŷ�ǿ�ȡ���̼�ŷ���
+    [F1(i,:),F2(i,:),Npump(i,:),Nt(i,:),Nt2(i,:),L(i,:)]=process(AA(i,1:23),i);  %F1:  F2:
     a(i)=F2(i,3)-F1(i,3);
 end
-ce=F2(:,3)-F1(:,3); %���յĳ���̼����Ч�棬��λkg
-CE=sum(ce)/10000000; %ȫ��ĳ���̼����Ч�棬��λ��t
+ce=F2(:,3)-F1(:,3); %kg
+CE=sum(ce)/10000000; %t
 
-pump=reshape(Npump',8760,1); %��ˮ���ܵ�վ���й���
-NT_pump=reshape(Nt',8760,1); %�г����»�����й���
-NT=reshape(Nt2',8760,1);     %�޳����»�����й���
-L=reshape(L',8760,1);        %����
+pump=reshape(Npump',8760,1); %
+NT_pump=reshape(Nt',8760,1); %
+NT=reshape(Nt2',8760,1);     %
+L=reshape(L',8760,1);        %
 AAA=[pump,NT_pump,NT,L];
 
 % i=6;

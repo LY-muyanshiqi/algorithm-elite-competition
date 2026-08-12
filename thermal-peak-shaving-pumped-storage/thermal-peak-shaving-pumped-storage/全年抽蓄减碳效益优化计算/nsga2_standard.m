@@ -1,13 +1,13 @@
 function chromosome = nsga2_standard(Nh, Nw, Np, L, Zpump, h, Cprice)
-% NSGA-II 标准实现 — 用于对比实验
-% nslde.m 的变体：移除 Levy 飞行扰动和 Logistic 混沌初始化
-% 其余结构（锦标赛选择、非支配排序、替换策略）与 nslde.m 完全一致
+% NSGA-II   
+% nslde.m  Levy  Logistic 
+%  nslde.m 
 
 pop = round(100);
 gen = round(3000);
 [M, V, min_range, max_range] = objective_description_function();
 
-% === 关键差异1: 随机初始化（无混沌映射） ===
+% === 1:  ===
 chromosome = initialize_variables_rand(pop, M, V, min_range, max_range, Nh, Nw, Np, L, Zpump, h, Cprice);
 chromosome = non_domination_sort_mod(chromosome, M, V);
 
@@ -16,7 +16,7 @@ for i = 1:gen
     tour = 2;
     parent_chromosome = tournament_selection(chromosome, pool, tour);
 
-    % === 关键差异2: 标准遗传算子（无 Levy 飞行） ===
+    % === 2:  Levy  ===
     offspring_chromosome = genetic_operator_normal(parent_chromosome, chromosome, M, V, min_range, max_range, Nh, Nw, Np, L, Zpump, h, Cprice);
 
     [main_pop, ~] = size(chromosome);
@@ -33,7 +33,7 @@ for i = 1:gen
 end
 end
 
-% === 随机初始化（替代 Logistic 混沌映射） ===
+% ===  Logistic  ===
 function f = initialize_variables_rand(N, M, V, min_range, max_range, Nh, Nw, Np, L, Zpump, h, Cprice)
     K = M + V;
     for i = 1:N
@@ -44,7 +44,7 @@ function f = initialize_variables_rand(N, M, V, min_range, max_range, Nh, Nw, Np
     end
 end
 
-% === 标准遗传算子（DE/rand/1 + 多项式变异，无 Levy 飞行） ===
+% === DE/rand/1 +  Levy  ===
 function f = genetic_operator_normal(parent_chromosome, chromosome, M, V, l_limit, u_limit, Nh, Nw, Np, L, Zpump, h, Cprice)
     [N, ~] = size(parent_chromosome);
     p = 1;
@@ -61,13 +61,13 @@ function f = genetic_operator_normal(parent_chromosome, chromosome, M, V, l_limi
         p1 = parent_chromosome(parent_1, :);
         p2 = parent_chromosome(parent_2, :);
         for j = 1:V
-            % DE/rand/1 差分变异 (F=0.65)
+            % DE/rand/1  (F=0.65)
             if rand(1) < 0.7
                 child_1(j) = parent_chromosome(i, j) + 0.65 * (p1(j) - p2(j));
             else
                 child_1(j) = parent_chromosome(i, j);
             end
-            % 多项式变异 (pm=1/V, mum=20)
+            %  (pm=1/V, mum=20)
             r = rand(1);
             if r < 1/V
                 if r < 0.5

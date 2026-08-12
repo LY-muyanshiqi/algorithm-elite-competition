@@ -1,0 +1,161 @@
+{
+  "op_names": [
+    "DE/rand/1",
+    "DE/rand/2",
+    "DE/c-to-b/1",
+    "PM",
+    "SBX",
+    "Levy",
+    "Cauchy"
+  ],
+  "strategy_use_count": [
+    162,
+    70,
+    299,
+    121,
+    140,
+    239,
+    169
+  ],
+  "strategy_history": [
+    [
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    [
+      0.1,
+      0.098,
+      0.108,
+      0.004,
+      0.196,
+      0.296,
+      0.198
+    ],
+    [
+      0.102,
+      0.05,
+      0.299,
+      0.101,
+      0.1,
+      0.199,
+      0.149
+    ]
+  ],
+  "generations": [
+    0,
+    100,
+    200
+  ],
+  "n_runs": 10,
+  "strategy_stats": [
+    {
+      "name": "DE/rand/1",
+      "type": "\u5dee\u5206\u53d8\u5f02",
+      "use_count": "162",
+      "use_ratio": "13.5%",
+      "avg_reward": "-",
+      "survival_rate": "-",
+      "phase": "-"
+    },
+    {
+      "name": "DE/rand/2",
+      "type": "\u5dee\u5206\u53d8\u5f02",
+      "use_count": "70",
+      "use_ratio": "5.8%",
+      "avg_reward": "-",
+      "survival_rate": "-",
+      "phase": "-"
+    },
+    {
+      "name": "DE/c-to-b/1",
+      "type": "\u5dee\u5206\u53d8\u5f02",
+      "use_count": "299",
+      "use_ratio": "24.9%",
+      "avg_reward": "-",
+      "survival_rate": "-",
+      "phase": "-"
+    },
+    {
+      "name": "PM",
+      "type": "\u591a\u9879\u5f0f\u53d8\u5f02",
+      "use_count": "121",
+      "use_ratio": "10.1%",
+      "avg_reward": "-",
+      "survival_rate": "-",
+      "phase": "-"
+    },
+    {
+      "name": "SBX",
+      "type": "\u6a21\u62df\u4ea4\u53c9",
+      "use_count": "140",
+      "use_ratio": "11.7%",
+      "avg_reward": "-",
+      "survival_rate": "-",
+      "phase": "-"
+    },
+    {
+      "name": "Levy",
+      "type": "Levy\u98de\u884c",
+      "use_count": "239",
+      "use_ratio": "19.9%",
+      "avg_reward": "-",
+      "survival_rate": "-",
+      "phase": "-"
+    },
+    {
+      "name": "Cauchy",
+      "type": "\u67ef\u897f\u6270\u52a8",
+      "use_count": "169",
+      "use_ratio": "14.1%",
+      "avg_reward": "-",
+      "survival_rate": "-",
+      "phase": "-"
+    }
+  ],
+  "comparison": {
+    "feasibility_adaptive": 1.0,
+    "feasibility_fixed": 1.0,
+    "operators": [
+      {
+        "name": "DE/rand/1",
+        "use_count": 162,
+        "use_ratio": 0.135
+      },
+      {
+        "name": "DE/rand/2",
+        "use_count": 70,
+        "use_ratio": 0.0583
+      },
+      {
+        "name": "DE/c-to-b/1",
+        "use_count": 299,
+        "use_ratio": 0.2492
+      },
+      {
+        "name": "PM",
+        "use_count": 121,
+        "use_ratio": 0.1008
+      },
+      {
+        "name": "SBX",
+        "use_count": 140,
+        "use_ratio": 0.1167
+      },
+      {
+        "name": "Levy",
+        "use_count": 239,
+        "use_ratio": 0.1992
+      },
+      {
+        "name": "Cauchy",
+        "use_count": 169,
+        "use_ratio": 0.1408
+      }
+    ]
+  }
+}

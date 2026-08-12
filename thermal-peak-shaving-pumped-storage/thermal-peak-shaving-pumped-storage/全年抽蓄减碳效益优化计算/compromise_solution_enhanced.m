@@ -1,27 +1,27 @@
 function [best_solution, best_idx, decision_report] = compromise_solution_enhanced(chromosome, M, V, Zpump, h, carbon_price)
-% compromise_solution_enhanced - TOPSIS + VIKOR + GRA 三方法对比
+% compromise_solution_enhanced - TOPSIS + VIKOR + GRA 
 %
-% 三层决策:
-%   Layer1: 工程可行性过滤
-%   Layer2: 经济评价
-%   Layer3: TOPSIS + VIKOR + GRA 三方法并行 + 排名一致性分析
+% :
+%   Layer1: 
+%   Layer2: 
+%   Layer3: TOPSIS + VIKOR + GRA  + 
 %
-% 相较于原 compromise_solution.m:
-%   1. 升级为标准 TOPSIS 算法 (含正负理想解距离 + 相对贴近度)
-%   2. 三层决策: Layer1工程过滤 -> Layer2经济评价 -> Layer3 MADM赋权
-%   3. 消除列索引硬编码 (使用 M,V 参数动态计算)
+%  compromise_solution.m:
+%   1.  TOPSIS  ( + )
+%   2. : Layer1 -> Layer2 -> Layer3 MADM
+%   3.  ( M,V )
 %
-% 输入:
-%   chromosome   - 种群矩阵 (N x (V+M+2))
-%   M, V         - 目标数、决策变量数
-%   Zpump        - 抽蓄装机容量 (MW)
-%   h            - 蓄能时长
-%   carbon_price - 碳价格 (元/tCO2), 可选, 默认100
+% :
+%   chromosome   -  (N x (V+M+2))
+%   M, V         - 
+%   Zpump        -  (MW)
+%   h            - 
+%   carbon_price -  (/tCO2), , 100
 %
-% 输出:
-%   best_solution   - 最优解决策变量 (1xV)
-%   best_idx        - 最优解在染色体矩阵中的行索引
-%   decision_report - 决策报告结构体
+% :
+%   best_solution   -  (1xV)
+%   best_idx        - 
+%   decision_report - 
 
 if nargin < 6
     carbon_price = 100;
@@ -183,7 +183,7 @@ G_scores = grc * W(:);
 [~, gra_order] = sort(G_scores, 'descend');
 top5_gra = feasible_idx(gra_order(1:min(5, length(gra_order))));
 
-%% ===== Kendall's Tau 排名一致性 =====
+%% ===== Kendall's Tau  =====
 tau_topsis_vikor = kendall_tau(top_order, vikor_order);
 tau_topsis_gra = kendall_tau(top_order, gra_order);
 tau_vikor_gra = kendall_tau(vikor_order, gra_order);
@@ -209,7 +209,7 @@ decision_report.final_best_idx = best_idx;
 decision_report.final_f1 = chromosome(best_idx, V+1);
 decision_report.final_f2 = chromosome(best_idx, V+2);
 
-fprintf('\n=== 多属性决策报告 ===\n');
+fprintf('\n===  ===\n');
 fprintf('TOPSIS    Top3: %s\n', mat2str(top5_topsis(1:min(3,end))'));
 fprintf('VIKOR     Top3: %s\n', mat2str(top5_vikor(1:min(3,end))'));
 fprintf('GRA       Top3: %s\n', mat2str(top5_gra(1:min(3,end))'));

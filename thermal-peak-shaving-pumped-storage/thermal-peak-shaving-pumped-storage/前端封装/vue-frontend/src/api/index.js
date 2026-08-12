@@ -141,4 +141,10 @@ export async function fetchExperimentStatistics() {
   return data
 }
 
+/** 获取 Q-Learning 策略贡献数据 */
+export async function fetchStrategyResults() {
+  const { data } = await api.get('/experiments/strategy')
+  return data
+}
+
 export default api

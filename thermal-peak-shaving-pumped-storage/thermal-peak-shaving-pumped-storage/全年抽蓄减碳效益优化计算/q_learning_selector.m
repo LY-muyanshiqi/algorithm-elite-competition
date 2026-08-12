@@ -1,33 +1,33 @@
 function [op_probs, q_table, epsilon] = q_learning_selector(state_features, q_table, epsilon, action, reward, gen, max_gen)
-% q_learning_selector - Q-Learning 自适应算子选择器
+% q_learning_selector - Q-Learning 
 %
-% 状态空间 (6维, 每维离散化为3-5个桶):
-%   1. 种群熵 (0-1)          -> 3 bins
-%   2. 代数进度 (0-1)         -> 5 bins
-%   3. 停滞计数 (log scale)   -> 3 bins
-%   4. HV增量 (normalized)    -> 3 bins
-%   5. 约束违反率 (0-1)       -> 3 bins
-%   6. 拥挤距离方差 (0-1)     -> 3 bins
+%  (6, 3-5):
+%   1.  (0-1)          -> 3 bins
+%   2.  (0-1)         -> 5 bins
+%   3.  (log scale)   -> 3 bins
+%   4. HV (normalized)    -> 3 bins
+%   5.  (0-1)       -> 3 bins
+%   6.  (0-1)     -> 3 bins
 %
-% 总状态数: 3*5*3*3*3*3 = 1215
+% : 3*5*3*3*3*3 = 1215
 %
-% 动作空间 (7种算子):
+%  (7):
 %   1: DE/rand/1, 2: DE/rand/2, 3: DE/current-to-best/1
 %   4: PM, 5: SBX, 6: Levy, 7: Cauchy
 %
-% 输入:
-%   state_features - 6维特征向量 [entropy, gen_ratio, stagnation, hv_delta, cv_rate, crowd_var]
-%   q_table        - Q表 (states x actions)
-%   epsilon        - 当前探索率
-%   action         - 上一步选择的动作 (1-7), 首次调用传0
-%   reward         - 上一步的奖励, 首次调用传0
-%   gen            - 当前代数
-%   max_gen        - 最大代数
+% :
+%   state_features - 6 [entropy, gen_ratio, stagnation, hv_delta, cv_rate, crowd_var]
+%   q_table        - Q (states x actions)
+%   epsilon        - 
+%   action         -  (1-7), 0
+%   reward         - , 0
+%   gen            - 
+%   max_gen        - 
 %
-% 输出:
-%   op_probs  - 7维算子选择概率向量
-%   q_table   - 更新后的Q表
-%   epsilon   - 更新后的探索率
+% :
+%   op_probs  - 7
+%   q_table   - Q
+%   epsilon   - 
 
 persistent n_bins n_states prev_state prev_action alpha gamma
 

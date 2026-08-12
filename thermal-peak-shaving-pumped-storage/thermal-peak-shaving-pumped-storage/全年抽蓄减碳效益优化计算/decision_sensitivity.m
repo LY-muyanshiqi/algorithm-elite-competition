@@ -1,7 +1,7 @@
 function sensitivity = decision_sensitivity(best_solution, V, Zpump, h, Nh, Nw, Np, L, Cprice)
-% decision_sensitivity - 决策变量One-at-a-time敏感性分析
+% decision_sensitivity - One-at-a-time
 %
-% 对最优解的每个决策变量施加 +/-10% 扰动, 观察目标函数变化
+%  +/-10% , 
 
 if nargin < 9, Cprice = 0.05; end
 
@@ -13,8 +13,8 @@ sensitivity.f1_sensitivity = zeros(V, 1);
 sensitivity.f2_sensitivity = zeros(V, 1);
 sensitivity.total_sensitivity = zeros(V, 1);
 
-fprintf('=== 决策变量敏感性分析 ===\n');
-fprintf('基准值: f1=%.1f, f2=%.1f\n\n', f0(1), f0(2));
+fprintf('===  ===\n');
+fprintf(': f1=%.1f, f2=%.1f\n\n', f0(1), f0(2));
 fprintf('%-6s %-12s %-12s %-12s\n', 'Var', 'delta_f1', 'delta_f2', 'total');
 
 for j = 1:V
@@ -53,13 +53,13 @@ for j = 1:V
 end
 
 [~, rank_order] = sort(sensitivity.total_sensitivity, 'descend');
-fprintf('\n--- 敏感度 Top10 决策变量 ---\n');
-fprintf('Rank  Var    Total_Sens  主要影响目标\n');
+fprintf('\n---  Top10  ---\n');
+fprintf('Rank  Var    Total_Sens  \n');
 for r = 1:min(10, V)
     j = rank_order(r);
-    target = 'f1(调峰)';
+    target = 'f1()';
     if sensitivity.f2_sensitivity(j) > sensitivity.f1_sensitivity(j)
-        target = 'f2(碳排)';
+        target = 'f2()';
     end
     fprintf('%-5d %-6d %-12.4f %s\n', r, j, sensitivity.total_sensitivity(j), target);
 end

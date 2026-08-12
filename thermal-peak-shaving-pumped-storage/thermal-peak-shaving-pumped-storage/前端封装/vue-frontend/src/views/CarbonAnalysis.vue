@@ -1,6 +1,5 @@
 <template>
   <div class="carbon-page">
-    <ScreenHeader title="西北五省区碳减排监测中心" subtitle="抽水蓄能协同调峰 · 碳排趋势 · 减排贡献分析" status-label="碳监测在线" />
     <div class="page-header">
       <h2>💨 碳减排分析</h2>
       <p class="page-desc">抽水蓄能对火电调峰和碳排放的全年影响分析</p>
@@ -131,7 +130,6 @@
 import { ref, computed, onMounted, onBeforeUnmount, nextTick } from "vue";
 import * as echarts from "echarts";
 import { fetchCarbonAnalysis } from "../api";
-import ScreenHeader from "../components/ScreenHeader.vue";
 import MapFlow from "../components/MapFlow.vue";
 
 const loading = ref(true);
@@ -349,7 +347,18 @@ onBeforeUnmount(() => {
   animation: fadeIn 0.3s ease;
   min-height: 100vh;
   padding: 10px;
-  background: radial-gradient(circle at 50% 8%, rgba(20,241,190,.08), transparent 32%), repeating-linear-gradient(90deg, rgba(86,217,255,.015) 0 1px, transparent 1px 32px), #020d15;
+  background:
+    radial-gradient(
+      circle at 50% 8%,
+      rgba(20, 241, 190, 0.08),
+      transparent 32%
+    ),
+    repeating-linear-gradient(
+      90deg,
+      rgba(86, 217, 255, 0.015) 0 1px,
+      transparent 1px 32px
+    ),
+    #020d15;
 }
 @keyframes fadeIn {
   from {
@@ -445,8 +454,8 @@ onBeforeUnmount(() => {
   border-radius: 2px;
   padding: 20px;
   margin-bottom: 10px;
-  border-color: rgba(20,241,190,.24);
-  box-shadow: inset 0 0 30px rgba(20,241,190,.025);
+  border-color: rgba(20, 241, 190, 0.24);
+  box-shadow: inset 0 0 30px rgba(20, 241, 190, 0.025);
 }
 .section-card h3 {
   font-size: 1rem;
@@ -526,6 +535,17 @@ onBeforeUnmount(() => {
   font-size: 0.85rem;
   margin-bottom: 16px;
 }
-.regional-carbon-map { position: relative; height: 500px; padding: 0; overflow: hidden; }
-.regional-carbon-map h3 { position: absolute; z-index: 5; margin: 16px; padding-left: 10px; border-left: 3px solid var(--color-accent); }
+.regional-carbon-map {
+  position: relative;
+  height: 500px;
+  padding: 0;
+  overflow: hidden;
+}
+.regional-carbon-map h3 {
+  position: absolute;
+  z-index: 5;
+  margin: 16px;
+  padding-left: 10px;
+  border-left: 3px solid var(--color-accent);
+}
 </style>

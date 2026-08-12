@@ -1,0 +1,128 @@
+[
+  {
+    "config": {
+      "name": "A0_NSGAII_baseline",
+      "init": "random",
+      "operators": "various"
+    },
+    "n_runs": 10,
+    "metrics": {
+      "n_feasible": 40.0,
+      "feasibility_rate": 1.0,
+      "f1_mean": 8611.018420087285,
+      "f2_mean": 463679619.87906015,
+      "f1_std": 608.679681052836,
+      "f2_std": 1206218.8876493028,
+      "spread": 1206827.567330356,
+      "spacing": 103245.30070631517
+    }
+  },
+  {
+    "config": {
+      "name": "A1_chaos_only",
+      "init": "logistic",
+      "operators": "various"
+    },
+    "n_runs": 10,
+    "metrics": {
+      "n_feasible": 40.0,
+      "feasibility_rate": 1.0,
+      "f1_mean": 8256.328647081215,
+      "f2_mean": 463104874.8733238,
+      "f1_std": 649.3715170153959,
+      "f2_std": 1197224.476928723,
+      "spread": 1197873.8484457382,
+      "spacing": 100810.84337046866
+    }
+  },
+  {
+    "config": {
+      "name": "A2_de_only",
+      "init": "random",
+      "operators": "various"
+    },
+    "n_runs": 10,
+    "metrics": {
+      "n_feasible": 40.0,
+      "feasibility_rate": 1.0,
+      "f1_mean": 8464.250895517205,
+      "f2_mean": 463099215.2332937,
+      "f1_std": 708.0497689665721,
+      "f2_std": 1170426.9476393599,
+      "spread": 1171134.9974083265,
+      "spacing": 100091.48995979608
+    }
+  },
+  {
+    "config": {
+      "name": "A3_levy_only",
+      "init": "random",
+      "operators": "various"
+    },
+    "n_runs": 10,
+    "metrics": {
+      "n_feasible": 40.0,
+      "feasibility_rate": 1.0,
+      "f1_mean": 8546.969621757373,
+      "f2_mean": 463343335.4566348,
+      "f1_std": 670.4312355150776,
+      "f2_std": 1171003.7506286188,
+      "spread": 1171674.1818641338,
+      "spacing": 97517.65947420601
+    }
+  },
+  {
+    "config": {
+      "name": "A4_NSLDE",
+      "init": "logistic",
+      "operators": "various"
+    },
+    "n_runs": 10,
+    "metrics": {
+      "n_feasible": 40.0,
+      "feasibility_rate": 1.0,
+      "f1_mean": 8467.783234565952,
+      "f2_mean": 463058983.7205788,
+      "f1_std": 698.6312699693224,
+      "f2_std": 1081646.5791308256,
+      "spread": 1082345.2104007949,
+      "spacing": 93195.72342281972
+    }
+  },
+  {
+    "config": {
+      "name": "A5_NSLDE_osn",
+      "init": "logistic",
+      "operators": "various"
+    },
+    "n_runs": 10,
+    "metrics": {
+      "n_feasible": 40.0,
+      "feasibility_rate": 1.0,
+      "f1_mean": 8402.999640169448,
+      "f2_mean": 463146628.9798902,
+      "f1_std": 692.5934312257798,
+      "f2_std": 1259388.222534549,
+      "spread": 1260080.8159657745,
+      "spacing": 105608.47813548958
+    }
+  },
+  {
+    "config": {
+      "name": "A6_NSLDE_full",
+      "init": "logistic",
+      "operators": "various"
+    },
+    "n_runs": 10,
+    "metrics": {
+      "n_feasible": 40.0,
+      "feasibility_rate": 1.0,
+      "f1_mean": 8568.641239939736,
+      "f2_mean": 463148618.7068426,
+      "f1_std": 593.4859121405552,
+      "f2_std": 970953.1300409958,
+      "spread": 971546.6159531365,
+      "spacing": 85513.93305134619
+    }
+  }
+]

@@ -1,20 +1,20 @@
 function chromosome = moead_standard(Nh, Nw, Np, L, Zpump, h, Cprice)
-% MOEA/D 标准实现 — 基于切比雪夫分解
-% 与 NSLDE 使用相同的决策变量编码和 evaluate_objective
+% MOEA/D   
+%  NSLDE  evaluate_objective
 
 pop = 100;
 gen = 3000;
-T = 20;  % 邻域大小
+T = 20;  % 
 [M, V, min_range, max_range] = objective_description_function();
 
-% === 1. 生成权重向量 (simplex-lattice, 2目标) ===
+% === 1.  (simplex-lattice, 2) ===
 lambda = zeros(pop, M);
 for i = 1:pop
     lambda(i, 1) = (i-1)/(pop-1);
     lambda(i, 2) = 1 - lambda(i, 1);
 end
 
-% === 2. 邻域关系 ===
+% === 2.  ===
 B = zeros(pop, T);
 for i = 1:pop
     dist = zeros(pop, 1);
@@ -25,7 +25,7 @@ for i = 1:pop
     B(i, :) = idx(1:T);
 end
 
-% === 3. 初始化种群 ===
+% === 3.  ===
 x = zeros(pop, V);
 fx = zeros(pop, M);
 for i = 1:pop
@@ -36,13 +36,13 @@ for i = 1:pop
     fx(i, :) = obj;
 end
 
-% === 4. 参考点 ===
+% === 4.  ===
 z_star = min(fx, [], 1);
 
-% === 5. 主循环 ===
+% === 5.  ===
 for g = 1:gen
     for i = 1:pop
-        % 从邻域选两个父代
+        % 
         nbrs = B(i, :);
         p1_idx = nbrs(randi(T));
         p2_idx = nbrs(randi(T));
@@ -50,7 +50,7 @@ for g = 1:gen
             p2_idx = nbrs(randi(T));
         end
 
-        % DE/rand/1 变异 (F=0.65) + 多项式变异 (pm=1/V, mum=20)
+        % DE/rand/1  (F=0.65) +  (pm=1/V, mum=20)
         y = zeros(1, V);
         for j = 1:V
             if rand(1) < 0.7
@@ -73,12 +73,12 @@ for g = 1:gen
 
         fy = evaluate_objective(y, M, V, Nh, Nw, Np, L, Zpump, h, Cprice);
 
-        % 更新参考点
+        % 
         for k = 1:M
             if fy(k) < z_star(k), z_star(k) = fy(k); end
         end
 
-        % 更新邻域解（切比雪夫聚合）
+        % 
         for j_idx = 1:T
             j = nbrs(j_idx);
             g_old = max(lambda(j, :) .* (fx(j, :) - z_star));
@@ -96,7 +96,7 @@ for g = 1:gen
     end
 end
 
-% === 6. 组装输出染色体 ===
+% === 6.  ===
 chromosome = [x, fx];
 chromosome = non_domination_sort_mod(chromosome, M, V);
 end

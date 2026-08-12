@@ -1,6 +1,5 @@
 <template>
   <div class="renewable-page">
-    <ScreenHeader title="西北五省区新能源资源分析" subtitle="风电 · 光伏 · 水电 / 365天 × 24小时出力监测" status-label="新能源数据在线" />
     <div class="page-header">
       <h2>🌤️ 新能源数据</h2>
       <p class="page-desc">风电、光伏、水电 365天×24小时出力数据可视化</p>
@@ -84,10 +83,16 @@
 </template>
 
 <script setup>
-import { ref, computed, watch, onMounted, onBeforeUnmount, nextTick } from "vue";
+import {
+  ref,
+  computed,
+  watch,
+  onMounted,
+  onBeforeUnmount,
+  nextTick,
+} from "vue";
 import * as echarts from "echarts";
 import { fetchAllData } from "../api";
-import ScreenHeader from "../components/ScreenHeader.vue";
 import MapFlow from "../components/MapFlow.vue";
 
 const loading = ref(true);
@@ -408,7 +413,18 @@ onBeforeUnmount(() => {
   animation: fadeIn 0.3s ease;
   min-height: 100vh;
   padding: 10px;
-  background: radial-gradient(circle at 50% 10%, rgba(20,241,190,.08), transparent 34%), repeating-linear-gradient(0deg, rgba(86,217,255,.018) 0 1px, transparent 1px 30px), #020d15;
+  background:
+    radial-gradient(
+      circle at 50% 10%,
+      rgba(20, 241, 190, 0.08),
+      transparent 34%
+    ),
+    repeating-linear-gradient(
+      0deg,
+      rgba(86, 217, 255, 0.018) 0 1px,
+      transparent 1px 30px
+    ),
+    #020d15;
 }
 @keyframes fadeIn {
   from {
@@ -500,7 +516,7 @@ onBeforeUnmount(() => {
   border: 1px solid var(--border-color);
   border-radius: 2px;
   margin-bottom: 10px;
-  border-color: rgba(20,241,190,.3);
+  border-color: rgba(20, 241, 190, 0.3);
 }
 .ctrl-group {
   display: flex;
@@ -531,7 +547,7 @@ onBeforeUnmount(() => {
   border-radius: 2px;
   padding: 20px;
   margin-bottom: 10px;
-  box-shadow: inset 0 0 28px rgba(20,241,190,.025);
+  box-shadow: inset 0 0 28px rgba(20, 241, 190, 0.025);
 }
 .section-card h3 {
   font-size: 1rem;
@@ -546,9 +562,21 @@ onBeforeUnmount(() => {
   width: 100%;
   height: 320px;
 }
-.regional-map-card { height: 520px; padding: 0; overflow: hidden; }
-.regional-map-card h3 { position: absolute; z-index: 5; margin: 16px; padding-left: 10px; border-left: 3px solid var(--color-accent); }
-.regional-map-card { position: relative; }
+.regional-map-card {
+  height: 520px;
+  padding: 0;
+  overflow: hidden;
+}
+.regional-map-card h3 {
+  position: absolute;
+  z-index: 5;
+  margin: 16px;
+  padding-left: 10px;
+  border-left: 3px solid var(--color-accent);
+}
+.regional-map-card {
+  position: relative;
+}
 .row-2col {
   display: grid;
   grid-template-columns: 1fr 1fr;

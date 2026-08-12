@@ -304,6 +304,23 @@ async def get_statistics():
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@app.get("/api/experiments/strategy")
+async def get_strategy_results():
+    """获取 Q-Learning 策略贡献数据（来自 run_ablation 的 A5 配置）"""
+    try:
+        json_path = os.path.join(
+            os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+            '全年抽蓄减碳效益优化计算', 'experiment_results', 'strategy_results.json'
+        )
+        if os.path.exists(json_path):
+            with open(json_path, 'r') as f:
+                data = json.load(f)
+            return {"status": "ok", "data": data}
+        return {"status": "pending", "data": None, "message": "请先运行 run_ablation 生成策略数据"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 # ==================== 简易入口 ====================
 
 if __name__ == "__main__":

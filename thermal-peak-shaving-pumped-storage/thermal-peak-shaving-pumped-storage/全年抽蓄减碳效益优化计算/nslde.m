@@ -7,13 +7,13 @@ if nargin < 9, gen = 3000; end
 chromosome = initialize_variables(pop, M, V, min_range, max_range, Nh, Nw, Np, L, Zpump, h, Cprice);
 chromosome = non_domination_sort_mod(chromosome, M, V);
 
-%% Start the evolution process                                    ��ʼ��������
-% The following are performed in each generation                           ������ÿһ��ִ�еĲ���
-% * Select the parents which are fit for reproduction                      ѡ���ʺϷ�ֳ�ĸ���
-% * Perfrom crossover and Mutation operator on the selected parents        ����ѡ����������ִ�н����ͻ�����
-% * Perform Selection from the parents and the offsprings                  �ڸ������Ӵ�֮�����ѡ�����
+%% Start the evolution process                                    
+% The following are performed in each generation                           
+% * Select the parents which are fit for reproduction                      
+% * Perfrom crossover and Mutation operator on the selected parents        
+% * Perform Selection from the parents and the offsprings                  
 % * Replace the unfit individuals with the fit individuals to maintain a
-%   constant population size.                                              �ú��ʵĸ����滻�����ʵĸ��壬�Ա��ֺ㶨����Ⱥ��ģ��
+%   constant population size.                                              
 
 for i = 1 : gen
     pool = round(pop / 2);
