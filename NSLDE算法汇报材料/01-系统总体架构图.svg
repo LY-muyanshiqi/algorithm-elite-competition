@@ -1,0 +1,174 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 720">
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&amp;display=swap');
+    text { font-family: 'JetBrains Mono', 'Noto Sans SC', 'PingFang SC', sans-serif; }
+  </style>
+
+  <defs>
+    <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+      <path d="M 40 0 L 0 0 0 40" fill="none" stroke="#1e293b" stroke-width="0.5"/>
+    </pattern>
+    <marker id="arrow-cyan" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#22d3ee"/>
+    </marker>
+    <marker id="arrow-emerald" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#34d399"/>
+    </marker>
+    <marker id="arrow-violet" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#a78bfa"/>
+    </marker>
+    <marker id="arrow-amber" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#fbbf24"/>
+    </marker>
+    <marker id="arrow-slate" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#64748b"/>
+    </marker>
+  </defs>
+
+  <!-- Background -->
+  <rect width="100%" height="100%" fill="#0f172a"/>
+  <rect width="100%" height="100%" fill="url(#grid)"/>
+
+  <!-- Title -->
+  <text x="30" y="32" fill="white" font-size="16" font-weight="700">抽水蓄能零碳效益智能核算交互系统 — 总体架构</text>
+
+  <!-- ============================================ -->
+  <!-- Layer 1: 数据层 (y=60) -->
+  <!-- ============================================ -->
+  <rect x="20" y="55" width="920" height="130" rx="10" fill="none" stroke="#22d3ee" stroke-width="1" stroke-dasharray="8,4"/>
+  <text x="34" y="75" fill="#22d3ee" font-size="10" font-weight="600">数据层 Data Layer</text>
+
+  <!-- 数据源1 -->
+  <rect x="40" y="90" width="200" height="38" rx="6" fill="#0f172a"/>
+  <rect x="40" y="90" width="200" height="38" rx="6" fill="rgba(8,51,68,0.4)" stroke="#22d3ee" stroke-width="1.2"/>
+  <text x="140" y="113" fill="white" font-size="10" font-weight="600" text-anchor="middle">8760h 逐时负荷数据</text>
+
+  <!-- 数据源2 -->
+  <rect x="260" y="90" width="200" height="38" rx="6" fill="#0f172a"/>
+  <rect x="260" y="90" width="200" height="38" rx="6" fill="rgba(8,51,68,0.4)" stroke="#22d3ee" stroke-width="1.2"/>
+  <text x="360" y="113" fill="white" font-size="10" font-weight="600" text-anchor="middle">各省风光水装机容量</text>
+
+  <!-- 数据源3 -->
+  <rect x="480" y="90" width="200" height="38" rx="6" fill="#0f172a"/>
+  <rect x="480" y="90" width="200" height="38" rx="6" fill="rgba(8,51,68,0.4)" stroke="#22d3ee" stroke-width="1.2"/>
+  <text x="580" y="113" fill="white" font-size="10" font-weight="600" text-anchor="middle">陕西电网真实逐时出力</text>
+
+  <!-- 数据源4 -->
+  <rect x="700" y="90" width="200" height="38" rx="6" fill="#0f172a"/>
+  <rect x="700" y="90" width="200" height="38" rx="6" fill="rgba(8,51,68,0.4)" stroke="#22d3ee" stroke-width="1.2"/>
+  <text x="800" y="113" fill="white" font-size="10" font-weight="600" text-anchor="middle">CCER 碳价 / 方法学</text>
+
+  <!-- 数据层说明 -->
+  <text x="40" y="150" fill="#94a3b8" font-size="8">Wu &amp; Kan (2023) Zenodo 数据集  |  各省统计年报  |  国网陕西  |  CM-004-V01 方法学</text>
+
+  <!-- Layer 1→2 箭头 -->
+  <line x1="480" y1="185" x2="480" y2="215" stroke="#64748b" stroke-width="1.5" marker-end="url(#arrow-slate)"/>
+
+  <!-- ============================================ -->
+  <!-- Layer 2: 算法层 (y=220) -->
+  <!-- ============================================ -->
+  <rect x="20" y="220" width="920" height="155" rx="10" fill="none" stroke="#34d399" stroke-width="1" stroke-dasharray="8,4"/>
+  <text x="34" y="240" fill="#34d399" font-size="10" font-weight="600">算法层 Algorithm Layer (pymoo 框架)</text>
+
+  <!-- 算法三列 -->
+  <!-- NSLDE (自研) - 突出 -->
+  <rect x="40" y="255" width="280" height="70" rx="8" fill="#0f172a"/>
+  <rect x="40" y="255" width="280" height="70" rx="8" fill="rgba(59,130,246,0.25)" stroke="#60a5fa" stroke-width="2"/>
+  <text x="180" y="280" fill="#60a5fa" font-size="11" font-weight="700" text-anchor="middle">改进 NSLDE (自研)</text>
+  <text x="180" y="298" fill="#94a3b8" font-size="8" text-anchor="middle">差分进化 + 自适应变异 + 精英保留</text>
+  <text x="180" y="313" fill="#fbbf24" font-size="8" text-anchor="middle">双目标: min 碳排放 · min 火电调峰</text>
+
+  <!-- NSGA-III -->
+  <rect x="340" y="255" width="280" height="70" rx="8" fill="#0f172a"/>
+  <rect x="340" y="255" width="280" height="70" rx="8" fill="rgba(6,78,59,0.35)" stroke="#34d399" stroke-width="1.2"/>
+  <text x="480" y="280" fill="#34d399" font-size="11" font-weight="600" text-anchor="middle">NSGA-III (对标)</text>
+  <text x="480" y="298" fill="#94a3b8" font-size="8" text-anchor="middle">参考点机制 · 高维目标空间均匀分布</text>
+  <text x="480" y="313" fill="#94a3b8" font-size="8" text-anchor="middle">Benchmark: IGD · Spacing · Hypervolume</text>
+
+  <!-- MOEA/D -->
+  <rect x="640" y="255" width="280" height="70" rx="8" fill="#0f172a"/>
+  <rect x="640" y="255" width="280" height="70" rx="8" fill="rgba(6,78,59,0.35)" stroke="#34d399" stroke-width="1.2"/>
+  <text x="780" y="280" fill="#34d399" font-size="11" font-weight="600" text-anchor="middle">MOEA/D (对标)</text>
+  <text x="780" y="298" fill="#94a3b8" font-size="8" text-anchor="middle">分解策略 · 权重向量引导搜索</text>
+  <text x="780" y="313" fill="#94a3b8" font-size="8" text-anchor="middle">Benchmark: IGD · Spacing · Hypervolume</text>
+
+  <!-- 并行计算标注 -->
+  <rect x="560" y="340" width="140" height="22" rx="4" fill="rgba(251,191,36,0.15)" stroke="#fbbf24" stroke-width="0.8"/>
+  <text x="630" y="355" fill="#fbbf24" font-size="8" font-weight="500" text-anchor="middle">并行计算架构 · 效率 ×10</text>
+
+  <!-- Layer 2→3 箭头 -->
+  <line x1="480" y1="375" x2="480" y2="405" stroke="#64748b" stroke-width="1.5" marker-end="url(#arrow-slate)"/>
+
+  <!-- ============================================ -->
+  <!-- Layer 3: 应用层 (y=410) -->
+  <!-- ============================================ -->
+  <rect x="20" y="410" width="920" height="130" rx="10" fill="none" stroke="#a78bfa" stroke-width="1" stroke-dasharray="8,4"/>
+  <text x="34" y="430" fill="#a78bfa" font-size="10" font-weight="600">应用层 Application Layer — 三大核心模型</text>
+
+  <!-- 碳排放模型 -->
+  <rect x="40" y="445" width="280" height="45" rx="6" fill="#0f172a"/>
+  <rect x="40" y="445" width="280" height="45" rx="6" fill="rgba(76,29,149,0.35)" stroke="#a78bfa" stroke-width="1.2"/>
+  <text x="180" y="470" fill="white" font-size="10" font-weight="600" text-anchor="middle">火电三段式碳排放模型</text>
+  <text x="180" y="483" fill="#94a3b8" font-size="7.5" text-anchor="middle">常规 / 深度不投油 / 深度投油 · 逐时核算</text>
+
+  <!-- 优化模型 -->
+  <rect x="340" y="445" width="280" height="45" rx="6" fill="#0f172a"/>
+  <rect x="340" y="445" width="280" height="45" rx="6" fill="rgba(76,29,149,0.35)" stroke="#a78bfa" stroke-width="1.2"/>
+  <text x="480" y="470" fill="white" font-size="10" font-weight="600" text-anchor="middle">多目标智能优化调度模型</text>
+  <text x="480" y="483" fill="#94a3b8" font-size="7.5" text-anchor="middle">8760h 全时序 · 四省份并行 · 三算法对标</text>
+
+  <!-- CCER -->
+  <rect x="640" y="445" width="280" height="45" rx="6" fill="#0f172a"/>
+  <rect x="640" y="445" width="280" height="45" rx="6" fill="rgba(76,29,149,0.35)" stroke="#a78bfa" stroke-width="1.2"/>
+  <text x="780" y="470" fill="white" font-size="10" font-weight="600" text-anchor="middle">CCER 碳交易经济评价模型</text>
+  <text x="780" y="483" fill="#94a3b8" font-size="7.5" text-anchor="middle">NPV · IRR · 回收期 · 碳价敏感性 30~200元/t</text>
+
+  <!-- 全参数面板标注 -->
+  <rect x="560" y="502" width="180" height="22" rx="4" fill="rgba(167,139,250,0.12)" stroke="#a78bfa" stroke-width="0.8"/>
+  <text x="650" y="517" fill="#a78bfa" font-size="8" font-weight="500" text-anchor="middle">全参数可视化自定义面板</text>
+
+  <!-- Layer 3→4 箭头 -->
+  <line x1="480" y1="540" x2="480" y2="570" stroke="#64748b" stroke-width="1.5" marker-end="url(#arrow-slate)"/>
+
+  <!-- ============================================ -->
+  <!-- Layer 4: 展示层 (y=575) -->
+  <!-- ============================================ -->
+  <rect x="20" y="575" width="920" height="115" rx="10" fill="none" stroke="#fbbf24" stroke-width="1" stroke-dasharray="8,4"/>
+  <text x="34" y="595" fill="#fbbf24" font-size="10" font-weight="600">展示层 Presentation Layer — Streamlit 交互式 Web 平台</text>
+
+  <rect x="40" y="610" width="205" height="38" rx="6" fill="#0f172a"/>
+  <rect x="40" y="610" width="205" height="38" rx="6" fill="rgba(120,53,15,0.25)" stroke="#fbbf24" stroke-width="1.2"/>
+  <text x="142" y="633" fill="white" font-size="9.5" font-weight="600" text-anchor="middle">四省份数据切换</text>
+
+  <rect x="260" y="610" width="205" height="38" rx="6" fill="#0f172a"/>
+  <rect x="260" y="610" width="205" height="38" rx="6" fill="rgba(120,53,15,0.25)" stroke="#fbbf24" stroke-width="1.2"/>
+  <text x="362" y="633" fill="white" font-size="9.5" font-weight="600" text-anchor="middle">Pareto 前沿可视化</text>
+
+  <rect x="480" y="610" width="205" height="38" rx="6" fill="#0f172a"/>
+  <rect x="480" y="610" width="205" height="38" rx="6" fill="rgba(120,53,15,0.25)" stroke="#fbbf24" stroke-width="1.2"/>
+  <text x="582" y="633" fill="white" font-size="9.5" font-weight="600" text-anchor="middle">Benchmark 即时对比</text>
+
+  <rect x="700" y="610" width="205" height="38" rx="6" fill="#0f172a"/>
+  <rect x="700" y="610" width="205" height="38" rx="6" fill="rgba(120,53,15,0.25)" stroke="#fbbf24" stroke-width="1.2"/>
+  <text x="802" y="633" fill="white" font-size="9.5" font-weight="600" text-anchor="middle">CCER 情景分析面板</text>
+
+  <!-- 输出标注 -->
+  <text x="480" y="675" fill="#fbbf24" font-size="8" font-weight="500" text-anchor="middle">核心输出: 碳减排量 · 新能源渗透率 · 抽发效率 · 碳交易收益 · 优化调度策略</text>
+
+  <!-- ============================================ -->
+  <!-- 左右侧标注：四省份 -->
+  <!-- ============================================ -->
+
+  <!-- 左侧：陕西标注 -->
+  <path d="M 20 120 L 12 120 L 12 240 L 20 240" fill="none" stroke="#fb923c" stroke-width="1.5" stroke-dasharray="3,3"/>
+
+  <!-- 右侧：陕甘青宁 -->
+  <rect x="890" y="80" width="55" height="90" rx="5" fill="#0f172a"/>
+  <rect x="890" y="80" width="55" height="90" rx="5" fill="rgba(251,146,60,0.15)" stroke="#fb923c" stroke-width="0.8"/>
+  <text x="917" y="98" fill="#fb923c" font-size="8" font-weight="600" text-anchor="middle">陕西</text>
+  <text x="917" y="114" fill="#fb923c" font-size="7.5" font-weight="600" text-anchor="middle">甘肃</text>
+  <text x="917" y="130" fill="#fb923c" font-size="7.5" font-weight="600" text-anchor="middle">青海</text>
+  <text x="917" y="146" fill="#fb923c" font-size="7.5" font-weight="600" text-anchor="middle">宁夏</text>
+  <text x="917" y="164" fill="#94a3b8" font-size="6.5" text-anchor="middle">西北四省</text>
+
+</svg>

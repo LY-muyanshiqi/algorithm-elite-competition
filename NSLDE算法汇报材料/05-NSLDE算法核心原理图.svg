@@ -1,0 +1,243 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 900">
+  <defs>
+    <style>
+      @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&amp;display=swap');
+      text { font-family: 'JetBrains Mono', 'Noto Sans SC', 'PingFang SC', sans-serif; }
+    </style>
+
+    <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+      <path d="M 40 0 L 0 0 0 40" fill="none" stroke="#1e293b" stroke-width="0.5"/>
+    </pattern>
+
+    <marker id="arrow-white" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+      <polygon points="0 0, 8 3, 0 6" fill="#94a3b8"/>
+    </marker>
+    <marker id="arrow-cyan" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+      <polygon points="0 0, 8 3, 0 6" fill="#22d3ee"/>
+    </marker>
+    <marker id="arrow-emerald" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+      <polygon points="0 0, 8 3, 0 6" fill="#34d399"/>
+    </marker>
+    <marker id="arrow-amber" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+      <polygon points="0 0, 8 3, 0 6" fill="#fbbf24"/>
+    </marker>
+    <marker id="arrow-violet" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+      <polygon points="0 0, 8 3, 0 6" fill="#a78bfa"/>
+    </marker>
+    <marker id="arrow-orange" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+      <polygon points="0 0, 8 3, 0 6" fill="#fb923c"/>
+    </marker>
+
+    <filter id="glow" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur stdDeviation="4" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+
+    <linearGradient id="bg-grad" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#0f172a"/>
+      <stop offset="100%" stop-color="#0c1322"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Background -->
+  <rect width="100%" height="100%" fill="url(#bg-grad)"/>
+  <rect width="100%" height="100%" fill="url(#grid)"/>
+
+  <!-- Title -->
+  <text x="600" y="42" fill="white" font-size="20" font-weight="700" text-anchor="middle" filter="url(#glow)">NSLDE 多目标进化算法 · 核心原理图</text>
+  <text x="600" y="64" fill="#64748b" font-size="10" text-anchor="middle">Non-dominated Sorting Lévy-flight Differential Evolution — 融合混沌初始化 · 差分进化 · Lévy 飞行的改进 NSGA-II</text>
+
+  <!-- ============================================================ -->
+  <!-- LEFT COLUMN: Stage labels -->
+  <!-- ============================================================ -->
+
+  <!-- Stage 1 -->
+  <rect x="30" y="100" width="140" height="28" rx="6" fill="#0f172a" stroke="#22d3ee" stroke-width="1"/>
+  <text x="100" y="119" fill="#22d3ee" font-size="10" font-weight="600" text-anchor="middle">Phase 1 · 初始化</text>
+
+  <!-- Stage 2 -->
+  <rect x="30" y="205" width="140" height="28" rx="6" fill="#0f172a" stroke="#a78bfa" stroke-width="1"/>
+  <text x="100" y="224" fill="#a78bfa" font-size="10" font-weight="600" text-anchor="middle">Phase 2 · 排序</text>
+
+  <!-- Stage 3 -->
+  <rect x="30" y="310" width="140" height="28" rx="6" fill="#0f172a" stroke="#34d399" stroke-width="1"/>
+  <text x="100" y="329" fill="#34d399" font-size="10" font-weight="600" text-anchor="middle">Phase 3 · 进化</text>
+
+  <!-- Stage 4 -->
+  <rect x="30" y="435" width="140" height="28" rx="6" fill="#0f172a" stroke="#fbbf24" stroke-width="1"/>
+  <text x="100" y="454" fill="#fbbf24" font-size="10" font-weight="600" text-anchor="middle">Phase 4 · 扰动</text>
+
+  <!-- Stage 5 -->
+  <rect x="30" y="560" width="140" height="28" rx="6" fill="#0f172a" stroke="#fb923c" stroke-width="1"/>
+  <text x="100" y="579" fill="#fb923c" font-size="10" font-weight="600" text-anchor="middle">Phase 5 · 选择</text>
+
+  <!-- Iteration -->
+  <rect x="50" y="650" width="100" height="24" rx="12" fill="rgba(251,113,133,0.2)" stroke="#fb7185" stroke-width="1"/>
+  <text x="100" y="666" fill="#fb7185" font-size="8" font-weight="600" text-anchor="middle">Gen = Gen + 1</text>
+
+  <!-- ============================================================ -->
+  <!-- MAIN FLOW: Boxes and arrows -->
+  <!-- ============================================================ -->
+
+  <!-- Box 1: Chaotic Init -->
+  <rect x="220" y="90" width="200" height="60" rx="8" fill="#0f172a"/>
+  <rect x="220" y="90" width="200" height="60" rx="8" fill="rgba(8,51,68,0.4)" stroke="#22d3ee" stroke-width="1.5"/>
+  <text x="320" y="112" fill="white" font-size="11" font-weight="600" text-anchor="middle">Chaotic 混沌初始化</text>
+  <text x="320" y="128" fill="#94a3b8" font-size="7.5" text-anchor="middle">Logistic 映射: yₙ₊₁ = 4·yₙ·(1−yₙ)</text>
+  <text x="320" y="142" fill="#64748b" font-size="7" text-anchor="middle">N = 100 个体 · D = 23 决策变量</text>
+
+  <!-- Arrows from Init to Evaluate -->
+  <line x1="420" y1="120" x2="510" y2="120" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#arrow-white)"/>
+
+  <!-- Box 2: Objective Evaluation -->
+  <rect x="515" y="90" width="200" height="60" rx="8" fill="#0f172a"/>
+  <rect x="515" y="90" width="200" height="60" rx="8" fill="rgba(8,51,68,0.4)" stroke="#22d3ee" stroke-width="1.5"/>
+  <text x="615" y="112" fill="white" font-size="11" font-weight="600" text-anchor="middle">双目标函数评估</text>
+  <text x="615" y="128" fill="#94a3b8" font-size="7.5" text-anchor="middle">f₁ = 火电调峰容量 → min</text>
+  <text x="615" y="142" fill="#94a3b8" font-size="7.5" text-anchor="middle">f₂ = 系统碳排放量 → min</text>
+
+  <!-- Arrow down to NDS -->
+  <line x1="615" y1="150" x2="615" y2="195" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#arrow-white)"/>
+
+  <!-- Box 3: Non-Dominated Sorting -->
+  <rect x="515" y="195" width="200" height="60" rx="8" fill="#0f172a"/>
+  <rect x="515" y="195" width="200" height="60" rx="8" fill="rgba(76,29,149,0.35)" stroke="#a78bfa" stroke-width="1.5"/>
+  <text x="615" y="217" fill="#a78bfa" font-size="11" font-weight="600" text-anchor="middle">快速非支配排序</text>
+  <text x="615" y="233" fill="#94a3b8" font-size="7.5" text-anchor="middle">O(MN²) · 按 Pareto 等级分层</text>
+  <text x="615" y="247" fill="#64748b" font-size="7" text-anchor="middle">Rank 1 = 当前最优前沿</text>
+
+  <!-- Side branch: Crowding Distance -->
+  <line x1="715" y1="225" x2="830" y2="225" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#arrow-white)"/>
+
+  <rect x="835" y="195" width="180" height="60" rx="8" fill="#0f172a"/>
+  <rect x="835" y="195" width="180" height="60" rx="8" fill="rgba(76,29,149,0.3)" stroke="#a78bfa" stroke-width="1.5"/>
+  <text x="925" y="217" fill="#a78bfa" font-size="10" font-weight="600" text-anchor="middle">拥挤距离计算</text>
+  <text x="925" y="235" fill="#94a3b8" font-size="7.5" text-anchor="middle">dᵢ = Σⱼ |fⱼⁱ⁺¹ − fⱼⁱ⁻¹|</text>
+  <text x="925" y="250" fill="#64748b" font-size="7" text-anchor="middle">边界个体 → ∞ · 保持均匀性</text>
+
+  <!-- Return arrow from crowding -->
+  <path d="M 925 255 L 925 300 L 615 300 L 615 255" fill="none" stroke="#94a3b8" stroke-width="1" stroke-dasharray="4,3"/>
+
+  <!-- Arrow from NDS to DE -->
+  <line x1="615" y1="255" x2="615" y2="295" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#arrow-white)"/>
+
+  <!-- Box 4: Differential Evolution -->
+  <rect x="515" y="295" width="200" height="65" rx="8" fill="#0f172a"/>
+  <rect x="515" y="295" width="200" height="65" rx="8" fill="rgba(6,78,59,0.35)" stroke="#34d399" stroke-width="1.5"/>
+  <text x="615" y="317" fill="#34d399" font-size="11" font-weight="600" text-anchor="middle">差分进化 (DE/rand/1)</text>
+  <text x="615" y="334" fill="#94a3b8" font-size="7.5" text-anchor="middle">Mutation: vᵢ = xᵣ₁ + F·(xᵣ₂ − xᵣ₃)</text>
+  <text x="615" y="350" fill="#64748b" font-size="7" text-anchor="middle">F = 0.65 · Crossover CR = 0.9 · 生成 Qₜ</text>
+
+  <!-- Arrow to Lévy -->
+  <line x1="615" y1="360" x2="615" y2="410" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#arrow-white)"/>
+
+  <!-- Box 5: Lévy Flight -->
+  <rect x="500" y="410" width="230" height="80" rx="8" fill="#0f172a"/>
+  <rect x="500" y="410" width="230" height="80" rx="8" fill="rgba(120,53,15,0.35)" stroke="#fbbf24" stroke-width="1.5"/>
+  <text x="615" y="432" fill="#fbbf24" font-size="11" font-weight="600" text-anchor="middle">Lévy 飞行长程扰动</text>
+  <text x="615" y="450" fill="#94a3b8" font-size="7.5" text-anchor="middle">x'ᵢ = xᵢ + α ⊕ Lévy(β)  ,  β = 1.5</text>
+  <text x="615" y="466" fill="#94a3b8" font-size="7.5" text-anchor="middle">Mantegna 算法生成 Lévy 随机步长</text>
+  <text x="615" y="482" fill="#64748b" font-size="7" text-anchor="middle">k = 0.3 扰动概率 · 重尾分布 → 跳出局部最优</text>
+
+  <!-- Arrow to Merge -->
+  <line x1="615" y1="490" x2="615" y2="545" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#arrow-white)"/>
+
+  <!-- Box 6: Merge + Elitism -->
+  <rect x="500" y="545" width="230" height="65" rx="8" fill="#0f172a"/>
+  <rect x="500" y="545" width="230" height="65" rx="8" fill="rgba(124,45,18,0.35)" stroke="#fb923c" stroke-width="1.5"/>
+  <text x="615" y="567" fill="#fb923c" font-size="11" font-weight="600" text-anchor="middle">精英选择 (Elitism)</text>
+  <text x="615" y="584" fill="#94a3b8" font-size="7.5" text-anchor="middle">Rₜ = Pₜ ∪ Qₜ → 非支配排序 → Top N</text>
+  <text x="615" y="600" fill="#64748b" font-size="7" text-anchor="middle">等级优先 · 拥挤距离次之 · 外部存档</text>
+
+  <!-- ============================================================ -->
+  <!-- Decision Diamond -->
+  <!-- ============================================================ -->
+
+  <line x1="615" y1="610" x2="615" y2="655" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#arrow-white)"/>
+
+  <g transform="translate(615, 690)">
+    <polygon points="0,-34 52,0 0,34 -52,0" fill="#0f172a"/>
+    <polygon points="0,-34 52,0 0,34 -52,0" fill="rgba(120,53,15,0.25)" stroke="#fbbf24" stroke-width="1.5"/>
+    <text y="4" fill="white" font-size="9" font-weight="600" text-anchor="middle">Gen ≥ Max</text>
+    <text y="15" fill="#64748b" font-size="7" text-anchor="middle">or converged?</text>
+  </g>
+
+  <!-- Branch arrows from decision -->
+  <!-- Yes → Output -->
+  <line x1="667" y1="690" x2="830" y2="690" stroke="#34d399" stroke-width="2" marker-end="url(#arrow-emerald)"/>
+  <text x="745" y="680" fill="#34d399" font-size="9" font-weight="600" text-anchor="middle">Yes</text>
+
+  <!-- Output box -->
+  <rect x="835" y="650" width="200" height="80" rx="10" fill="#0f172a"/>
+  <rect x="835" y="650" width="200" height="80" rx="10" fill="rgba(34,211,238,0.15)" stroke="#22d3ee" stroke-width="2" filter="url(#glow)"/>
+  <text x="935" y="676" fill="#22d3ee" font-size="12" font-weight="700" text-anchor="middle">输出 Pareto 前沿</text>
+  <text x="935" y="696" fill="#94a3b8" font-size="8" text-anchor="middle">365 天 × 最优调度方案</text>
+  <text x="935" y="714" fill="#94a3b8" font-size="8" text-anchor="middle">(f₁ = 调峰容量, f₂ = 碳排放)</text>
+  <text x="935" y="728" fill="#64748b" font-size="7" text-anchor="middle">四省独立优化 · 全年无约束违规</text>
+
+  <!-- No → loop back -->
+  <line x1="563" y1="690" x2="220" y2="690" stroke="#fb7185" stroke-width="1.5" stroke-dasharray="6,3" marker-end="url(#arrow-white)"/>
+  <text x="390" y="680" fill="#fb7185" font-size="9" font-weight="600" text-anchor="middle">No · 循环</text>
+
+  <!-- Loop back up path -->
+  <path d="M 220 690 L 220 120 L 515 120" fill="none" stroke="#fb7185" stroke-width="1.5" stroke-dasharray="6,3" marker-end="url(#arrow-white)"/>
+  <text x="200" y="410" fill="#fb7185" font-size="8" font-weight="500">Gen + 1</text>
+
+  <!-- ============================================================ -->
+  <!-- Phase descriptions on the left -->
+  <!-- ============================================================ -->
+
+  <!-- Stage 1 desc -->
+  <text x="100" y="150" fill="#64748b" font-size="7" font-weight="400" text-anchor="middle">混沌映射</text>
+  <text x="100" y="162" fill="#64748b" font-size="7" font-weight="400" text-anchor="middle">遍历性种群</text>
+
+  <!-- Stage 2 desc -->
+  <text x="100" y="255" fill="#64748b" font-size="7" font-weight="400" text-anchor="middle">Pareto 分层</text>
+  <text x="100" y="267" fill="#64748b" font-size="7" font-weight="400" text-anchor="middle">拥挤距离</text>
+
+  <!-- Stage 3 desc -->
+  <text x="100" y="360" fill="#64748b" font-size="7" font-weight="400" text-anchor="middle">变异 + 交叉</text>
+  <text x="100" y="372" fill="#64748b" font-size="7" font-weight="400" text-anchor="middle">生成子代</text>
+
+  <!-- Stage 4 desc -->
+  <text x="100" y="485" fill="#64748b" font-size="7" font-weight="400" text-anchor="middle">长程跳跃</text>
+  <text x="100" y="497" fill="#64748b" font-size="7" font-weight="400" text-anchor="middle">逃离局部极值</text>
+
+  <!-- Stage 5 desc -->
+  <text x="100" y="610" fill="#64748b" font-size="7" font-weight="400" text-anchor="middle">合并择优</text>
+  <text x="100" y="622" fill="#64748b" font-size="7" font-weight="400" text-anchor="middle">精英保留</text>
+
+  <!-- ============================================================ -->
+  <!-- BOTTOM: 3 Innovation Cards -->
+  <!-- ============================================================ -->
+
+  <rect x="30" y="760" width="1140" height="120" rx="10" fill="none" stroke="#334155" stroke-width="1"/>
+  <text x="50" y="782" fill="#64748b" font-size="10" font-weight="600">三项关键创新</text>
+
+  <!-- Card 1 -->
+  <rect x="50" y="795" width="340" height="70" rx="8" fill="#0f172a"/>
+  <rect x="50" y="795" width="340" height="70" rx="8" fill="rgba(8,51,68,0.25)" stroke="#22d3ee" stroke-width="1"/>
+  <rect x="50" y="795" width="340" height="20" rx="8" fill="rgba(34,211,238,0.12)"/>
+  <text x="220" y="810" fill="#22d3ee" font-size="9" font-weight="600" text-anchor="middle">01 Chaotic 混沌初始化</text>
+  <text x="65" y="828" fill="#94a3b8" font-size="7">· Logistic 映射替代随机初始化，种群分布更均匀</text>
+  <text x="65" y="842" fill="#94a3b8" font-size="7">· 对初值高度敏感 → 搜索空间覆盖度提升 30%+</text>
+  <text x="65" y="856" fill="#64748b" font-size="7">vs. NSGA-II: 标准伪随机数初始化，种群可能集中</text>
+
+  <!-- Card 2 -->
+  <rect x="420" y="795" width="340" height="70" rx="8" fill="#0f172a"/>
+  <rect x="420" y="795" width="340" height="70" rx="8" fill="rgba(120,53,15,0.25)" stroke="#fbbf24" stroke-width="1"/>
+  <rect x="420" y="795" width="340" height="20" rx="8" fill="rgba(251,191,36,0.12)"/>
+  <text x="590" y="810" fill="#fbbf24" font-size="9" font-weight="600" text-anchor="middle">02 Lévy Flight 长程扰动</text>
+  <text x="435" y="828" fill="#94a3b8" font-size="7">· 重尾分布: 80% 小步局部搜索 + 20% 大步全局跳跃</text>
+  <text x="435" y="842" fill="#94a3b8" font-size="7">· 扰动概率 k = 0.3 · Mantegna 算法 · 步长 β = 1.5</text>
+  <text x="435" y="856" fill="#64748b" font-size="7">vs. NSGA-II / NSGA-III: 无内置扰动机制，易局部收敛</text>
+
+  <!-- Card 3 -->
+  <rect x="790" y="795" width="360" height="70" rx="8" fill="#0f172a"/>
+  <rect x="790" y="795" width="360" height="70" rx="8" fill="rgba(124,45,18,0.25)" stroke="#fb923c" stroke-width="1"/>
+  <rect x="790" y="795" width="360" height="20" rx="8" fill="rgba(251,146,60,0.12)"/>
+  <text x="970" y="810" fill="#fb923c" font-size="9" font-weight="600" text-anchor="middle">03 DE 增强 + 精英选择</text>
+  <text x="805" y="828" fill="#94a3b8" font-size="7">· 差分进化 DE/rand/1 → 比 SBX 交叉探索能力更强</text>
+  <text x="805" y="842" fill="#94a3b8" font-size="7">· 父代+子代合并 (2N) → 精英保留 → 防最优解丢失</text>
+  <text x="805" y="856" fill="#64748b" font-size="7">vs. NSGA-II: SBX 交叉 + 多项式变异, 仅拥挤距离选择</text>
+</svg>

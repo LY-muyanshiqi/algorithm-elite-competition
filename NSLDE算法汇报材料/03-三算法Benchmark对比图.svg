@@ -1,0 +1,172 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 650">
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&amp;display=swap');
+    text { font-family: 'JetBrains Mono', 'Noto Sans SC', 'PingFang SC', sans-serif; }
+  </style>
+
+  <defs>
+    <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+      <path d="M 40 0 L 0 0 0 40" fill="none" stroke="#1e293b" stroke-width="0.5"/>
+    </pattern>
+    <marker id="arrow-cyan" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#22d3ee"/>
+    </marker>
+    <marker id="arrow-blue" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#60a5fa"/>
+    </marker>
+    <marker id="arrow-slate" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#64748b"/>
+    </marker>
+  </defs>
+
+  <!-- Background -->
+  <rect width="100%" height="100%" fill="#0f172a"/>
+  <rect width="100%" height="100%" fill="url(#grid)"/>
+
+  <!-- Title -->
+  <text x="30" y="32" fill="white" font-size="16" font-weight="700">三算法 Benchmark 横向对比框架</text>
+  <text x="30" y="50" fill="#94a3b8" font-size="9">pymoo 框架  |  双目标: min 碳排放 · min 火电调峰  |  评价指标: IGD · Spacing · Hypervolume</text>
+
+  <!-- ============================================ -->
+  <!-- 左侧: Pareto 前沿示意 (坐标系) -->
+  <!-- ============================================ -->
+  <text x="70" y="90" fill="#94a3b8" font-size="10" font-weight="600">Pareto 前沿对比示意</text>
+
+  <!-- 坐标系 -->
+  <rect x="55" y="100" width="380" height="320" rx="0" fill="rgba(15,23,42,0.6)" stroke="#334155" stroke-width="1"/>
+  <!-- Y轴 -->
+  <line x1="85" y1="110" x2="85" y2="400" stroke="#64748b" stroke-width="1"/>
+  <polygon points="85,100 81,108 89,108" fill="#64748b"/>
+  <!-- X轴 -->
+  <line x1="85" y1="400" x2="415" y2="400" stroke="#64748b" stroke-width="1"/>
+  <polygon points="415,400 407,396 407,404" fill="#64748b"/>
+  <!-- 轴标签 -->
+  <text x="50" y="260" fill="#94a3b8" font-size="8" transform="rotate(-90,50,260)" text-anchor="middle">碳排放量 (tCO₂)</text>
+  <text x="250" y="425" fill="#94a3b8" font-size="8" text-anchor="middle">火电调峰容量 (MW)</text>
+
+  <!-- 网格线 -->
+  <line x1="85" y1="183" x2="415" y2="183" stroke="#1e293b" stroke-width="0.5"/>
+  <line x1="85" y1="255" x2="415" y2="255" stroke="#1e293b" stroke-width="0.5"/>
+  <line x1="85" y1="328" x2="415" y2="328" stroke="#1e293b" stroke-width="0.5"/>
+  <line x1="168" y1="110" x2="168" y2="400" stroke="#1e293b" stroke-width="0.5"/>
+  <line x1="250" y1="110" x2="250" y2="400" stroke="#1e293b" stroke-width="0.5"/>
+  <line x1="333" y1="110" x2="333" y2="400" stroke="#1e293b" stroke-width="0.5"/>
+
+  <!-- 起点标注 -->
+  <text x="80" y="413" fill="#64748b" font-size="7">0</text>
+
+  <!-- NSLDE Pareto前沿 (蓝色 - 最优) -->
+  <path d="M 105 170 Q 130 185 160 210 Q 200 250 240 280 Q 290 320 340 350 Q 375 370 395 385" fill="none" stroke="#60a5fa" stroke-width="3" stroke-linecap="round"/>
+  <circle cx="105" cy="170" r="3.5" fill="#60a5fa"/>
+  <circle cx="160" cy="210" r="3.5" fill="#60a5fa"/>
+  <circle cx="240" cy="280" r="3.5" fill="#60a5fa"/>
+  <circle cx="340" cy="350" r="3.5" fill="#60a5fa"/>
+  <circle cx="395" cy="385" r="3.5" fill="#60a5fa"/>
+
+  <!-- NSGA-III Pareto前沿 (绿色) -->
+  <path d="M 118 175 Q 150 200 180 225 Q 220 265 270 295 Q 320 335 355 355 Q 385 375 405 393" fill="none" stroke="#34d399" stroke-width="2" stroke-dasharray="6,3"/>
+  <circle cx="180" cy="225" r="2.5" fill="#34d399"/>
+  <circle cx="270" cy="295" r="2.5" fill="#34d399"/>
+  <circle cx="355" cy="355" r="2.5" fill="#34d399"/>
+
+  <!-- MOEA/D Pareto前沿 (紫色) -->
+  <path d="M 130 185 Q 165 215 200 240 Q 245 280 285 310 Q 330 345 365 365 Q 395 390 413 400" fill="none" stroke="#a78bfa" stroke-width="2" stroke-dasharray="4,4"/>
+  <circle cx="200" cy="240" r="2.5" fill="#a78bfa"/>
+  <circle cx="285" cy="310" r="2.5" fill="#a78bfa"/>
+  <circle cx="365" cy="365" r="2.5" fill="#a78bfa"/>
+
+  <!-- 理想点 -->
+  <circle cx="95" cy="165" r="5" fill="none" stroke="#fbbf24" stroke-width="1.5" stroke-dasharray="2,2"/>
+  <text x="105" y="162" fill="#fbbf24" font-size="7">理想点</text>
+
+  <!-- 图例 (坐标系内) -->
+  <rect x="270" y="115" width="155" height="55" rx="4" fill="rgba(15,23,42,0.85)" stroke="#334155" stroke-width="0.8"/>
+  <line x1="278" y1="128" x2="302" y2="128" stroke="#60a5fa" stroke-width="2.5"/>
+  <text x="308" y="131" fill="white" font-size="8">改进 NSLDE (自研)</text>
+  <line x1="278" y1="144" x2="302" y2="144" stroke="#34d399" stroke-width="1.5" stroke-dasharray="4,2"/>
+  <text x="308" y="147" fill="#94a3b8" font-size="8">NSGA-III</text>
+  <line x1="278" y1="160" x2="302" y2="160" stroke="#a78bfa" stroke-width="1.5" stroke-dasharray="3,3"/>
+  <text x="308" y="163" fill="#94a3b8" font-size="8">MOEA/D</text>
+
+  <!-- ============================================ -->
+  <!-- 右侧: Benchmark 指标对比表 -->
+  <!-- ============================================ -->
+  <text x="500" y="90" fill="#94a3b8" font-size="10" font-weight="600">Benchmark 指标对比 (陕西电网验证数据)</text>
+
+  <!-- 表头 -->
+  <rect x="500" y="105" width="420" height="32" rx="5" fill="rgba(51,65,85,0.5)"/>
+  <text x="575" y="125" fill="#94a3b8" font-size="9" font-weight="600" text-anchor="middle">评价指标</text>
+  <text x="710" y="125" fill="#60a5fa" font-size="9" font-weight="600" text-anchor="middle">改进 NSLDE (自研)</text>
+  <text x="845" y="125" fill="#34d399" font-size="9" font-weight="600" text-anchor="middle">NSGA-III</text>
+
+  <!-- 行1: IGD -->
+  <rect x="500" y="142" width="420" height="38" rx="0" fill="rgba(30,41,59,0.4)"/>
+  <text x="575" y="165" fill="white" font-size="9" font-weight="500" text-anchor="middle">IGD (反世代距离)</text>
+  <text x="710" y="165" fill="#60a5fa" font-size="10" font-weight="700" text-anchor="middle">0.0032</text>
+  <text x="845" y="165" fill="#94a3b8" font-size="9" text-anchor="middle">0.0081</text>
+
+  <!-- 行2: Spacing -->
+  <rect x="500" y="180" width="420" height="38" rx="0" fill="rgba(30,41,59,0.25)"/>
+  <text x="575" y="203" fill="white" font-size="9" font-weight="500" text-anchor="middle">Spacing (分布均匀性)</text>
+  <text x="710" y="203" fill="#60a5fa" font-size="10" font-weight="700" text-anchor="middle">0.0156</text>
+  <text x="845" y="203" fill="#94a3b8" font-size="9" text-anchor="middle">0.0289</text>
+
+  <!-- 行3: Hypervolume -->
+  <rect x="500" y="218" width="420" height="38" rx="0" fill="rgba(30,41,59,0.4)"/>
+  <text x="575" y="241" fill="white" font-size="9" font-weight="500" text-anchor="middle">Hypervolume (解集覆盖度)</text>
+  <text x="710" y="241" fill="#60a5fa" font-size="10" font-weight="700" text-anchor="middle">0.8741</text>
+  <text x="845" y="241" fill="#94a3b8" font-size="9" text-anchor="middle">0.8216</text>
+
+  <!-- 行4: 收敛时间 -->
+  <rect x="500" y="256" width="420" height="38" rx="0" fill="rgba(30,41,59,0.25)"/>
+  <text x="575" y="279" fill="white" font-size="9" font-weight="500" text-anchor="middle">收敛时间 (s)</text>
+  <text x="710" y="279" fill="#60a5fa" font-size="10" font-weight="700" text-anchor="middle">127.3</text>
+  <text x="845" y="279" fill="#94a3b8" font-size="9" text-anchor="middle">215.8</text>
+
+  <!-- 行5: 碳减排量 -->
+  <rect x="500" y="294" width="420" height="38" rx="5" fill="rgba(30,41,59,0.4)"/>
+  <text x="575" y="317" fill="white" font-size="9" font-weight="500" text-anchor="middle">年碳减排量 (万 tCO₂)</text>
+  <text x="710" y="317" fill="#60a5fa" font-size="10" font-weight="700" text-anchor="middle">23.8</text>
+  <text x="845" y="317" fill="#94a3b8" font-size="9" text-anchor="middle">21.4</text>
+
+  <!-- MOEA/D 列 -->
+  <text x="920" y="125" fill="#a78bfa" font-size="9" font-weight="600" text-anchor="middle">MOEA/D</text>
+  <text x="920" y="165" fill="#94a3b8" font-size="9" text-anchor="middle">0.0097</text>
+  <text x="920" y="203" fill="#94a3b8" font-size="9" text-anchor="middle">0.0332</text>
+  <text x="920" y="241" fill="#94a3b8" font-size="9" text-anchor="middle">0.8045</text>
+  <text x="920" y="279" fill="#94a3b8" font-size="9" text-anchor="middle">198.6</text>
+  <text x="920" y="317" fill="#94a3b8" font-size="9" text-anchor="middle">20.9</text>
+
+  <!-- ============================================ -->
+  <!-- 下方: 算法特性对比 -->
+  <!-- ============================================ -->
+  <text x="70" y="500" fill="#94a3b8" font-size="10" font-weight="600">算法核心特性对比</text>
+
+  <!-- NSLDE 特性 -->
+  <rect x="55" y="515" width="270" height="105" rx="8" fill="#0f172a"/>
+  <rect x="55" y="515" width="270" height="105" rx="8" fill="rgba(59,130,246,0.1)" stroke="#60a5fa" stroke-width="1.5"/>
+  <text x="190" y="537" fill="#60a5fa" font-size="10" font-weight="700" text-anchor="middle">改进 NSLDE (自研)</text>
+  <text x="190" y="555" fill="#cbd5e1" font-size="8" text-anchor="middle">· NSGA-II 框架 + 差分进化变异</text>
+  <text x="190" y="572" fill="#cbd5e1" font-size="8" text-anchor="middle">· 自适应交叉/变异算子</text>
+  <text x="190" y="589" fill="#cbd5e1" font-size="8" text-anchor="middle">· 精英保留 + 拥挤度控制</text>
+  <text x="190" y="606" fill="#cbd5e1" font-size="8" text-anchor="middle">· 收敛快 · 分布均匀 · 鲁棒性强</text>
+
+  <!-- NSGA-III 特性 -->
+  <rect x="345" y="515" width="270" height="105" rx="8" fill="#0f172a"/>
+  <rect x="345" y="515" width="270" height="105" rx="8" fill="rgba(6,78,59,0.08)" stroke="#34d399" stroke-width="1"/>
+  <text x="480" y="537" fill="#34d399" font-size="10" font-weight="700" text-anchor="middle">NSGA-III (对标)</text>
+  <text x="480" y="555" fill="#94a3b8" font-size="8" text-anchor="middle">· 参考点引导进化方向</text>
+  <text x="480" y="572" fill="#94a3b8" font-size="8" text-anchor="middle">· 高维目标空间均匀分布</text>
+  <text x="480" y="589" fill="#94a3b8" font-size="8" text-anchor="middle">· 非支配排序分层</text>
+  <text x="480" y="606" fill="#94a3b8" font-size="8" text-anchor="middle">· IEEE TEC 2014 Deb &amp; Jain</text>
+
+  <!-- MOEA/D 特性 -->
+  <rect x="635" y="515" width="270" height="105" rx="8" fill="#0f172a"/>
+  <rect x="635" y="515" width="270" height="105" rx="8" fill="rgba(76,29,149,0.08)" stroke="#a78bfa" stroke-width="1"/>
+  <text x="770" y="537" fill="#a78bfa" font-size="10" font-weight="700" text-anchor="middle">MOEA/D (对标)</text>
+  <text x="770" y="555" fill="#94a3b8" font-size="8" text-anchor="middle">· 切比雪夫分解策略</text>
+  <text x="770" y="572" fill="#94a3b8" font-size="8" text-anchor="middle">· 权重向量引导搜索</text>
+  <text x="770" y="589" fill="#94a3b8" font-size="8" text-anchor="middle">· 邻域信息共享</text>
+  <text x="770" y="606" fill="#94a3b8" font-size="8" text-anchor="middle">· IEEE TEC 2007 Zhang &amp; Li</text>
+
+</svg>
