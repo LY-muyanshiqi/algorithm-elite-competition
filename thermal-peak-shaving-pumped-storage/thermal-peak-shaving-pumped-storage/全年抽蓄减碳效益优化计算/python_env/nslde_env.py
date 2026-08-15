@@ -60,14 +60,13 @@ class NSLDEEnv:
         return np.hstack([pop_x, F])
 
     def _hv(self, pop):
-        """计算当前种群的 HV"""
+        """计算当前种群的 HV（用固定参考点，整个 episode 不变）"""
         obj = pop[:, self.V:self.V + self.M]
         feasible = ~np.isinf(obj[:, 0]) & ~np.isinf(obj[:, 1])
         if feasible.sum() == 0:
             return 0.0
         pts = obj[feasible]
-        ref = [np.max(pts[:, 0]) * 1.2, np.max(pts[:, 1]) * 1.2]
-        return compute_hv_2d(pts, ref)
+        return compute_hv_2d(pts, self.ref_point)
 
     def _survival_rate(self, offspring, new_pop):
         """子代存活率：offspring 中有多少个进入 new_pop（按决策变量去重近似）"""
@@ -78,6 +77,14 @@ class NSLDEEnv:
         self.generation = 0
         pop_xy = self._init_population()
         self.pop_sorted = non_domination_sort(pop_xy, self.M, self.V)
+        # 固定参考点：基于初始种群目标值的上界（整个 episode 不变）
+        init_obj = pop_xy[:, self.V:self.V + self.M]
+        init_feasible = init_obj[~np.isinf(init_obj[:, 0]) & ~np.isinf(init_obj[:, 1])]
+        if init_feasible.shape[0] > 0:
+            self.ref_point = [init_feasible[:, 0].max() * 1.2,
+                              init_feasible[:, 1].max() * 1.2]
+        else:
+            self.ref_point = [1e5, 1e10]
         self.prev_hv = self._hv(self.pop_sorted)
         self.stagnation = 0
         self.hv_history = [self.prev_hv]
