@@ -74,33 +74,32 @@ def non_domination_sort(x, M, V):
     # 组装完整染色体（决策+目标+rank）
     full = np.hstack([x, rank.reshape(-1, 1).astype(float)])
 
-    # 拥挤距离
+    # 拥挤距离（严格对齐 MATLAB: 对 front 内所有个体排序，不跳过 inf）
     crowding = np.zeros(N)
-    # 找最大 rank 层数（front 列表里有几个非空层）
     n_fronts = f
     for fi in range(n_fronts):
-        if len(front[fi]) == 0:
-            continue
         members = np.array(front[fi])
-        # 对每个目标计算拥挤距离贡献
+        if len(members) == 0:
+            continue
+        # 每个目标维度的距离贡献，先存临时，最后求和
+        dist_per_obj = np.zeros((len(members), M))
         for k in range(M):
             fk = obj[members, k]
-            # 只处理非 inf 的
-            finite = ~np.isinf(fk)
-            if finite.sum() < 2:
-                continue
-            order = members[np.argsort(fk)]
-            fk_sorted = obj[order, k]
-            f_max = fk_sorted[-1]
-            f_min = fk_sorted[0]
-            # 边界点距离 = inf
-            crowding[order[0]] = np.inf
-            crowding[order[-1]] = np.inf
-            for j in range(1, len(order) - 1):
+            order_in_front = np.argsort(fk)
+            f_sorted = fk[order_in_front]
+            f_max = f_sorted[-1]
+            f_min = f_sorted[0]
+            # 首末边界 = inf
+            dist_per_obj[order_in_front[0], k] = np.inf
+            dist_per_obj[order_in_front[-1], k] = np.inf
+            for j in range(1, len(order_in_front) - 1):
                 if f_max - f_min == 0:
-                    crowding[order[j]] = np.inf
+                    dist_per_obj[order_in_front[j], k] = np.inf
                 else:
-                    crowding[order[j]] += (obj[order[j + 1], k] - obj[order[j - 1], k]) / (f_max - f_min)
+                    dist_per_obj[order_in_front[j], k] = (
+                        f_sorted[j + 1] - f_sorted[j - 1]) / (f_max - f_min)
+        # 求和（inf + 有限值 = inf，保留 MATLAB 语义）
+        crowding[members] = dist_per_obj.sum(axis=1)
 
     full = np.hstack([full, crowding.reshape(-1, 1)])
 
