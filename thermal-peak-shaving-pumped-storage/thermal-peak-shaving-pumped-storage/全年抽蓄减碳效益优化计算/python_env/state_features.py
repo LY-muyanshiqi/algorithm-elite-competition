@@ -64,6 +64,8 @@ def extract_state_features(chromosome, M, V, gen, max_gen, stagnation, prev_hv):
     crowd_var = 0.0
     if n_feasible > 2:
         crowd_vals = chromosome[feasible, V + M + 1]
-        crowd_var = min(max(np.std(crowd_vals) / max(np.mean(crowd_vals), 1e-10), 0.0), 1.0)
+        crowd_vals = crowd_vals[np.isfinite(crowd_vals)]
+        if crowd_vals.size > 1:
+            crowd_var = min(max(np.std(crowd_vals) / max(np.mean(crowd_vals), 1e-10), 0.0), 1.0)
 
     return np.array([entropy_norm, gen_ratio, stag_norm, hv_delta, cv_rate, crowd_var])
