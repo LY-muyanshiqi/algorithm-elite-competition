@@ -6,7 +6,7 @@
 
 ## 一句话说清楚
 
-在风电光伏大规模并网、火电机组被迫深度调峰的背景下，用 **NSLDE 多目标进化算法** 求解抽水蓄能调度方案——同时压低火电调峰深度和系统碳排放，这两个天然冲突的目标。
+在风电光伏大规模并网、火电机组被迫深度调峰的背景下，用 **NSLDE 多目标进化算法** 求解抽水蓄能调度方案——同时压低火电调峰深度和系统碳排放，这两个天然冲突的目标。并进一步用 **GNN + PPO 深度强化学习** 替代固定策略，让算法学会"什么时候该用哪个搜索算子"。
 
 ## 跑起来
 
@@ -22,6 +22,13 @@ streamlit run app.py
 ```
 
 浏览器打开 `localhost:8501`，调整装机容量 / 蓄能时长 / 抽发效率，即时看 Pareto 前沿移动。
+
+```bash
+# Python 深度学习环境（GNN+PPO 路线，实验中）
+cd thermal-peak-shaving-pumped-storage/thermal-peak-shaving-pumped-storage/全年抽蓄减碳效益优化计算
+python tests/test_objective_parity.py   # 目标函数 MATLAB 对拍验证
+python experiments/train_ppo_full.py    # PPO 可行性验证训练
+```
 
 ## 这东西到底干了什么
 
@@ -39,7 +46,9 @@ streamlit run app.py
 
 ## 核心看点
 
-**算法层面** — 不是套壳 NSGA-II。在标准差分进化上叠加了三个机制：
+### 算法层面 — 不是套壳 NSGA-II
+
+在标准差分进化上叠加了三个机制：
 
 | 改进点 | 方法 | 解决的问题 |
 |--------|------|-----------|
@@ -47,21 +56,34 @@ streamlit run app.py
 | Lévy 扰动 | Mantegna 算法 (β=1.5) | 跳出局部最优，保持全局搜索能力 |
 | 非支配排序 | 快速 NDS + 拥挤距离 | 保证 Pareto 前沿分布质量 |
 
-**工程层面** — 不是纯 MATLAB 脚本：
+### 自适应算子选择 — 路线 A vs 路线 B
+
+| | 路线 A：Q-Learning | 路线 B：GNN + PPO |
+|---|---|---|
+| 方式 | 6 维状态离散化 Q 表 | 图神经网络 + 策略网络 |
+| 输出 | ε-greedy 选 7 算子之一 | Actor 输出 7 算子概率分布 |
+| 实现 | MATLAB 原生 | PyTorch + PyG |
+| 状态 | ✅ 已实现 | ✅ 框架已建，实验验证中 |
+
+路线 B 是"深度学习重装型"：用 **GNN 编码器**（电网电源×时段图结构）+ **PPO 训练** 构成 DL+EA 混合范式，让算子选择从"查表"升级为"理解种群状态"。三种编码器（GNN / MLP / Transformer）统一接口可对比。
+
+### 工程层面 — 不是纯 MATLAB 脚本
 
 - 17 个 pytest 测试用例 + GitHub Actions CI（唯一有真测试的项目）
+- numpy 精确复刻 MATLAB 目标函数与核心算子，经对拍验证（f1 差 0、f2 差 1e-7）
 - GitHub Pages 自动部署落地页
 - Dev Container 支持，克隆即用
 - Blender 3D 抽水蓄能电站建模
 
-**领域层面** — 不是参数玩具：
-- 真实区域电网数据：甘肃 / 青海 / 宁夏 / 四川，365天×24小时
+### 领域层面 — 不是参数玩具
+
+- 真实区域电网数据：陕西 / 甘肃 / 青海 / 宁夏，365天×24小时
 - 碳排放核算链完整：煤耗分档 → 碳氧化率 → CO₂分子量比
 - 深度调峰三档分类：常规 (>50%) / 中度 (30-50%) / 深度 (<30%)
 
 ## 技术栈
 
-MATLAB · Python (Streamlit, NumPy, SciPy) · GitHub Actions · Blender · Docker
+MATLAB · Python (Streamlit, NumPy, SciPy, PyTorch, PyTorch Geometric) · GitHub Actions · Blender · Docker
 
 ## 目录
 
@@ -69,7 +91,11 @@ MATLAB · Python (Streamlit, NumPy, SciPy) · GitHub Actions · Blender · Docke
 ├── 参赛方案书、答辩大纲、任务清单等    ← 算法精英大赛申报材料
 ├── thermal-peak-shaving-pumped-storage/
 │   └── thermal-peak-shaving-pumped-storage/
-│       ├── 全年抽蓄减碳效益优化计算/   ← MATLAB NSLDE 核心
+│       ├── 全年抽蓄减碳效益优化计算/   ← MATLAB NSLDE 核心 + Python 深度学习环境
+│       │   ├── python_env/             ← numpy 复刻目标函数/算子（RL训练用）
+│       │   ├── rl/                     ← GNN+PPO 深度学习框架
+│       │   ├── experiments/            ← 实验脚本
+│       │   └── tests/                  ← MATLAB 对拍测试
 │       ├── 前端封装/frontend/          ← Streamlit 平台
 │       ├── 建模/                       ← Blender 3D 场景
 │       └── backend/                    ← FastAPI 后端
