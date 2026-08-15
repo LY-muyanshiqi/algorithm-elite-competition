@@ -92,6 +92,10 @@ def non_domination_sort(x, M, V):
             # 首末边界 = inf
             dist_per_obj[order_in_front[0], k] = np.inf
             dist_per_obj[order_in_front[-1], k] = np.inf
+            # 若 f_max/f_min 含 inf（不可行解），该维度只有边界 inf，中间个体给 inf
+            if not np.isfinite(f_max) or not np.isfinite(f_min):
+                dist_per_obj[order_in_front[1:-1], k] = np.inf
+                continue
             for j in range(1, len(order_in_front) - 1):
                 if f_max - f_min == 0:
                     dist_per_obj[order_in_front[j], k] = np.inf
