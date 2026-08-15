@@ -185,7 +185,7 @@ end
 if ~exist('z', 'var') || isempty(z)
     f = x;
 else
-    f = z();
+    f = z;
 end
 
 %% References

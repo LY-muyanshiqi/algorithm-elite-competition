@@ -21,6 +21,11 @@ for i = 1 : gen
     parent_chromosome = tournament_selection(chromosome, pool, tour);
     offspring_chromosome = genetic_operator(parent_chromosome, chromosome, M, V, min_range, max_range, Nh, Nw, Np, L, Zpump, h, Cprice);
 
+    [main_pop, ~] = size(chromosome);
+    [offspring_pop, ~] = size(offspring_chromosome);
+    intermediate_chromosome(1:main_pop, :) = chromosome;
+    intermediate_chromosome(main_pop+1:main_pop+offspring_pop, 1:M+V) = offspring_chromosome;
+    intermediate_chromosome = non_domination_sort_mod(intermediate_chromosome, M, V);
     chromosome = replace_chromosome(intermediate_chromosome, M, V, pop);
     if ~mod(i, 100)
         clc

@@ -178,11 +178,30 @@ function [history] = record_history(history, chromosome, M, V, idx)
     ref_point = [max(f1(feasible_mask)) * 1.2, max(f2(feasible_mask)) * 1.2];
     history.hv(idx) = compute_hv_2d([f1(feasible_mask), f2(feasible_mask)], ref_point);
 
-    if history.n_feasible(idx) > 1 && exist('ref_pareto', 'var')
-        history.igd(idx) = compute_igd_2d(ref_pareto, [f1(feasible_mask), f2(feasible_mask)]);
+    if history.n_feasible(idx) > 1
+        f_all = [f1(feasible_mask), f2(feasible_mask)];
+        ref_front = pareto_front(f_all);
+        history.igd(idx) = compute_igd_2d(ref_front, f_all);
     else
         history.igd(idx) = 0;
     end
+end
+
+function ref = pareto_front(points)
+    n = size(points, 1);
+    is_front = true(n, 1);
+    for i = 1:n
+        for j = 1:n
+            if i ~= j
+                if (points(j,1) <= points(i,1) && points(j,2) <= points(i,2)) && ...
+                   (points(j,1) < points(i,1) || points(j,2) < points(i,2))
+                    is_front(i) = false;
+                    break;
+                end
+            end
+        end
+    end
+    ref = points(is_front, :);
 end
 
 function hv = compute_hv_2d(points, ref_point)
