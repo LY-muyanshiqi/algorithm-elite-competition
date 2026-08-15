@@ -69,6 +69,9 @@ op_probs = op_probs / sum(op_probs);
 end
 
 function idx = discretize_state(features, n_bins)
+    % NaN/Inf 防护：替换为 0，避免 floor(NaN) 导致索引越界
+    features(isnan(features)) = 0;
+    features(isinf(features)) = 0;
     idx = 0;
     stride = 1;
 
