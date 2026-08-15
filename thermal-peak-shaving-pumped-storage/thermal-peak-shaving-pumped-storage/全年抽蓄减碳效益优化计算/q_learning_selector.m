@@ -82,8 +82,8 @@ function idx = discretize_state(features, n_bins)
     idx = idx + (bin - 1) * stride;
     stride = stride * n_bins(2);
 
-    feat = min(features(3), 3);
-    bin = floor(feat) + 1;
+    feat = min(max(features(3), 0), 3);
+    bin = min(floor(feat) + 1, n_bins(3));
     idx = idx + (bin - 1) * stride;
     stride = stride * n_bins(3);
 
