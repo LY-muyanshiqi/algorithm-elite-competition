@@ -54,16 +54,21 @@ NSLDE 多目标优化算法的核心计算模块，包含 MATLAB 实现与 Pytho
 - `verify_chaos_uniformity.m` / `verify_levy_jump.m` — 混沌/Lévy 验证
 - `decision_sensitivity.m` — 决策变量敏感性分析
 
-## 三、Python 深度学习环境（路线 B）
+## 三、Python 深度学习环境（路线 B，经验证收益弱，代码留存）
+
+> 注：路线 A（Q-Learning）和路线 B（GNN+PPO）两个"自适应算子选择"方向，
+> 经严谨实验验证均无显著收益（详见外层 `NSLDE算法方向探索结论.md`）。
+> 该环境的 numpy 复刻部分（对拍验证）仍有价值，深度学习框架作为探索记录留存。
 
 ### 路线 A vs 路线 B
 
-| | 路线 A（已实现） | 路线 B（本目录） |
+| | 路线 A（已验证） | 路线 B（已验证） |
 |---|---|---|
 | 自适应方式 | Q-Learning（Q 表） | GNN + PPO 策略网络 |
 | 实现语言 | MATLAB 原生 | Python + PyTorch + PyG |
 | 状态空间 | 6 维特征离散化 | 图结构 + 6 维标量 |
 | 训练 | 在线 ε-greedy | 离线 RL（BC + PPO） |
+| 验证结论 | 与固定策略无显著差异(p=0.31) | reward 仅升 3%，MLP≈GNN |
 
 ### Python 环境的用途
 
