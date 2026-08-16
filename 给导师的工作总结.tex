@@ -1,0 +1,109 @@
+\documentclass[11pt,a4paper]{ctexart}
+\usepackage{geometry}
+\geometry{left=2.5cm,right=2.5cm,top=2.5cm,bottom=2.5cm}
+\usepackage{amsmath,amssymb}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{enumitem}
+\usepackage{hyperref}
+\hypersetup{colorlinks=true,linkcolor=blue,urlcolor=blue}
+\usepackage{xcolor}
+
+\setlength{\parskip}{0.5em}
+\setlength{\parindent}{0pt}
+
+\title{\textbf{NSLDE 项目工作总结与方向求助}}
+\author{（团队成员整理，供导师审阅）}
+\date{\today}
+
+\begin{document}
+
+\maketitle
+\vspace{-2em}
+
+\section{我们做了什么}
+
+围绕``抽水蓄能减碳效益优化''这一核心业务，我们基于 NSLDE 多目标进化算法（NSGA-II + Logistic 混沌初始化 + DE 交叉 + Lévy 飞行变异），系统性地验证了多个算法改进方向。所有结论均基于真实数据实验和统计检验，而非停留在``搭框架''层面。
+
+\section{已验证的核心结论}
+
+\subsection{结论 1：自适应算子选择无显著收益}
+
+\textbf{路线 A（Q-Learning 自适应算子选择）}：采用宁夏 5 天 $\times$ 2 配置 $\times$ 10 次重复 $=$ 50 个样本做 Wilcoxon 配对符号秩检验，Q-Learning 与固定策略无显著差异（$p = 0.31$），均值反而略差 $3\%$。
+
+\textbf{路线 B（GNN + PPO 深度强化学习）}：完整搭建了 numpy 精确复刻目标函数（与 MATLAB 对拍一致）、GNN/MLP/Transformer 三种编码器、PPO 训练管线。但 100 episode 训练 reward 仅涨 $3\%$，且最简单的 MLP（不使用图结构）就能达到接近 GNN 的水平——图神经网络在这个``5 电源 $\times$ 24 时段的简单二分图''上没有增量价值。
+
+\subsection{结论 2：深度学习融合不成立}
+
+检索了最新的 SAEA（代理辅助进化）等方法，并实测确认：目标函数计算很快（单次 $0.215$\,ms），代理模型``加速''的动机不存在；问题规模小、图结构简单、约束不极端，缺乏深度学习发挥价值的条件。
+
+\subsection{结论 3：NSLDE 三机制有温和但真实的正贡献}
+
+框架内消融显示，三机制（混沌初始化 + DE 交叉 + Lévy 飞行）整体带来约 $-5.4\%$ 的目标提升，其中混沌初始化最显著（约 $-4.2\%$）。这是目前经得起较多验证、相对稳健的结论。
+
+\subsection{结论 4：抽蓄功率平滑约束方向合理但效果待确认}
+
+给目标函数加入``抽蓄功率平滑惩罚''，初测切换次数降低 $38\%$，但全年采样复测缩水到约 $15\%$ 且不稳健。
+
+\section{反复出现的规律（重要）}
+
+我们注意到一个贯穿整个探索的规律：
+
+\begin{center}
+\begin{tabular}{lll}
+\toprule
+\textbf{方向} & \textbf{初看起来的效果} & \textbf{严谨验证后} \\
+\midrule
+Q-Learning 自适应 & 似乎收敛一致 & 无显著差异（$p=0.31$）\\
+双空间拥挤距离 & 借鉴同校论文 & 决策空间欧氏距离失真 \\
+抽蓄平滑约束 & ``降 38\%'' & 缩水到约 15\% \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\textbf{``看似明显的改进，用更严谨的方法（全年数据、更多重复、统计检验）验证后，效果普遍会缩水。''}
+
+\section{诚实的问题诊断（当前卡点）}
+
+经过这么多方向的验证，我们得出一个关键判断：
+
+\textbf{当前问题的建模过于简化，已经把算法的创新空间榨干了。}
+
+具体来说，我们的问题是：
+\begin{itemize}[itemsep=0pt]
+  \item \textbf{单日}调度（365 天被独立拆成 365 个互不相关的问题）
+  \item \textbf{单省}（无空间耦合）
+  \item \textbf{单水库、单机组}（无组合复杂性）
+  \item 目标函数\textbf{便宜}、约束\textbf{不极端}
+\end{itemize}
+
+这样一个``又小又简单''的问题，让 NSLDE 的机制（本来为``强约束、高维''设计）失去了发挥空间，也让各种``高级方法''（自适应、深度学习）失去了用武之地。
+
+\section{我们想到的出路（想请老师把关）}
+
+要真正做出一篇\textbf{算法创新}的论文，我们认为出路是\textbf{``把问题做大''}——恢复问题真实的复杂性。目前判断最有性价比的方向是：
+
+\subsection{方向：多日耦合调度（滚动时窗）}
+
+\textbf{现状}：`main.m` 中是 \texttt{parfor i=1:365}，每天独立优化，水库状态每天从 $0.5$ 重新开始，与前一天无关。
+
+\textbf{问题}：真实世界的抽蓄电站，水库是连续运行的——今天的结束水位就是明天的起始水位。``单日独立优化''完全捕捉不到``跨日储能''这种真实运营策略（比如连续低谷存水、高峰集中释放）。
+
+\textbf{改造}：把单日独立优化改为``滚动时窗耦合优化''——每次优化一个 7 天（或 $N$ 天）窗口，窗口内水库状态连续，窗口间交接。这会带来真实的算法挑战：决策变量从 23 维增长到 $N\times 21$ 维，约束从简单周期约束变成链式耦合。
+
+\textbf{为什么这是算法创新}：NSLDE 本来就为``强约束、高维''设计，现在的问题太简单反而发挥不出机制优势。多日耦合让问题的维度、约束复杂度真正上了一个量级，混沌初始化、Lévy 跳跃、DE 才能体现出价值。同时``最优时窗长度''本身就是一个有研究价值的新问题。
+
+\section{我们希望得到的指导}
+
+\begin{enumerate}[itemsep=0.3em]
+  \item 上述``多日耦合''方向的判断是否正确？是否符合算法创新论文的要求？
+  \item 除了``多日耦合''，老师是否觉得还有我们没想到的、更适合的``把问题做大''或``算法创新''方向？
+  \item 在当前的 NSLDE 三机制基础上，如果要形成一篇算法创新论文，老师建议的创新点应该落在哪里？
+  \item 数据源的问题（陕西水电全年恒定 1600MW，疑似人为简化），对论文的影响有多大？是否必须更换真实数据？
+\end{enumerate}
+
+\vspace{1em}
+\small
+\textit{注：详细的实验数据和统计检验结果见附件《NSLDE算法方向探索结论.md》。}
+
+\end{document}
