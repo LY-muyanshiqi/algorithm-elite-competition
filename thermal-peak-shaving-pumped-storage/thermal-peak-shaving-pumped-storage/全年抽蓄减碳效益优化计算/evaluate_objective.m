@@ -5,7 +5,7 @@ function f = evaluate_objective(x, M, VV, Nh, Nw, Np, L, Zpump, h, Cprice, lambd
 
 global global_lambda_smooth;
 
-if nargin < 10
+if nargin < 11
     lambda_smooth = 0;
 end
 if ~isempty(global_lambda_smooth)
