@@ -1,5 +1,16 @@
-function f = evaluate_objective(x, M, VV, Nh, Nw, Np, L, Zpump, h, Cprice)
+function f = evaluate_objective(x, M, VV, Nh, Nw, Np, L, Zpump, h, Cprice, lambda_smooth)
 % evaluate_objective - objective evaluation (continuous carbon model)
+% lambda_smooth: 可选，抽蓄功率平滑惩罚权重（默认0=无惩罚）
+% 优先读全局变量 global_lambda_smooth（供批量实验用）
+
+global global_lambda_smooth;
+
+if nargin < 10
+    lambda_smooth = 0;
+end
+if ~isempty(global_lambda_smooth)
+    lambda_smooth = global_lambda_smooth;
+end
 
 f = [];
 V = Zpump * h;
@@ -66,6 +77,12 @@ end
 
 f(1) = Zt_f;
 f(2) = sum(EMI);
+
+% 抽蓄功率平滑惩罚：加权到 f2
+if lambda_smooth > 0
+    smooth = sum(abs(diff(Npump)));
+    f(2) = f(2) + lambda_smooth * smooth;
+end
 
 if abs(C(25) - 0.5) > 0.01
     f(1) = inf;
