@@ -41,3 +41,15 @@ class StrategyData(BaseModel):
     """策略贡献数据"""
     strategy_history: Optional[list] = None
     strategy_use_count: Optional[list] = None
+
+
+class RobustOptimizationParams(BaseModel):
+    """年度代表场景鲁棒优化参数。"""
+    province: str = Field("shaanxi", pattern="^(shaanxi|gansu|qinghai|ningxia)$")
+    population: int = Field(24, ge=8, le=100)
+    generations: int = Field(20, ge=1, le=500)
+    scenario_count: int = Field(6, ge=2, le=16)
+    extreme_count: int = Field(2, ge=1, le=6)
+    beta: float = Field(0.3, ge=0.0, le=2.0)
+    alpha: float = Field(0.9, ge=0.5, lt=1.0)
+    seed: int = Field(42, ge=0, le=2147483647)

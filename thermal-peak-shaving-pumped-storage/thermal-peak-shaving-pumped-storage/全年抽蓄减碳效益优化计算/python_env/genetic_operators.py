@@ -144,7 +144,7 @@ def op_cauchy(target, V, l_limit, u_limit):
 
 
 def genetic_operator_multi(parent_chromosome, chromosome, M, V, l_limit, u_limit,
-                           Nh, Nw, Np, L, Zpump, h, op_probs):
+                           Nh, Nw, Np, L, Zpump, h, op_probs, evaluator=None):
     """复刻 genetic_operator_multi.m：按 op_probs 轮盘赌选算子，对每个父代生成 2 子代"""
     from evaluate_objective import evaluate_objective_np
 
@@ -189,8 +189,12 @@ def genetic_operator_multi(parent_chromosome, chromosome, M, V, l_limit, u_limit
             c1, c2 = op_cauchy(target, V, l_limit, u_limit)
 
         # 评估两个子代
-        f1a, f2a = evaluate_objective_np(c1, Nh, Nw, Np, L, Zpump, h)
-        f1b, f2b = evaluate_objective_np(c2, Nh, Nw, Np, L, Zpump, h)
+        if evaluator is None:
+            f1a, f2a = evaluate_objective_np(c1, Nh, Nw, Np, L, Zpump, h)
+            f1b, f2b = evaluate_objective_np(c2, Nh, Nw, Np, L, Zpump, h)
+        else:
+            f1a, f2a = evaluator(c1)
+            f1b, f2b = evaluator(c2)
 
         children[p] = np.concatenate([c1, [f1a, f2a]])
         children[p + 1] = np.concatenate([c2, [f1b, f2b]])

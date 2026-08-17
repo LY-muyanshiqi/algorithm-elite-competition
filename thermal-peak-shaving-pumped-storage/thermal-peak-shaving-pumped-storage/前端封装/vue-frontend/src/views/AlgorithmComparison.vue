@@ -1,643 +1,143 @@
 <template>
-  <div class="algo-compare">
-    <div class="page-header">
-      <h2>⚔️ NSLDE vs NSGA-II vs MOEA/D 算法对比</h2>
-      <p class="page-desc">
-        在相同数据和约束条件下，三种多目标进化算法的 Pareto
-        前沿、性能指标和收敛速度对比
-      </p>
-    </div>
-
-    <div v-if="loading" class="loading-state">
-      <div class="spinner"></div>
-      <p>加载对比数据...</p>
-    </div>
-
-    <template v-if="!loading && compData">
-      <!-- 数据来源 -->
-      <div class="info-banner" v-if="compData.is_real">
-        ✅ 使用真实 MATLAB 对比实验数据（{{ compData.days_used?.length || 5 }}
-        个代表日）
+  <div class="algorithm-screen">
+    <section class="control-band">
+      <div class="control-title">
+        <span>场景鲁棒优化实验</span>
+        <small>全年代表场景 · 极端日 · CVaR · 跨日经验迁移</small>
       </div>
+      <label>省份
+        <select v-model="form.province" :disabled="running">
+          <option value="shaanxi">陕西</option><option value="gansu">甘肃</option>
+          <option value="qinghai">青海</option><option value="ningxia">宁夏</option>
+        </select>
+      </label>
+      <label>种群<input v-model.number="form.population" type="number" min="8" max="100" :disabled="running"></label>
+      <label>代数<input v-model.number="form.generations" type="number" min="1" max="500" :disabled="running"></label>
+      <label>场景<input v-model.number="form.scenario_count" type="number" min="2" max="16" :disabled="running"></label>
+      <label>β<input v-model.number="form.beta" type="number" min="0" max="2" step="0.1" :disabled="running"></label>
+      <button class="run-button" :disabled="running" @click="runOptimization">
+        {{ running ? '计算中' : '运行四组对比' }}
+      </button>
+    </section>
 
-      <!-- KPI 卡片 -->
-      <div class="kpi-grid">
-        <div class="kpi-card">
-          <div class="kpi-label">NSLDE (本项目)</div>
-          <div class="kpi-value" style="color: #00d4ff">{{ nsldeMean }}</div>
-          <div class="kpi-unit">f₁ 均值</div>
+    <section v-if="task && running" class="progress-band">
+      <div><strong>{{ task.stage }}</strong><span>{{ task.progress }}%</span></div>
+      <div class="progress-track"><i :style="{ width: `${task.progress}%` }"></i></div>
+    </section>
+    <section v-if="error" class="error-band">{{ error }}</section>
+
+    <template v-if="result">
+      <section class="summary-line">
+        <span>{{ result.province_name }} · {{ result.capacity_mw }} MW</span>
+        <span>代表日 {{ result.scenario_days.join('、') }}</span>
+        <span>CVaR α={{ result.risk.alpha }} / β={{ result.risk.beta }}</span>
+        <span>耗时 {{ result.runtime_seconds }} s</span>
+      </section>
+
+      <section class="kpi-grid">
+        <article v-for="item in result.variants" :key="item.key" :class="['kpi-card', item.key]">
+          <header><span>{{ item.label }}</span><b>{{ item.solutions }} 解</b></header>
+          <div class="metric"><strong>{{ format(item.f1_best) }}</strong><small>最小调峰容量</small></div>
+          <div class="metric"><strong>{{ format(item.f2_best) }}</strong><small>最小碳排放</small></div>
+          <footer>HV {{ compact(item.hv) }} · IGD {{ item.igd.toFixed(4) }}</footer>
+        </article>
+      </section>
+
+      <section class="visual-grid">
+        <div class="panel wide"><h3>真实 Pareto 前沿</h3><div ref="paretoEl" class="chart"></div></div>
+        <div class="panel"><h3>统一评价指标</h3><div ref="metricEl" class="chart"></div></div>
+        <div class="panel"><h3>调度质量</h3><div ref="qualityEl" class="chart"></div></div>
+      </section>
+
+      <section class="scenario-panel">
+        <h3>代表场景构成</h3>
+        <div class="scenario-list">
+          <span v-for="(day, index) in result.scenario_days" :key="day">
+            D{{ day }} · {{ labelName(result.scenario_labels[index]) }}
+          </span>
         </div>
-        <div class="kpi-card">
-          <div class="kpi-label">NSGA-II</div>
-          <div class="kpi-value" style="color: #ff9800">{{ nsga2Mean }}</div>
-          <div class="kpi-unit">f₁ 均值 · {{ nsga2Delta }}</div>
-        </div>
-        <div class="kpi-card">
-          <div class="kpi-label">MOEA/D</div>
-          <div class="kpi-value" style="color: #e040fb">{{ moeadMean }}</div>
-          <div class="kpi-unit">f₁ 均值 · {{ moeadDelta }}</div>
-        </div>
-      </div>
-
-      <!-- Tab 切换 -->
-      <div class="tabs">
-        <button
-          v-for="tab in tabs"
-          :key="tab.key"
-          class="tab-btn"
-          :class="{ 'tab-active': activeTab === tab.key }"
-          @click="activeTab = tab.key"
-        >
-          {{ tab.label }}
-        </button>
-      </div>
-
-      <!-- Tab 内容 -->
-      <div class="tab-content">
-        <!-- Pareto 前沿 -->
-        <div
-          v-show="activeTab === 'pareto'"
-          ref="paretoChart"
-          class="chart-body"
-        ></div>
-
-        <!-- 性能指标 -->
-        <div v-show="activeTab === 'metrics'" class="metrics-section">
-          <div ref="metricsChart" class="chart-body"></div>
-          <div class="metrics-explain">
-            <div class="explain-card">
-              <strong>HV (Hypervolume) ↑</strong>
-              <p>解集覆盖的目标空间体积，越大表示前沿更广更优</p>
-            </div>
-            <div class="explain-card">
-              <strong>IGD ↓</strong>
-              <p>到参考集(NSLDE)的平均距离，越小越逼近真实前沿</p>
-            </div>
-            <div class="explain-card">
-              <strong>Spacing ↓</strong>
-              <p>解分布的均匀度，越小表示 Pareto 前沿覆盖更均匀</p>
-            </div>
-          </div>
-          <!-- 运行时间 -->
-          <div class="timing-section" v-if="compData.timing">
-            <h3>⏱️ 平均运行时间</h3>
-            <div class="timing-grid">
-              <div class="timing-card">
-                <span class="timing-algo" style="color: #00d4ff">NSLDE</span>
-                <span class="timing-val">{{ timing[0] }}s</span>
-              </div>
-              <div class="timing-card">
-                <span class="timing-algo" style="color: #ff9800">NSGA-II</span>
-                <span class="timing-val">{{ timing[1] }}s</span>
-              </div>
-              <div class="timing-card">
-                <span class="timing-algo" style="color: #e040fb">MOEA/D</span>
-                <span class="timing-val">{{ timing[2] }}s</span>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- 收敛曲线 -->
-        <div
-          v-show="activeTab === 'convergence'"
-          ref="convChart"
-          class="chart-body"
-        ></div>
-      </div>
+      </section>
     </template>
 
-    <!-- 无数据 -->
-    <div v-if="!loading && !compData" class="empty-state">
-      <p>暂无对比数据，请确保 comparison_results.mat 已生成</p>
-    </div>
+    <section v-else-if="!running" class="empty-panel">
+      设置实验参数并运行，系统将比较原始 NSLDE、场景鲁棒、经验热启动和组合算法。
+    </section>
   </div>
 </template>
 
 <script setup>
-import {
-  ref,
-  computed,
-  onMounted,
-  onBeforeUnmount,
-  nextTick,
-  watch,
-} from "vue";
-import * as echarts from "echarts";
-import { fetchAllData } from "../api";
+import { nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
+import * as echarts from 'echarts'
+import { fetchLatestRobustOptimization, fetchRobustOptimization, startRobustOptimization } from '../api'
 
-const loading = ref(true);
-const compData = ref(null);
-const activeTab = ref("pareto");
+const form = ref({ province: 'shaanxi', population: 24, generations: 20, scenario_count: 6, extreme_count: 2, beta: 0.3, alpha: 0.9, seed: 42 })
+const task = ref(null)
+const result = ref(null)
+const running = ref(false)
+const error = ref('')
+const paretoEl = ref(null)
+const metricEl = ref(null)
+const qualityEl = ref(null)
+let timer = null
+let charts = []
 
-const tabs = [
-  { key: "pareto", label: "🎯 Pareto 前沿对比" },
-  { key: "metrics", label: "📊 性能指标 (HV / IGD / Spacing)" },
-  { key: "convergence", label: "📉 收敛曲线对比" },
-];
+const colors = ['#43e7c5', '#48a8ff', '#ffc857', '#ff6b8a']
+const format = value => Number(value).toLocaleString('zh-CN', { maximumFractionDigits: 1 })
+const compact = value => Number(value).toExponential(2)
+const labelName = value => value === 'extreme_residual_load' ? '极端剩余负荷' : value.replace('cluster_', '典型簇 ')
 
-const paretoChart = ref(null);
-const metricsChart = ref(null);
-const convChart = ref(null);
-
-let paretoInstance = null;
-let metricsInstance = null;
-let convInstance = null;
-
-const nsldeMean = computed(() => {
-  if (!compData.value?.z_nslde) return "-";
-  const m =
-    compData.value.z_nslde.map((r) => r[0]).reduce((a, b) => a + b, 0) /
-    compData.value.z_nslde.length;
-  return m.toFixed(1);
-});
-
-const nsga2Mean = computed(() => {
-  if (!compData.value?.z_nsga2) return "-";
-  const m =
-    compData.value.z_nsga2.map((r) => r[0]).reduce((a, b) => a + b, 0) /
-    compData.value.z_nsga2.length;
-  return m.toFixed(1);
-});
-
-const moeadMean = computed(() => {
-  if (!compData.value?.z_moead) return "-";
-  const m =
-    compData.value.z_moead.map((r) => r[0]).reduce((a, b) => a + b, 0) /
-    compData.value.z_moead.length;
-  return m.toFixed(1);
-});
-
-const nsga2Delta = computed(() => {
-  if (!compData.value) return "";
-  const n = nsldeMean.value,
-    ns = nsga2Mean.value;
-  if (n === "-") return "";
-  const d = ((ns - n) / n) * 100;
-  return (d >= 0 ? "+" : "") + d.toFixed(1) + "%";
-});
-
-const moeadDelta = computed(() => {
-  if (!compData.value) return "";
-  const n = nsldeMean.value,
-    m = moeadMean.value;
-  if (n === "-") return "";
-  const d = ((m - n) / n) * 100;
-  return (d >= 0 ? "+" : "") + d.toFixed(1) + "%";
-});
-
-const timing = computed(() => {
-  if (!compData.value?.timing) return ["-", "-", "-"];
-  return compData.value.timing.map((v) => v.toFixed(1));
-});
-
-function initParetoChart() {
-  if (!paretoChart.value || !compData.value) return;
-  if (paretoInstance) paretoInstance.dispose();
-  paretoInstance = echarts.init(paretoChart.value);
-  const d = compData.value;
-
-  paretoInstance.setOption({
-    tooltip: { trigger: "item" },
-    legend: {
-      data: ["NSLDE", "NSGA-II", "MOEA/D"],
-      textStyle: { color: "#8ba4c4" },
-      top: 10,
-    },
-    grid: { left: 70, right: 30, top: 60, bottom: 60 },
-    xAxis: {
-      name: "f₁: 火电调峰容量",
-      nameTextStyle: { color: "#8ba4c4" },
-      axisLabel: { color: "#8ba4c4" },
-    },
-    yAxis: {
-      name: "f₂: 碳排放",
-      nameTextStyle: { color: "#8ba4c4" },
-      axisLabel: { color: "#8ba4c4" },
-      splitLine: { lineStyle: { color: "rgba(255,255,255,0.05)" } },
-    },
-    series: [
-      {
-        name: "NSLDE",
-        type: "scatter",
-        data: d.z_nslde,
-        symbolSize: 8,
-        itemStyle: { color: "#00d4ff" },
-      },
-      {
-        name: "NSGA-II",
-        type: "scatter",
-        data: d.z_nsga2,
-        symbolSize: 8,
-        itemStyle: { color: "#ff9800" },
-      },
-      {
-        name: "MOEA/D",
-        type: "scatter",
-        data: d.z_moead,
-        symbolSize: 8,
-        itemStyle: { color: "#e040fb" },
-      },
-    ],
-  });
-}
-
-function initMetricsChart() {
-  if (!metricsChart.value || !compData.value) return;
-  if (metricsInstance) metricsInstance.dispose();
-  metricsInstance = echarts.init(metricsChart.value);
-  const d = compData.value;
-  const algos = ["NSLDE", "NSGA-II", "MOEA/D"];
-  const colors = ["#00d4ff", "#ff9800", "#e040fb"];
-
-  metricsInstance.setOption({
-    tooltip: { trigger: "axis" },
-    grid: [
-      { left: 60, right: 20, top: 40, bottom: 40, width: "30%" },
-      { left: "38%", right: 20, top: 40, bottom: 40, width: "30%" },
-      { left: "68%", right: 20, top: 40, bottom: 40, width: "30%" },
-    ],
-    xAxis: [
-      { gridIndex: 0, data: algos, axisLabel: { color: "#8ba4c4" } },
-      { gridIndex: 1, data: algos, axisLabel: { color: "#8ba4c4" } },
-      { gridIndex: 2, data: algos, axisLabel: { color: "#8ba4c4" } },
-    ],
-    yAxis: [
-      {
-        gridIndex: 0,
-        axisLabel: { color: "#8ba4c4" },
-        splitLine: { lineStyle: { color: "rgba(255,255,255,0.05)" } },
-      },
-      {
-        gridIndex: 1,
-        axisLabel: { color: "#8ba4c4" },
-        splitLine: { lineStyle: { color: "rgba(255,255,255,0.05)" } },
-      },
-      {
-        gridIndex: 2,
-        axisLabel: { color: "#8ba4c4" },
-        splitLine: { lineStyle: { color: "rgba(255,255,255,0.05)" } },
-      },
-    ],
-    series: [
-      {
-        name: "HV",
-        type: "bar",
-        xAxisIndex: 0,
-        yAxisIndex: 0,
-        data: d.hv,
-        itemStyle: { color: "#00d4ff" },
-      },
-      {
-        name: "IGD",
-        type: "bar",
-        xAxisIndex: 1,
-        yAxisIndex: 1,
-        data: d.igd,
-        itemStyle: { color: "#ff9800" },
-      },
-      {
-        name: "Spacing",
-        type: "bar",
-        xAxisIndex: 2,
-        yAxisIndex: 2,
-        data: d.spacing,
-        itemStyle: { color: "#e040fb" },
-      },
-    ],
-  });
-}
-
-function initConvChart() {
-  if (!convChart.value) return;
-  if (convInstance) convInstance.dispose();
-  convInstance = echarts.init(convChart.value);
-
-  const gens = Array.from({ length: 31 }, (_, i) => i * 100);
-  const seed = 42;
-  const series = [
-    { name: "NSLDE", color: "#00d4ff", factor: 0.7 },
-    { name: "NSGA-II", color: "#ff9800", factor: 1.0 },
-    { name: "MOEA/D", color: "#e040fb", factor: 1.3 },
-  ].map((s, si) => {
-    const data = gens.map((g, i) => [
-      g,
-      Math.exp(-(g / 1000)) * s.factor +
-        (Math.sin(i * 3.7 + si * 2.1 + seed) * 0.5 + 0.5) * 0.04,
-    ]);
-    return {
-      name: s.name,
-      type: "line",
-      data,
-      smooth: true,
-      lineStyle: { color: s.color, width: 2 },
-      symbol: "none",
-    };
-  });
-
-  convInstance.setOption({
-    tooltip: { trigger: "axis" },
-    legend: {
-      data: series.map((s) => s.name),
-      textStyle: { color: "#8ba4c4" },
-      top: 10,
-    },
-    grid: { left: 70, right: 30, top: 60, bottom: 60 },
-    xAxis: {
-      name: "迭代代数",
-      nameTextStyle: { color: "#8ba4c4" },
-      axisLabel: { color: "#8ba4c4" },
-      splitLine: { lineStyle: { color: "rgba(255,255,255,0.05)" } },
-    },
-    yAxis: {
-      name: "f₁ (归一化)",
-      nameTextStyle: { color: "#8ba4c4" },
-      axisLabel: { color: "#8ba4c4" },
-    },
-    series,
-  });
-}
-
-watch(activeTab, async () => {
-  await nextTick();
-  if (activeTab.value === "pareto") initParetoChart();
-  else if (activeTab.value === "metrics") initMetricsChart();
-  else if (activeTab.value === "convergence") initConvChart();
-});
-
-onMounted(async () => {
+async function runOptimization() {
+  error.value = ''; result.value = null; running.value = true
   try {
-    const data = await fetchAllData();
-    // 从后端获取对比数据（通过 carbon-analysis 端点携带额外字段）
-    // 如果没有专门端点，我们构建前端模拟的对比数据（后续接真实API）
-    compData.value = buildComparisonData(data);
+    task.value = await startRobustOptimization(form.value)
+    poll(task.value.task_id)
   } catch (e) {
-    console.error("加载失败:", e);
+    running.value = false
+    error.value = e.response?.data?.detail || e.message
   }
-  loading.value = false;
-  await nextTick();
-  initParetoChart();
-});
-
-onBeforeUnmount(() => {
-  paretoInstance?.dispose();
-  metricsInstance?.dispose();
-  convInstance?.dispose();
-});
-
-// 临时构建对比数据（后端目前没有专门的 comparison API，用 z_gain 生成模拟对比）
-// 后续可接入 /api/data/comparison 端点返回真实 MATLAB 结果
-function buildComparisonData(data) {
-  const z = data.z_gain || [];
-  const n = z.length;
-  if (n === 0) return null;
-
-  // 只用前100个点作为展示
-  const take = Math.min(n, 100);
-  const nslde = z.slice(0, take);
-
-  // 模拟 NSGA-II（偏移5-12%）
-  const nsga2 = nslde
-    .map(([x, y]) => [
-      x * (1 + 0.08 + Math.random() * 0.04),
-      y * (1 + 0.06 + Math.random() * 0.03),
-    ])
-    .sort((a, b) => a[0] - b[0]);
-
-  // 模拟 MOEA/D（偏移3-6%）
-  const moead = nslde
-    .map(([x, y]) => [
-      x * (1 + 0.04 + Math.random() * 0.03),
-      y * (1 + 0.03 + Math.random() * 0.02),
-    ])
-    .sort((a, b) => a[0] - b[0]);
-
-  return {
-    z_nslde: nslde,
-    z_nsga2: nsga2,
-    z_moead: moead,
-    hv: [7.75e10, 1.04e11, 5.42e10],
-    igd: [0, 1.07e5, 8.01e5],
-    spacing: [0.12, 0.28, 0.35],
-    timing: [85.8, 31.7, 12.6],
-    days_used: [75, 98, 182, 323, 356],
-    is_real: false,
-  };
 }
+
+function poll(taskId) {
+  clearInterval(timer)
+  const refresh = async () => {
+    try {
+      task.value = await fetchRobustOptimization(taskId)
+      if (task.value.status === 'completed') {
+        clearInterval(timer); running.value = false; result.value = task.value.result
+        await nextTick(); renderCharts()
+      } else if (task.value.status === 'failed') {
+        clearInterval(timer); running.value = false; error.value = task.value.error || '优化失败'
+      }
+    } catch (e) { clearInterval(timer); running.value = false; error.value = e.message }
+  }
+  refresh(); timer = window.setInterval(refresh, 1000)
+}
+
+function chart(dom, option) {
+  const instance = echarts.init(dom); instance.setOption(option); charts.push(instance)
+}
+
+function renderCharts() {
+  charts.forEach(item => item.dispose()); charts = []
+  const variants = result.value.variants
+  const base = { textStyle: { color: '#9ab6c7' }, backgroundColor: 'transparent' }
+  chart(paretoEl.value, { ...base, tooltip: { trigger: 'item' }, legend: { data: variants.map(v => v.label), textStyle: { color: '#9ab6c7' } }, grid: { left: 70, right: 25, top: 50, bottom: 55 }, xAxis: { name: '调峰容量', splitLine: { lineStyle: { color: '#123344' } } }, yAxis: { name: '碳排放', splitLine: { lineStyle: { color: '#123344' } } }, series: variants.map((v, i) => ({ name: v.label, type: 'scatter', data: v.pareto, symbolSize: 7, itemStyle: { color: colors[i] } })) })
+  chart(metricEl.value, { ...base, tooltip: { trigger: 'axis' }, legend: { data: ['IGD', 'Spacing'], textStyle: { color: '#9ab6c7' } }, grid: { left: 55, right: 20, top: 48, bottom: 60 }, xAxis: { type: 'category', data: variants.map(v => v.label), axisLabel: { rotate: 18 } }, yAxis: { splitLine: { lineStyle: { color: '#123344' } } }, series: [{ name: 'IGD', type: 'bar', data: variants.map(v => v.igd), itemStyle: { color: '#48a8ff' } }, { name: 'Spacing', type: 'line', data: variants.map(v => v.spacing), itemStyle: { color: '#ffc857' } }] })
+  chart(qualityEl.value, { ...base, tooltip: { trigger: 'axis' }, legend: { data: ['启停', '切换', '短时运行'], textStyle: { color: '#9ab6c7' } }, grid: { left: 45, right: 20, top: 48, bottom: 60 }, xAxis: { type: 'category', data: variants.map(v => v.label), axisLabel: { rotate: 18 } }, yAxis: { splitLine: { lineStyle: { color: '#123344' } } }, series: ['starts', 'mode_switches', 'short_runs'].map((key, i) => ({ name: ['启停', '切换', '短时运行'][i], type: 'bar', data: variants.map(v => v.dispatch_quality[key]), itemStyle: { color: colors[i] } })) })
+}
+
+function resize() { charts.forEach(item => item.resize()) }
+onMounted(async () => {
+  window.addEventListener('resize', resize)
+  try {
+    const latest = await fetchLatestRobustOptimization()
+    if (latest.status === 'completed') { task.value = latest; result.value = latest.result; await nextTick(); renderCharts() }
+    else if (['queued', 'running'].includes(latest.status)) { task.value = latest; running.value = true; poll(latest.task_id) }
+  } catch { /* No previous task. */ }
+})
+onBeforeUnmount(() => { clearInterval(timer); charts.forEach(item => item.dispose()); window.removeEventListener('resize', resize) })
 </script>
 
 <style scoped>
-.algo-compare {
-  animation: fadeIn 0.3s ease;
-  min-height: 100vh;
-  padding: 10px;
-  background:
-    radial-gradient(
-      circle at 50% 7%,
-      rgba(86, 217, 255, 0.08),
-      transparent 34%
-    ),
-    repeating-linear-gradient(
-      90deg,
-      rgba(20, 241, 190, 0.016) 0 1px,
-      transparent 1px 32px
-    ),
-    #020d15;
-}
-
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-.page-header {
-  display: none;
-}
-.page-header h2 {
-  font-size: 1.5rem;
-  color: var(--accent);
-  margin-bottom: 8px;
-}
-.page-desc {
-  color: var(--text-secondary);
-  font-size: 0.9rem;
-}
-
-.loading-state {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding: 80px 0;
-  color: var(--text-secondary);
-}
-.spinner {
-  width: 40px;
-  height: 40px;
-  border: 3px solid rgba(0, 212, 255, 0.2);
-  border-top-color: var(--accent);
-  border-radius: 50%;
-  animation: spin 0.8s linear infinite;
-  margin-bottom: 16px;
-}
-@keyframes spin {
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-.info-banner {
-  background: rgba(0, 255, 136, 0.1);
-  border: 1px solid rgba(0, 255, 136, 0.3);
-  border-radius: 8px;
-  padding: 10px 16px;
-  margin-bottom: 20px;
-  font-size: 0.9rem;
-  color: #00ff88;
-}
-
-.kpi-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 10px;
-  margin: 10px 0;
-}
-.kpi-card {
-  background: linear-gradient(
-    135deg,
-    rgba(0, 212, 255, 0.1),
-    rgba(0, 150, 255, 0.05)
-  );
-  border: 1px solid rgba(20, 241, 190, 0.26);
-  border-radius: 2px;
-  padding: 18px;
-  text-align: center;
-}
-.kpi-label {
-  font-size: 0.85rem;
-  color: var(--text-secondary);
-  margin-bottom: 12px;
-}
-.kpi-value {
-  font-size: 2rem;
-  font-weight: 700;
-  margin-bottom: 4px;
-}
-.kpi-unit {
-  font-size: 0.8rem;
-  color: var(--text-secondary);
-}
-
-.tabs {
-  display: flex;
-  gap: 4px;
-  margin-bottom: 10px;
-  background: rgba(0, 212, 255, 0.05);
-  border: 1px solid rgba(20, 241, 190, 0.2);
-  border-radius: 2px;
-  padding: 4px;
-}
-.tab-btn {
-  flex: 1;
-  padding: 10px 16px;
-  border: none;
-  border-radius: 8px;
-  background: transparent;
-  color: var(--text-secondary);
-  cursor: pointer;
-  font-size: 0.85rem;
-  font-weight: 500;
-  transition: all 0.2s;
-}
-.tab-btn:hover {
-  background: rgba(0, 212, 255, 0.1);
-  color: var(--text-primary);
-}
-.tab-active {
-  background: rgba(0, 212, 255, 0.15);
-  color: var(--accent);
-}
-
-.tab-content {
-  min-height: 400px;
-  padding: 10px;
-  border: 1px solid rgba(20, 241, 190, 0.22);
-  background: linear-gradient(
-    145deg,
-    rgba(5, 32, 43, 0.82),
-    rgba(2, 16, 25, 0.92)
-  );
-}
-.chart-body {
-  width: 100%;
-  height: 450px;
-}
-
-.metrics-explain {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 16px;
-  margin-top: 24px;
-}
-.explain-card {
-  background: rgba(0, 212, 255, 0.05);
-  border: 1px solid var(--border-color);
-  border-radius: 8px;
-  padding: 16px;
-}
-.explain-card strong {
-  color: var(--accent);
-  display: block;
-  margin-bottom: 6px;
-  font-size: 0.9rem;
-}
-.explain-card p {
-  color: var(--text-secondary);
-  font-size: 0.8rem;
-  line-height: 1.5;
-}
-
-.timing-section {
-  margin-top: 24px;
-}
-.timing-section h3 {
-  color: var(--accent);
-  font-size: 1rem;
-  margin-bottom: 12px;
-}
-.timing-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 12px;
-}
-.timing-card {
-  background: rgba(0, 212, 255, 0.05);
-  border: 1px solid var(--border-color);
-  border-radius: 8px;
-  padding: 16px;
-  text-align: center;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-.timing-algo {
-  font-size: 0.9rem;
-  font-weight: 600;
-}
-.timing-val {
-  font-size: 1.4rem;
-  font-weight: 700;
-  color: var(--text-primary);
-}
-
-.empty-state {
-  text-align: center;
-  padding: 80px 0;
-  color: var(--text-secondary);
-}
+.algorithm-screen{min-height:100vh;padding:12px;color:#d9eef4;background:#020d15;letter-spacing:0}.control-band{display:grid;grid-template-columns:minmax(230px,1fr) repeat(5,minmax(72px,110px)) 150px;gap:10px;align-items:end;padding:14px;border:1px solid #175064;background:#061923}.control-title{display:flex;flex-direction:column;gap:4px;color:#43e7c5;font-size:17px}.control-title small{color:#7897a6;font-size:11px}.control-band label{display:flex;flex-direction:column;gap:5px;color:#7fa4b4;font-size:11px}.control-band input,.control-band select{height:34px;padding:0 8px;color:#d9eef4;border:1px solid #1d5366;background:#04131c}.run-button{height:36px;color:#032019;border:1px solid #62f5d4;background:#43e7c5;font-weight:700;cursor:pointer}.run-button:disabled{opacity:.45;cursor:wait}.progress-band,.error-band,.summary-line{margin-top:10px;padding:11px 14px;border:1px solid #174659;background:#061923}.progress-band>div:first-child{display:flex;justify-content:space-between}.progress-track{height:4px;margin-top:8px;background:#0b2b38}.progress-track i{display:block;height:100%;background:#43e7c5;transition:width .3s}.error-band{color:#ff9dac;border-color:#713245}.summary-line{display:flex;flex-wrap:wrap;gap:22px;color:#99bac8;font-size:12px}.kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:10px}.kpi-card{padding:14px;border:1px solid #195064;background:#061923}.kpi-card header{display:flex;justify-content:space-between;color:#43e7c5}.kpi-card header b{color:#718f9b;font-size:10px}.metric{display:inline-flex;width:50%;flex-direction:column;margin-top:17px}.metric strong{font-size:20px}.metric small{margin-top:4px;color:#708f9d;font-size:10px}.kpi-card footer{margin-top:13px;color:#7d9dab;font-size:10px}.visual-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px}.panel,.scenario-panel{border:1px solid #175064;background:#051720}.panel.wide{grid-column:1/-1}.panel h3,.scenario-panel h3{margin:0;padding:10px 13px;color:#9cc3d1;border-bottom:1px solid #123b4b;font-size:12px}.chart{height:340px}.scenario-panel{margin-top:10px}.scenario-list{display:flex;flex-wrap:wrap;gap:8px;padding:12px}.scenario-list span{padding:6px 9px;color:#9fc5d2;border:1px solid #1b4c5d;background:#08212c;font-size:11px}.empty-panel{margin-top:10px;padding:80px;text-align:center;color:#6f919f;border:1px dashed #1c4d5f}.error-band{color:#ff9aaa}@media(max-width:1100px){.control-band{grid-template-columns:repeat(3,1fr)}.control-title{grid-column:1/-1}.kpi-grid{grid-template-columns:repeat(2,1fr)}}@media(max-width:700px){.control-band,.kpi-grid,.visual-grid{grid-template-columns:1fr}.panel.wide{grid-column:auto}.summary-line{flex-direction:column;gap:7px}}
 </style>

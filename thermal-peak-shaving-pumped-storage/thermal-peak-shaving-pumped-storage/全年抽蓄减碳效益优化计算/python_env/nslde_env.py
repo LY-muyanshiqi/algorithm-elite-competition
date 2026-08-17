@@ -20,7 +20,8 @@ class NSLDEEnv:
     """完整 NSLDE 环境，每代决定一个全局算子"""
 
     def __init__(self, Nh, Nw, Np, L, Zpump=1400.0, h=4.0, pop=100, gen=3000,
-                 init_method='logistic', op_probs=None, seed=42):
+                 init_method='logistic', op_probs=None, seed=42,
+                 evaluator=None, initial_solutions=None):
         self.Nh = Nh
         self.Nw = Nw
         self.Np = Np
@@ -32,6 +33,8 @@ class NSLDEEnv:
         self.init_method = init_method
         self.op_probs = op_probs if op_probs is not None else np.ones(7) / 7
         self.rng = np.random.default_rng(seed)
+        self.evaluator = evaluator
+        self.initial_solutions = initial_solutions
 
         self.M = 2
         self.V = 23
@@ -49,14 +52,21 @@ class NSLDEEnv:
         else:  # random
             pop_x = self.rng.random((self.pop, self.V))
             pop_x = self.min_range + (self.max_range - self.min_range) * pop_x
+        if self.initial_solutions is not None:
+            warm = np.asarray(self.initial_solutions, dtype=float)
+            n_warm = min(len(warm), self.pop)
+            pop_x[:n_warm] = np.clip(warm[:n_warm], self.min_range, self.max_range)
         return self._evaluate_pop(pop_x)
 
     def _evaluate_pop(self, pop_x):
         """评估种群，返回 (决策变量, 目标值) 拼接矩阵"""
         F = np.empty((self.pop, 2))
         for i in range(self.pop):
-            F[i, 0], F[i, 1] = evaluate_objective_np(
-                pop_x[i], self.Nh, self.Nw, self.Np, self.L, self.Zpump, self.h)
+            if self.evaluator is None:
+                F[i, 0], F[i, 1] = evaluate_objective_np(
+                    pop_x[i], self.Nh, self.Nw, self.Np, self.L, self.Zpump, self.h)
+            else:
+                F[i, 0], F[i, 1] = self.evaluator(pop_x[i])
         return np.hstack([pop_x, F])
 
     def _hv(self, pop):
@@ -113,6 +123,7 @@ class NSLDEEnv:
             parent, self.pop_sorted, self.M, self.V,
             self.min_range, self.max_range,
             self.Nh, self.Nw, self.Np, self.L, self.Zpump, self.h, op_probs,
+            evaluator=self.evaluator,
         )
 
         # 合并 + 非支配排序 + 精英保留

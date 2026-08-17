@@ -51,25 +51,15 @@ def carbon_intensity_continuous(load_ratio):
     return H, e, g, Ce1, Ce2, Ce3
 
 
-def evaluate_objective_np(x, Nh, Nw, Np, L, Zpump=1400.0, h=4.0):
-    """复刻 evaluate_objective.m，返回 (f1, f2) = (Zt_f, sum(EMI))"""
+def dispatch_from_solution(x, Zpump=1400.0, h=4.0):
+    """Decode a solution into reservoir level and pumped-storage power."""
     x = np.asarray(x, dtype=float)
-    Nh = np.asarray(Nh, dtype=float)
-    Nw = np.asarray(Nw, dtype=float)
-    Np = np.asarray(Np, dtype=float)
-    L = np.asarray(L, dtype=float)
-
     V = Zpump * h
-    N = Nh + Nw + Np
-
-    # C(1)..C(25)，C(1)=C(25)=0.5，C(2..24)=x(1..23)
     C = np.empty(25, dtype=float)
     C[0] = 0.5
     C[24] = 0.5
     C[1:24] = x[:23]
-
     Npump = np.zeros(24, dtype=float)
-
     for i in range(24):
         if C[i + 1] <= C[i]:
             Npump[i] = (C[i] - C[i + 1]) * V
@@ -87,6 +77,46 @@ def evaluate_objective_np(x, Nh, Nw, Np, L, Zpump=1400.0, h=4.0):
             if Npump[i] < -Zpump:
                 Npump[i] = -Zpump
                 C[i + 1] = C[i] - Npump[i] * 0.75 / V
+    return C, Npump
+
+
+def dispatch_quality_metrics(n_pump, active_threshold=1e-9):
+    """Calculate ramping and switching metrics separately from emissions."""
+    power = np.asarray(n_pump, dtype=float)
+    mode = np.sign(power).astype(int)
+    mode[np.abs(power) <= active_threshold] = 0
+    starts = int(np.sum((mode[1:] != mode[:-1]) & (mode[1:] != 0)))
+    switches = int(np.sum(mode[1:] != mode[:-1]))
+    run_lengths = []
+    start = 0
+    while start < len(mode):
+        if mode[start] == 0:
+            start += 1
+            continue
+        end = start + 1
+        while end < len(mode) and mode[end] == mode[start]:
+            end += 1
+        run_lengths.append(end - start)
+        start = end
+    return {
+        'ramp_mw': float(np.sum(np.abs(np.diff(power)))),
+        'starts': starts,
+        'mode_switches': switches,
+        'short_runs': int(sum(length < 2 for length in run_lengths)),
+    }
+
+
+def evaluate_objective_np(x, Nh, Nw, Np, L, Zpump=1400.0, h=4.0,
+                          return_details=False):
+    """复刻 evaluate_objective.m，返回 (f1, f2) = (Zt_f, sum(EMI))"""
+    x = np.asarray(x, dtype=float)
+    Nh = np.asarray(Nh, dtype=float)
+    Nw = np.asarray(Nw, dtype=float)
+    Np = np.asarray(Np, dtype=float)
+    L = np.asarray(L, dtype=float)
+
+    N = Nh + Nw + Np
+    C, Npump = dispatch_from_solution(x, Zpump, h)
 
     Nn = N + Npump
     Nt = L - Nn
@@ -116,6 +146,10 @@ def evaluate_objective_np(x, Nh, Nw, Np, L, Zpump=1400.0, h=4.0):
         f1 = np.inf
         f2 = np.inf
 
+    if return_details:
+        details = dispatch_quality_metrics(Npump)
+        details.update({'reservoir_level': C, 'pump_power': Npump})
+        return f1, f2, details
     return f1, f2
 
 

@@ -17,8 +17,10 @@ from contextlib import asynccontextmanager
 # 确保 backend 包可被找到
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from backend.models import SimulateParams, HealthResponse, ExperimentData, StrategyData
+from backend.models import (SimulateParams, HealthResponse, ExperimentData,
+                            StrategyData, RobustOptimizationParams)
 from backend.data_service import data_service
+from backend.robust_optimization_service import robust_optimization_service
 
 
 # ==================== 生命周期 ====================
@@ -319,6 +321,30 @@ async def get_strategy_results():
         return {"status": "pending", "data": None, "message": "请先运行 run_ablation 生成策略数据"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
+# ==================== 场景鲁棒优化 ====================
+
+@app.post("/api/optimization/robust/start")
+async def start_robust_optimization(params: RobustOptimizationParams):
+    """后台运行原始、鲁棒、热启动和组合算法。"""
+    return robust_optimization_service.start(params.model_dump())
+
+
+@app.get("/api/optimization/robust/latest")
+async def latest_robust_optimization():
+    task = robust_optimization_service.latest()
+    if task is None:
+        return {"status": "empty", "message": "尚未运行鲁棒优化"}
+    return task
+
+
+@app.get("/api/optimization/robust/{task_id}")
+async def get_robust_optimization(task_id: str):
+    task = robust_optimization_service.get(task_id)
+    if task is None:
+        raise HTTPException(status_code=404, detail="优化任务不存在")
+    return task
 
 
 # ==================== 简易入口 ====================

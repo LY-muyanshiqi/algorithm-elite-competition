@@ -147,4 +147,19 @@ export async function fetchStrategyResults() {
   return data
 }
 
+export async function startRobustOptimization(params) {
+  const { data } = await api.post('/optimization/robust/start', params)
+  return data
+}
+
+export async function fetchRobustOptimization(taskId) {
+  const { data } = await api.get(`/optimization/robust/${taskId}`)
+  return data
+}
+
+export async function fetchLatestRobustOptimization() {
+  const { data } = await api.get('/optimization/robust/latest')
+  return data
+}
+
 export default api
