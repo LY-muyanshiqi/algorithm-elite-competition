@@ -10,6 +10,8 @@ from evaluate_objective import evaluate_objective_np
 from robust_scenarios import (ExperienceArchive, RobustScenarioEvaluator,
                               extract_representative_scenarios, weighted_cvar)
 from nslde_env import NSLDEEnv
+from state_features import extract_state_features
+from operators import non_domination_sort
 
 
 def test_weighted_cvar_focuses_on_upper_tail():
@@ -51,3 +53,31 @@ def test_robust_evaluator_runs_through_evolution_step():
     assert state.shape == next_state.shape == (6,)
     assert np.isfinite(reward)
     assert done
+
+
+def test_nonfinite_inputs_are_rejected_or_penalized_without_nan_state():
+    data = tuple(np.ones((1, 24), dtype=float) for _ in range(4))
+    scenarios = extract_representative_scenarios(*data, n_clusters=1,
+                                                  n_extremes=0)
+    evaluator = RobustScenarioEvaluator(*data, scenarios)
+    result = evaluator.evaluate(np.zeros(23))
+    assert not result['feasible']
+    assert np.all(np.isfinite(result['objective']))
+
+    with np.testing.assert_raises(ValueError):
+        weighted_cvar(np.array([1.0, np.nan]), np.array([0.5, 0.5]))
+
+    # NaN objectives must be ranked as infeasible, and state extraction must
+    # remain finite even when the episode metadata is malformed.
+    population = np.array([
+        [0.0, 1.0, 1.0],
+        [0.0, np.nan, 2.0],
+        [0.0, 2.0, 1.5],
+    ])
+    ranked = non_domination_sort(population, M=2, V=1)
+    assert np.all(np.isfinite(ranked[:, 3]))
+    assert not np.any(np.isnan(ranked[:, 4]))
+    state = extract_state_features(np.empty((0, 5)), M=2, V=1,
+                                   gen=0, max_gen=0,
+                                   stagnation=np.nan, prev_hv=np.nan)
+    assert np.all(np.isfinite(state))

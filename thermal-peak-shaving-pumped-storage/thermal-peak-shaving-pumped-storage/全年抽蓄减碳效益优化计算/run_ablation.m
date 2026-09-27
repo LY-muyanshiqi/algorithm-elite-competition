@@ -130,7 +130,8 @@ function metrics = compute_solution_metrics(chromosome)
     V = 23;
     f1 = chromosome(:, V+1);
     f2 = chromosome(:, V+2);
-    feasible = ~isinf(f1) & ~isinf(f2);
+    % NaN is a failed evaluation too; only finite objective pairs count.
+    feasible = isfinite(f1) & isfinite(f2);
     n_feasible = sum(feasible);
 
     metrics.n_feasible = n_feasible;
@@ -152,19 +153,28 @@ function metrics = compute_solution_metrics(chromosome)
         metrics.f1_std = std(f1(feasible));
         metrics.f2_std = std(f2(feasible));
         metrics.spread = std(f1(feasible)) + std(f2(feasible));
-
-        f_all = [f1(feasible), f2(feasible)];
-        [~, idx] = sort(f_all(:, 1));
-        f_sorted = f_all(idx, :);
-        sp = 0;
-        for k = 1:size(f_sorted, 1) - 1
-            sp = sp + norm(f_sorted(k+1, :) - f_sorted(k, :));
-        end
-        metrics.spacing = sp / (size(f_sorted, 1) - 1);
     else
         metrics.f1_std = 0;
         metrics.f2_std = 0;
         metrics.spread = 0;
+    end
+
+    if n_feasible > 2
+        f_all = [f1(feasible), f2(feasible)];
+        % Keep the MATLAB ablation metric consistent with the Python runner,
+        % robust backend, and compare_algorithms.m: normalize each objective,
+        % measure each point's nearest other point, then report sample std.
+        lower = min(f_all, [], 1);
+        span = max(f_all, [], 1) - lower + 1e-12;
+        normalized = (f_all - lower) ./ span;
+        nearest = zeros(size(normalized, 1), 1);
+        for k = 1:size(normalized, 1)
+            distances = sqrt(sum((normalized - normalized(k, :)).^2, 2));
+            distances(k) = Inf;
+            nearest(k) = min(distances);
+        end
+        metrics.spacing = std(nearest, 0);
+    else
         metrics.spacing = 0;
     end
 end

@@ -66,7 +66,13 @@ for i = 1:24
 end
 
 Emi_b = 300 * 0.99 * 0.7 * 44 / 12 * Nt_b;
-load_ratio = TH ./ THmax;
+% A flat (or failed) net-load profile has no peak-shaving range.  Avoid
+% 0/0 here; the Python evaluator uses a neutral unit load ratio in this case.
+if isfinite(THmax) && THmax > 1e-12
+    load_ratio = TH ./ THmax;
+else
+    load_ratio = ones(size(TH));
+end
 [H_vec, e_vec, g_vec, Ce1_vec, Ce2_vec, Ce3_vec] = carbon_intensity_continuous(load_ratio);
 
 for i = 1:24
@@ -85,6 +91,13 @@ if lambda_smooth > 0
 end
 
 if abs(C(25) - 0.5) > 0.01
+    f(1) = inf;
+    f(2) = inf;
+end
+
+% Keep failed evaluations on the same infeasible path as +/-Inf penalties.
+% This also covers malformed input vectors or non-finite source data.
+if any(~isfinite(f))
     f(1) = inf;
     f(2) = inf;
 end

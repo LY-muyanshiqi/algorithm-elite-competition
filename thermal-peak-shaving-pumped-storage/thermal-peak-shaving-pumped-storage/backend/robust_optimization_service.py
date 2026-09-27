@@ -22,7 +22,7 @@ for path in (str(CALC_DIR), str(PYTHON_ENV)):
 from data_loader_py import load_all_days
 from evaluate_objective import evaluate_objective_np
 from nslde_env import NSLDEEnv
-from operators import compute_hv_2d
+from operators import compute_hv_2d, non_domination_sort
 from robust_scenarios import (ExperienceArchive, RobustScenarioEvaluator,
                               extract_representative_scenarios)
 
@@ -35,6 +35,44 @@ PROVINCES = {
 }
 
 
+# Used only when no feasible calibration policy can be evaluated.  Under the
+# normal path the HV reference is estimated from feasible robust objectives;
+# infeasible penalty values must not set the scale of the comparison.
+_HV_FALLBACK_REFERENCE = np.array([1e6, 1e12], dtype=float)
+
+
+def _common_hv_reference(evaluator, seed=42):
+    """Estimate a feasible-objective reference shared by all variants.
+
+    Infeasible schedules receive large optimization penalties, but those
+    penalties must not determine the HV scale.  Sample smooth schedules around
+    the neutral reservoir level and use only feasible robust objectives; the
+    fallback is used only when the evaluator cannot produce any feasible
+    sample.
+    """
+    candidates = [np.full(23, 0.5, dtype=float)]
+    grid = np.linspace(0.0, 2.0 * np.pi, 23)
+    for amplitude in (0.03, 0.06, 0.1, 0.15):
+        for phase in (0.0, 0.7, 1.4):
+            candidate = 0.5 + amplitude * np.sin(grid + phase)
+            candidate[-2:] = 0.5
+            candidates.append(np.clip(candidate, 0.0, 1.0))
+    rng = np.random.default_rng(seed)
+    for _ in range(32):
+        candidate = 0.5 + rng.normal(0.0, 0.04, 23)
+        candidate[-2:] = 0.5
+        candidates.append(np.clip(candidate, 0.0, 1.0))
+    values = []
+    for candidate in candidates:
+        result = evaluator.evaluate(candidate)
+        if result['feasible'] and np.all(np.isfinite(result['objective'])):
+            values.append(result['objective'])
+    if not values:
+        return _HV_FALLBACK_REFERENCE.copy()
+    upper = np.max(np.asarray(values, dtype=float), axis=0)
+    return np.maximum(upper * 1.2, np.array([1.0, 1.0]))
+
+
 def _load_province(province):
     name, prefix, capacity = PROVINCES[province]
     if not prefix:
@@ -45,11 +83,69 @@ def _load_province(province):
 
 
 def _pareto(population):
-    front = population[population[:, 25] == 1, :25]
-    return front if len(front) else population[:, :25]
+    rank_col = population.shape[1] - 2
+    front = population[population[:, rank_col] == 1, :rank_col]
+    return front if len(front) else population[:, :rank_col]
+
+
+def _nondominated_points(points):
+    """Return the unique non-dominated subset of a 2-D minimization set."""
+    points = np.asarray(points, dtype=float)
+    if points.size == 0:
+        return np.empty((0, 2), dtype=float)
+    if points.ndim != 2 or points.shape[1] != 2:
+        raise ValueError('points must have shape (n, 2)')
+    points = points[np.all(np.isfinite(points), axis=1)]
+    if len(points) == 0:
+        return np.empty((0, 2), dtype=float)
+    order = np.lexsort((points[:, 1], points[:, 0]))
+    ordered = points[order]
+    kept = []
+    best_y = np.inf
+    for point in ordered:
+        if point[1] < best_y:
+            kept.append(point)
+            best_y = point[1]
+    return np.asarray(kept, dtype=float)
+
+
+def _reevaluate_front(front, evaluator, V=23, M=2):
+    """Re-score a training front with the common test evaluator."""
+    if len(front) == 0:
+        return np.empty((0, V + M), dtype=float)
+    decisions = front[:, :V]
+    valid_decisions = []
+    scored = []
+    for decision in decisions:
+        if hasattr(evaluator, 'evaluate'):
+            evaluation = evaluator.evaluate(decision)
+            if not evaluation.get('feasible', True):
+                continue
+            scored.append(evaluation['objective'])
+        else:
+            scored.append(evaluator(decision))
+        valid_decisions.append(decision)
+    if not scored:
+        return np.empty((0, V + M), dtype=float)
+    valid_decisions = np.asarray(valid_decisions, dtype=float)
+    objectives = np.asarray(scored, dtype=float)
+    if objectives.ndim != 2 or objectives.shape[1] != M:
+        raise ValueError('evaluator must return exactly M objective values')
+    finite = np.all(np.isfinite(objectives), axis=1)
+    if not np.any(finite):
+        return np.empty((0, V + M))
+    scored_matrix = np.hstack([valid_decisions[finite], objectives[finite]])
+    ranked = non_domination_sort(scored_matrix, M, V)
+    return ranked[ranked[:, V + M] == 1, :V + M]
 
 
 def _spacing(points):
+    points = np.asarray(points, dtype=float)
+    if points.size == 0:
+        return 0.0
+    if points.ndim != 2 or points.shape[1] != 2:
+        raise ValueError('points must have shape (n, 2)')
+    points = points[np.all(np.isfinite(points), axis=1)]
     if len(points) < 3:
         return 0.0
     normalized = (points - points.min(0)) / (np.ptp(points, axis=0) + 1e-12)
@@ -91,19 +187,28 @@ class RobustOptimizationService:
             self._tasks[task_id].update(values)
 
     def _run_variant(self, data, capacity, evaluator, initial, params, seed,
-                     task_id, start_progress, end_progress, label):
+                     task_id, start_progress, end_progress, label,
+                     use_rlde=False, ref_point=None):
         env = NSLDEEnv(*[item[0] for item in data], Zpump=capacity,
                        pop=params["population"], gen=params["generations"],
                        seed=seed, evaluator=evaluator, initial_solutions=initial,
-                       op_probs=np.array([0.4, 0, 0, 0, 0, 0.3, 0.3]))
+                       op_probs=np.array([0.4, 0, 0, 0, 0, 0.3, 0.3]),
+                       use_rlde=use_rlde, rlde_options={
+                           "alpha": params.get("rl_alpha", 0.1),
+                           "gamma": params.get("rl_gamma", 0.9),
+                           "f_delta": params.get("f_delta", 0.1),
+                           "temperature": params.get("rl_temperature", 1.0),
+                       }, ref_point=ref_point)
         env.reset()
+        infos = []
         for generation in range(params["generations"]):
-            env.step(0)
+            _, _, _, info = env.step(return_info=True)
+            infos.append(info)
             progress = start_progress + (end_progress - start_progress) * (
                 generation + 1) / params["generations"]
             self._update(task_id, progress=round(progress),
                          stage=f"{label}：第 {generation + 1}/{params['generations']} 代")
-        return _pareto(env.pop_sorted), env.hv_history
+        return _pareto(env.pop_sorted), env.hv_history, env, infos
 
     def _run(self, task_id, params):
         started = time.perf_counter()
@@ -116,58 +221,87 @@ class RobustOptimizationService:
                 seed=params["seed"])
             robust = RobustScenarioEvaluator(
                 *data, scenarios, Zpump=capacity, beta=params["beta"], alpha=params["alpha"])
+            expected = RobustScenarioEvaluator(
+                *data, scenarios, Zpump=capacity, beta=0.0, alpha=params["alpha"])
+            common_ref = _common_hv_reference(robust, seed=params["seed"])
             representative_day = int(scenarios.indices[0])
-            single = lambda x: evaluate_objective_np(
-                x, *(item[representative_day] for item in data), capacity, 4.0)
 
             variants = []
-            baseline, baseline_hv = self._run_variant(
-                data, capacity, single, None, params, params["seed"], task_id,
-                5, 25, "原始 NSLDE")
-            variants.append(("baseline", "原始 NSLDE", baseline, baseline_hv))
+            # Use common random numbers so each algorithm starts from the same
+            # population; the RLDE controller has its own independent RNG.
+            comparison_seed = params["seed"]
+            baseline, baseline_hv, baseline_env, baseline_infos = self._run_variant(
+                data, capacity, expected, None, params, comparison_seed, task_id,
+                5, 25, "原始 NSLDE", ref_point=common_ref)
+            variants.append(("baseline", "原始 NSLDE", baseline, baseline_hv,
+                             baseline_env, baseline_infos, False))
 
-            robust_front, robust_hv = self._run_variant(
-                data, capacity, robust, None, params, params["seed"] + 1, task_id,
-                25, 48, "场景鲁棒 NSLDE")
-            variants.append(("robust", "场景鲁棒", robust_front, robust_hv))
+            robust_front, robust_hv, robust_env, robust_infos = self._run_variant(
+                data, capacity, robust, None, params, comparison_seed, task_id,
+                25, 48, "场景鲁棒 NSLDE", ref_point=common_ref)
+            variants.append(("robust", "场景鲁棒", robust_front, robust_hv,
+                             robust_env, robust_infos, False))
 
             archive = ExperienceArchive()
             archive.add(scenarios.features[representative_day], baseline[:, :23])
             warm = archive.warm_start(scenarios.features[representative_day],
                                       max(2, params["population"] // 3),
-                                      np.random.default_rng(params["seed"] + 2))
-            transfer, transfer_hv = self._run_variant(
-                data, capacity, single, warm, params, params["seed"] + 2, task_id,
-                48, 71, "经验热启动 NSLDE")
-            variants.append(("transfer", "经验热启动", transfer, transfer_hv))
+                                      np.random.default_rng(comparison_seed + 1),
+                                      lower=np.array([0.0] * 21 + [0.125, 0.3125]),
+                                      upper=np.array([1.0] * 21 + [1.0, 0.75]))
+            rlde_front, rlde_hv, rlde_env, rlde_infos = self._run_variant(
+                data, capacity, robust, None, params, comparison_seed, task_id,
+                48, 71, "RLDE-F 场景鲁棒", use_rlde=True, ref_point=common_ref)
+            variants.append(("rlde", "RLDE-F 场景鲁棒", rlde_front, rlde_hv,
+                             rlde_env, rlde_infos, True))
 
-            robust_warm, robust_warm_hv = self._run_variant(
-                data, capacity, robust, warm, params, params["seed"] + 3, task_id,
-                71, 94, "鲁棒+热启动 NSLDE")
-            variants.append(("robust_transfer", "鲁棒+热启动", robust_warm, robust_warm_hv))
+            robust_warm, robust_warm_hv, robust_warm_env, robust_warm_infos = self._run_variant(
+                data, capacity, robust, warm, params, comparison_seed, task_id,
+                71, 94, "RLDE-F + 同次运行热启动", use_rlde=True, ref_point=common_ref)
+            variants.append(("rlde_warm", "RLDE-F + 同次运行热启动", robust_warm, robust_warm_hv,
+                             robust_warm_env, robust_warm_infos, True))
 
-            all_points = np.vstack([item[2][:, 23:25] for item in variants])
-            ref = np.max(all_points, axis=0) * 1.05
-            union = all_points
+            # All variants are compared on the same robust test objective.
+            evaluated = []
+            for key, label, front, history, env, infos, is_rlde in variants:
+                evaluated.append((key, label, _reevaluate_front(front, robust),
+                                  history, env, infos, is_rlde))
+            point_sets = [item[2][:, 23:25] for item in evaluated if len(item[2])]
+            all_points = np.vstack(point_sets) if point_sets else np.empty((0, 2))
+            reference_points = _nondominated_points(all_points)
+            # Match the reference used by each environment's history.  A late
+            # outlier must not silently change the scale of only the final HV.
+            ref = common_ref
             results = []
-            for key, label, front, history in variants:
+            for key, label, front, history, env, infos, is_rlde in evaluated:
+                if len(front) == 0:
+                    continue
                 points = front[:, 23:25]
-                normalized = (points - union.min(0)) / (np.ptp(union, axis=0) + 1e-12)
-                union_normalized = (union - union.min(0)) / (np.ptp(union, axis=0) + 1e-12)
-                igd = float(cdist(union_normalized, normalized).min(1).mean())
+                union_min = all_points.min(0)
+                union_span = np.ptp(all_points, axis=0) + 1e-12
+                normalized = (points - union_min) / union_span
+                reference_normalized = (reference_points - union_min) / union_span
+                igd = float(cdist(reference_normalized, normalized).min(1).mean())
                 best_idx = int(np.argmin(normalized.sum(1)))
-                _, _, quality = evaluate_objective_np(
-                    front[best_idx, :23], *(item[representative_day] for item in data),
-                    capacity, 4.0, return_details=True)
+                best_solution = front[best_idx, :23]
+                evaluation = robust.evaluate(best_solution)
+                quality = self._quality_summary(best_solution, data, scenarios, capacity)
+                rl_summary = None if not is_rlde else env.rlde.summary()
                 results.append({
                     "key": key, "label": label, "pareto": np.round(points, 3).tolist(),
                     "hv": float(compute_hv_2d(points, ref)), "igd": igd,
                     "spacing": _spacing(points), "f1_best": float(points[:, 0].min()),
                     "f2_best": float(points[:, 1].min()), "solutions": len(points),
                     "convergence": [[i, float(value)] for i, value in enumerate(history)],
+                    "expected_objectives": np.round(evaluation['expected'], 6).tolist(),
+                    "cvar_objectives": np.round(evaluation['cvar'], 6).tolist(),
+                    "worst_objectives": np.round(evaluation['worst'], 6).tolist(),
+                    "nfe": int(env.nfe),
+                    "operator_use": env.operator_use_count.astype(int).tolist(),
+                    "rl": rl_summary,
                     "dispatch_quality": {
                         key: float(value) if isinstance(value, (float, np.floating)) else int(value)
-                        for key, value in quality.items() if key not in ("reservoir_level", "pump_power")
+                        for key, value in quality.items()
                     },
                 })
 
@@ -175,13 +309,30 @@ class RobustOptimizationService:
                 "province": params["province"], "province_name": province_name,
                 "capacity_mw": capacity, "scenario_days": (scenarios.indices + 1).tolist(),
                 "scenario_labels": scenarios.labels,
+                "algorithm_version": "NSLDE + scenario CVaR + RLDE-F",
+                "objective_definition": "common robust test objective: E[f] + beta * CVaR_alpha(f)",
                 "risk": {"beta": params["beta"], "alpha": params["alpha"]},
+                "hv_reference_point": np.round(common_ref, 6).tolist(),
+                "scenario_weights": np.round(scenarios.weights, 6).tolist(),
                 "variants": results, "runtime_seconds": round(time.perf_counter() - started, 3),
             }
             self._latest = task_id
             self._update(task_id, status="completed", progress=100, stage="计算完成", result=result)
         except Exception as exc:
             self._update(task_id, status="failed", stage="计算失败", error=str(exc))
+
+    @staticmethod
+    def _quality_summary(solution, data, scenarios, capacity):
+        values = []
+        for day in scenarios.indices:
+            _, _, details = evaluate_objective_np(
+                solution, *(item[day] for item in data), capacity, 4.0,
+                return_details=True)
+            values.append([details[name] for name in
+                           ('ramp_mw', 'starts', 'mode_switches', 'short_runs')])
+        values = np.asarray(values, dtype=float)
+        return dict(zip(('ramp_mw', 'starts', 'mode_switches', 'short_runs'),
+                        np.average(values, axis=0, weights=scenarios.weights)))
 
 
 robust_optimization_service = RobustOptimizationService()

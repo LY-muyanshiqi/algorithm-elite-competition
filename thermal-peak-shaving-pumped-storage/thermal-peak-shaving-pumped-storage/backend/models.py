@@ -1,7 +1,7 @@
 """
 Pydantic 模型 — 请求/响应数据结构定义
 """
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 from typing import Optional, Dict, Any
 
 
@@ -53,3 +53,13 @@ class RobustOptimizationParams(BaseModel):
     beta: float = Field(0.3, ge=0.0, le=2.0)
     alpha: float = Field(0.9, ge=0.5, lt=1.0)
     seed: int = Field(42, ge=0, le=2147483647)
+    rl_alpha: float = Field(0.1, gt=0.0, le=1.0, description="RLDE Q 学习率")
+    rl_gamma: float = Field(0.9, ge=0.0, le=1.0, description="RLDE 折扣因子")
+    rl_temperature: float = Field(1.0, gt=0.0, le=10.0, description="RLDE SoftMax 温度")
+    f_delta: float = Field(0.1, gt=0.0, le=0.5, description="F 自适应步长")
+
+    @model_validator(mode="after")
+    def validate_scenario_budget(self):
+        if self.extreme_count >= self.scenario_count:
+            raise ValueError("extreme_count must be smaller than scenario_count")
+        return self

@@ -40,6 +40,13 @@ init_method = options.init_method;
 %% Initialize population with selected strategy
 chromosome = initialize_variables_multi(pop, M, V, min_range, max_range, Nh, Nw, Np, L, Zpump, h, Cprice, init_method);
 chromosome = non_domination_sort_mod(chromosome, M, V);
+initial_obj = chromosome(:, V+1:V+M);
+initial_feasible = all(isfinite(initial_obj), 2);
+if any(initial_feasible)
+    hv_ref_point = max(initial_obj(initial_feasible, :), [], 1) * 1.2;
+else
+    hv_ref_point = [1e5, 1e10];
+end
 
 %% Initialize history tracking
 track_interval = 50;
@@ -58,7 +65,7 @@ history.obj1_std = zeros(n_entries, 1);
 history.obj2_std = zeros(n_entries, 1);
 
 entry_idx = 1;
-[history] = record_history(history, chromosome, M, V, entry_idx);
+[history] = record_history(history, chromosome, M, V, entry_idx, hv_ref_point);
 entry_idx = entry_idx + 1;
 
 q_table = [];
@@ -78,7 +85,7 @@ for i = 1:gen
 
     if options.use_qlearning
         if mod(i, track_interval) == 0 || i == 1
-            state_features = extract_state_features(chromosome, M, V, i, gen, stagnation_counter, prev_hv);
+            state_features = extract_state_features(chromosome, M, V, i, gen, stagnation_counter, prev_hv, hv_ref_point);
             if i == 1
                 [op_probs_current, q_table, epsilon] = q_learning_selector(state_features, [], 0.3, 0, 0, i, gen);
             else
@@ -118,7 +125,7 @@ for i = 1:gen
     chromosome = replace_chromosome(intermediate_chromosome, M, V, pop);
 
     if mod(i, track_interval) == 0
-        [history] = record_history(history, chromosome, M, V, entry_idx);
+        [history] = record_history(history, chromosome, M, V, entry_idx, hv_ref_point);
         if options.track_strategy
             strategy_history(entry_idx, :) = strategy_use_count / max(sum(strategy_use_count), 1);
         end
@@ -148,21 +155,47 @@ end
 
 end
 
-function [history] = record_history(history, chromosome, M, V, idx)
+function [history] = record_history(history, chromosome, M, V, idx, hv_ref_point)
     N = size(chromosome, 1);
 
     f1 = chromosome(:, V+1);
     f2 = chromosome(:, V+2);
-    feasible_mask = ~isinf(f1) & ~isinf(f2);
+    % A failed objective may be NaN as well as +/-Inf.  Treat only finite
+    % objective pairs as feasible so history statistics cannot be poisoned.
+    feasible_mask = isfinite(f1) & isfinite(f2);
 
     history.gen(idx) = (idx - 1) * max(50, 1);
     history.n_feasible(idx) = sum(feasible_mask);
-    history.obj1_mean(idx) = mean(f1(feasible_mask));
-    history.obj2_mean(idx) = mean(f2(feasible_mask));
-    history.obj1_std(idx) = std(f1(feasible_mask));
-    history.obj2_std(idx) = std(f2(feasible_mask));
-    history.crowding_mean(idx) = mean(chromosome(feasible_mask, V+M+2));
-    history.crowding_std(idx) = std(chromosome(feasible_mask, V+M+2));
+    if history.n_feasible(idx) > 0
+        history.obj1_mean(idx) = mean(f1(feasible_mask));
+        history.obj2_mean(idx) = mean(f2(feasible_mask));
+    else
+        % History is consumed by charts/RL state, so keep the empty-episode
+        % summary finite.  The separate solution metrics retain Inf as the
+        % infeasible sentinel.
+        history.obj1_mean(idx) = 0;
+        history.obj2_mean(idx) = 0;
+    end
+    if history.n_feasible(idx) > 1
+        history.obj1_std(idx) = std(f1(feasible_mask));
+        history.obj2_std(idx) = std(f2(feasible_mask));
+    else
+        history.obj1_std(idx) = 0;
+        history.obj2_std(idx) = 0;
+    end
+    crowding_values = chromosome(feasible_mask, V+M+2);
+    crowding_values = crowding_values(isfinite(crowding_values));
+    if isempty(crowding_values)
+        history.crowding_mean(idx) = 0;
+        history.crowding_std(idx) = 0;
+    else
+        history.crowding_mean(idx) = mean(crowding_values);
+        if numel(crowding_values) > 1
+            history.crowding_std(idx) = std(crowding_values);
+        else
+            history.crowding_std(idx) = 0;
+        end
+    end
 
     if sum(feasible_mask) > 2
         f_all = [f1(feasible_mask), f2(feasible_mask)];
@@ -175,8 +208,7 @@ function [history] = record_history(history, chromosome, M, V, idx)
         history.entropy(idx) = 0;
     end
 
-    ref_point = [max(f1(feasible_mask)) * 1.2, max(f2(feasible_mask)) * 1.2];
-    history.hv(idx) = compute_hv_2d([f1(feasible_mask), f2(feasible_mask)], ref_point);
+    history.hv(idx) = compute_hv_2d([f1(feasible_mask), f2(feasible_mask)], hv_ref_point);
 
     if history.n_feasible(idx) > 1
         f_all = [f1(feasible_mask), f2(feasible_mask)];
@@ -206,16 +238,29 @@ end
 
 function hv = compute_hv_2d(points, ref_point)
     if isempty(points), hv = 0; return; end
-    points = sortrows(points, 1);
-    hv = 0;
-    prev_x = ref_point(1);
+    points = double(points);
+    ref_point = double(ref_point(:)');
+    if size(points, 2) ~= 2 || numel(ref_point) ~= 2 || any(~isfinite(ref_point))
+        error('points must be N-by-2 and ref_point must contain two finite values');
+    end
+    points = points(all(isfinite(points), 2), :);
+    points = points(points(:, 1) < ref_point(1) & points(:, 2) < ref_point(2), :);
+    if isempty(points), hv = 0; return; end
+    points = sortrows(points, [1 2]);
+    front = zeros(size(points));
+    count = 0;
+    best_y = inf;
     for i = 1:size(points, 1)
-        if points(i, 2) < ref_point(2)
-            hv = hv + (prev_x - points(i, 1)) * (ref_point(2) - points(i, 2));
-            prev_x = points(i, 1);
+        if points(i, 2) < best_y
+            count = count + 1;
+            front(count, :) = points(i, :);
+            best_y = points(i, 2);
         end
     end
-    hv = abs(hv);
+    front = front(1:count, :);
+    widths = diff([front(:, 1); ref_point(1)]);
+    heights = ref_point(2) - front(:, 2);
+    hv = sum(widths .* heights);
 end
 
 function igd = compute_igd_2d(ref, points)
@@ -231,10 +276,10 @@ function igd = compute_igd_2d(ref, points)
     igd = total / size(ref, 1);
 end
 
-function features = extract_state_features(chromosome, M, V, gen, max_gen, stagnation, prev_hv)
+function features = extract_state_features(chromosome, M, V, gen, max_gen, stagnation, prev_hv, hv_ref_point)
     f1 = chromosome(:, V+1);
     f2 = chromosome(:, V+2);
-    feasible = ~isinf(f1) & ~isinf(f2);
+    feasible = isfinite(f1) & isfinite(f2);
     n_feasible = sum(feasible);
 
     if n_feasible > 2
@@ -257,8 +302,7 @@ function features = extract_state_features(chromosome, M, V, gen, max_gen, stagn
     hv_delta = 0;
     if prev_hv > 0 && n_feasible > 0
         f_all = [f1(feasible), f2(feasible)];
-        ref_point = [max(f1(feasible)) * 1.2, max(f2(feasible)) * 1.2];
-        hv_current = compute_hv_2d(f_all, ref_point);
+        hv_current = compute_hv_2d(f_all, hv_ref_point);
         hv_delta = (hv_current - prev_hv) / max(prev_hv, 1);
     end
 
@@ -267,7 +311,11 @@ function features = extract_state_features(chromosome, M, V, gen, max_gen, stagn
     crowd_var = 0;
     if n_feasible > 2
         crowd_vals = chromosome(feasible, V+M+2);
-        crowd_var = min(max(std(crowd_vals) / max(mean(crowd_vals), 1e-10), 0), 1);
+        crowd_vals = crowd_vals(isfinite(crowd_vals));
+        if numel(crowd_vals) > 1
+            crowd_mean = mean(crowd_vals);
+            crowd_var = min(max(std(crowd_vals) / max(abs(crowd_mean), 1e-10), 0), 1);
+        end
     end
 
     features = [entropy_norm, gen_ratio, stag_norm, hv_delta, cv_rate, crowd_var];

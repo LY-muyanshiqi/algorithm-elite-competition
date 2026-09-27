@@ -24,10 +24,13 @@ for d = 1:length(days)
             rng(day*10000 + c*1000 + r);
             options = struct('pop',pop_size,'gen',n_gen,'init_method',init,'track_hv',false,'op_probs',op);
             chr = nslde_enhanced(Nh(day,:),Nw(day,:),Np(day,:),L(day,:),Zpump,4,0.05,options);
-            f1 = chr(:,24); f2 = chr(:,25); fea = ~isinf(f1)&~isinf(f2);
-            if any(fea), f1s(r) = min(f1(fea)); else, f1s(r) = nan; end
+            f1 = chr(:,24); f2 = chr(:,25); fea = isfinite(f1)&isfinite(f2);
+            f1s(r) = Inf;
+            if any(fea), f1s(r) = min(f1(fea)); end
         end
-        line = sprintf('%s  %s=%.0f', line, cname, nanmean(f1s));
+        finite_f1 = f1s(isfinite(f1s));
+        if isempty(finite_f1), f1_mean = Inf; else, f1_mean = mean(finite_f1); end
+        line = sprintf('%s  %s=%.0f', line, cname, f1_mean);
     end
     fprintf('%s\n', line);
 end

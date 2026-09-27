@@ -45,16 +45,36 @@ app = FastAPI(
 )
 
 # ==================== CORS 配置 ====================
-# 允许 Streamlit 前端 (localhost:8501) 及开发环境跨域访问
+# Keep the local Streamlit entry point available while also allowing the Vue
+# dev server (Vite) and its preview server to call the API directly.  A
+# deployment can append explicit origins through CORS_ORIGINS, e.g.
+# ``https://demo.example.com,https://admin.example.com``.  Do not use ``*``
+# here because credentials are enabled below.
+_default_cors_origins = [
+    "http://localhost:8501",
+    "http://127.0.0.1:8501",
+    "http://localhost:5173",
+    "http://127.0.0.1:5173",
+    # Vite increments the dev/preview port when the default is occupied.
+    "http://localhost:5174",
+    "http://127.0.0.1:5174",
+    "http://localhost:4173",
+    "http://127.0.0.1:4173",
+    "http://localhost:4174",
+    "http://127.0.0.1:4174",
+    "http://localhost:8000",
+    "http://127.0.0.1:8000",
+]
+_configured_cors_origins = [
+    origin.strip()
+    for origin in os.getenv("CORS_ORIGINS", "").split(",")
+    if origin.strip()
+]
+_cors_origins = list(dict.fromkeys(_default_cors_origins + _configured_cors_origins))
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:8501",
-        "http://127.0.0.1:8501",
-        "http://localhost:8000",
-        "http://127.0.0.1:8000",
-        # Streamlit Cloud 部署时可在此添加域名
-    ],
+    allow_origins=_cors_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -264,7 +284,7 @@ async def get_ablation_results():
             '全年抽蓄减碳效益优化计算', 'experiment_results', 'ablation_results.json'
         )
         if os.path.exists(json_path):
-            with open(json_path, 'r') as f:
+            with open(json_path, 'r', encoding='utf-8') as f:
                 data = json.load(f)
             return {"status": "ok", "data": data}
         return {"status": "pending", "data": None, "message": "请先在MATLAB运行 run_ablation.m 生成实验数据"}
@@ -281,7 +301,7 @@ async def get_benchmark_results():
             '全年抽蓄减碳效益优化计算', 'experiment_results', 'benchmark_results.json'
         )
         if os.path.exists(json_path):
-            with open(json_path, 'r') as f:
+            with open(json_path, 'r', encoding='utf-8') as f:
                 data = json.load(f)
             return {"status": "ok", "data": data}
         return {"status": "pending", "data": None, "message": "请先在MATLAB运行 compare_algorithms.m"}
@@ -298,7 +318,7 @@ async def get_statistics():
             '全年抽蓄减碳效益优化计算', 'experiment_results', 'ablation_statistics.json'
         )
         if os.path.exists(json_path):
-            with open(json_path, 'r') as f:
+            with open(json_path, 'r', encoding='utf-8') as f:
                 data = json.load(f)
             return {"status": "ok", "data": data}
         return {"status": "pending", "data": None}
@@ -315,7 +335,7 @@ async def get_strategy_results():
             '全年抽蓄减碳效益优化计算', 'experiment_results', 'strategy_results.json'
         )
         if os.path.exists(json_path):
-            with open(json_path, 'r') as f:
+            with open(json_path, 'r', encoding='utf-8') as f:
                 data = json.load(f)
             return {"status": "ok", "data": data}
         return {"status": "pending", "data": None, "message": "请先运行 run_ablation 生成策略数据"}

@@ -65,11 +65,16 @@ for i = 1 : N     %
         for k = 1 : M   %
             vi = x(i, V + k);
             vj = x(j, V + k);
-            if isinf(vi) && isinf(vj)
+            % Any non-finite objective (NaN or +/-Inf) is an infeasible
+            % worst-case value.  Comparing NaN directly leaves all three
+            % domination counters unchanged and can produce invalid ranks.
+            vi_finite = isfinite(vi);
+            vj_finite = isfinite(vj);
+            if ~vi_finite && ~vj_finite
                 dom_equal = dom_equal + 1;
-            elseif isinf(vi)
+            elseif ~vi_finite
                 dom_more = dom_more + 1;
-            elseif isinf(vj)
+            elseif ~vj_finite
                 dom_less = dom_less + 1;
             elseif vi < vj
                 dom_less = dom_less + 1;
@@ -150,22 +155,30 @@ for front = 1 : (length(F) - 1)
     % Sort each individual based on the objective
     sorted_based_on_objective = [];
     for i = 1 : M
-        [sorted_based_on_objective, index_of_objectives] = ...
-            sort(y(:,V + i));
+        % MATLAB's sort placement for NaN is version-dependent.  Sort a
+        % finite-safe objective view so failed evaluations cannot propagate
+        % NaN into crowding distances.
+        objective_values = y(:, V + i);
+        objective_values(~isfinite(objective_values)) = Inf;
+        [~, index_of_objectives] = sort(objective_values);
         sorted_based_on_objective = [];
         for j = 1 : length(index_of_objectives)
             sorted_based_on_objective(j,:) = y(index_of_objectives(j),:);
         end
-        f_max = ...
-            sorted_based_on_objective(length(index_of_objectives), V + i);
-        f_min = sorted_based_on_objective(1, V + i);
+        sorted_objective_values = objective_values(index_of_objectives);
+        f_max = sorted_objective_values(length(index_of_objectives));
+        f_min = sorted_objective_values(1);
         y(index_of_objectives(length(index_of_objectives)),M + V + 1 + i)...
             = Inf;
         y(index_of_objectives(1),M + V + 1 + i) = Inf;
          for j = 2 : length(index_of_objectives) - 1
-            next_obj  = sorted_based_on_objective(j + 1,V + i);
-            previous_obj  = sorted_based_on_objective(j - 1,V + i);
-            if (f_max - f_min == 0)
+            next_obj  = sorted_objective_values(j + 1);
+            previous_obj  = sorted_objective_values(j - 1);
+            if ~isfinite(f_max) || ~isfinite(f_min)
+                % At least one infeasible member is present.  Keep all
+                % interior distances at Inf rather than computing Inf-Inf.
+                y(index_of_objectives(j),M + V + 1 + i) = Inf;
+            elseif (f_max - f_min == 0)
                 y(index_of_objectives(j),M + V + 1 + i) = Inf;
             else
                 y(index_of_objectives(j),M + V + 1 + i) = ...

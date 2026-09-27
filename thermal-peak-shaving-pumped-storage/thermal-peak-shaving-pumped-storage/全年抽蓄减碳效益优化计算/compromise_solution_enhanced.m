@@ -40,7 +40,7 @@ for i = 1:N
     f1 = chromosome(i, V+1);
     f2 = chromosome(i, V+2);
 
-    if isinf(f1) || isinf(f2)
+    if ~isfinite(f1) || ~isfinite(f2)
         feasible(i) = false;
     end
     if C_range > 0.95

@@ -14,6 +14,7 @@ NSLDE 多目标优化算法的核心计算模块，包含 MATLAB 实现与 Pytho
 │   ├── genetic_operators.py     # 7 个遗传算子
 │   ├── nslde_env.py             # 完整 NSLDE gym-like 环境
 │   ├── q_learning_selector.py   # Q-Learning 自适应算子选择（numpy 版）
+│   ├── rlde_controller.py       # RLDE-F：个体级 F 自适应 Q 控制器
 │   ├── state_features.py        # 6 维状态特征
 │   └── data_loader_py.py        # 单日数据加载
 ├── rl/                          # 深度学习框架（路线 B）
@@ -105,6 +106,36 @@ main
 python tests/test_objective_parity.py
 python tests/test_operators_parity.py
 ```
+
+### RLDE-F 场景鲁棒优化
+
+当前系统将 RLDE-PV 中可迁移的个体级 Q 学习机制改造成 RLDE-F：每个搜索个体维护独立 Q 表和 F，F 按参考实现的正态分布初始化并限制在有效范围内；动作分别为减小、保持或增大 F。为适配双目标 NSLDE，奖励采用归一化双目标改进，而非论文单目标的 0/1 奖励；Pareto 生存选择仍由 NSLDE 的非支配排序负责。因此 RLDE-F 是适配扩展，不是 RLDE-PV 的逐行复现。
+
+后端页面运行四组配置：原始 NSLDE、场景鲁棒 NSLDE、RLDE-F 场景鲁棒、RLDE-F + 同次运行热启动。各组共享随机初始化种子，最终统一在同一组代表/极端场景上重评，再计算 HV、IGD、Spacing 和 CVaR 指标。当前热启动档案仅使用本次运行的基线 Pareto 解，不应解释为跨天历史经验迁移；性能优劣仍需多种子、多场景统计检验。
+
+```bash
+python -m pytest tests/test_rlde_controller.py -q
+```
+
+### Spacing metric convention
+
+The MATLAB ablation/benchmark scripts, Python experiment runner, and robust
+backend use one spacing definition. Non-finite objective rows are discarded,
+each objective column is min-max normalized, and the sample standard deviation
+(`ddof=1`) of each point's nearest-neighbour distance is reported. Fronts with
+fewer than three valid points return `0`. When `experiment_runner.py` reads
+MATLAB benchmark output, the per-day `spacing_mean` is copied to the canonical
+`metrics.spacing` field and retained under `spacing_mean` for traceability.
+
+### IGD metric convention
+
+For each test instance, MATLAB `compare_algorithms.m` and the Python robust
+backend build one common reference front by concatenating all algorithms'
+finite objective points and retaining their joint non-dominated subset. Both
+objective axes are min-max normalized with the union range before averaging
+nearest-point Euclidean distances. NSLDE is therefore not treated as a
+privileged zero reference; empty/invalid fronts remain undefined instead of
+being reported as a perfect score.
 
 ### PPO 训练（可行性验证）
 ```bash

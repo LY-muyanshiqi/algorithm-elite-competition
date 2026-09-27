@@ -34,7 +34,8 @@ for p = 1:length(provinces)
                 rng(p*100000 + c*10000 + d*100 + r);
                 options = struct('pop',pop,'gen',gen,'init_method',init,'track_hv',false,'op_probs',op);
                 chr = nslde_enhanced(NH(day,:),NW(day,:),NP(day,:),L(day,:),Z,4,0.05,options);
-                f1=chr(:,24); f2=chr(:,25); fea=~isinf(f1)&~isinf(f2);
+                f1=chr(:,24); f2=chr(:,25);
+                fea=isfinite(f1)&isfinite(f2);
                 if any(fea)
                     f1_all(end+1) = min(f1(fea));
                     f2_all(end+1) = min(f2(fea));
@@ -42,7 +43,15 @@ for p = 1:length(provinces)
             end
         end
         results.(prov).(cname).f1 = f1_all;
-        fprintf('  %-12s: f1 mean=%.1f std=%.1f (n=%d)\n', cname, mean(f1_all), std(f1_all), length(f1_all));
+        finite_f1 = f1_all(isfinite(f1_all));
+        if isempty(finite_f1)
+            f1_mean = Inf;
+            f1_std = 0;
+        else
+            f1_mean = mean(finite_f1);
+            f1_std = std(finite_f1);
+        end
+        fprintf('  %-12s: f1 mean=%.1f std=%.1f (n=%d)\n', cname, f1_mean, f1_std, length(finite_f1));
     end
 end
 save('ablation_rigorous.mat', 'results', 'provinces', 'Zpump_map', 'configs', 'days', 'n_runs', 'pop', 'gen');

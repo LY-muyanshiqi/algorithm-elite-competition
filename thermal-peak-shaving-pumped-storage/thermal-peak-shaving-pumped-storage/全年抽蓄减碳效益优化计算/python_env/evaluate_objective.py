@@ -132,7 +132,9 @@ def evaluate_objective_np(x, Nh, Nw, Np, L, Zpump=1400.0, h=4.0,
     TH = np.maximum(TH, THmax * 0.3)
 
     Emi_b = 300.0 * 0.99 * 0.7 * 44.0 / 12.0 * Nt_b
-    load_ratio = TH / THmax
+    # A flat net-load profile has zero peak-shaving range.  Keep the
+    # carbon-intensity lookup finite instead of producing NaN through 0/0.
+    load_ratio = np.ones_like(TH) if THmax <= 1e-12 else TH / THmax
     _, _, _, Ce1_vec, Ce2_vec, Ce3_vec = carbon_intensity_continuous(load_ratio)
 
     Ce = Ce1_vec + Ce2_vec + Ce3_vec

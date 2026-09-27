@@ -34,9 +34,16 @@ for d = 1:length(days)
             end
             [chromosome, ~] = nslde_enhanced(Nh(day,:), Nw(day,:), Np(day,:), L(day,:), Zpump, 4, 0.05, options);
             f1 = chromosome(:, 24); f2 = chromosome(:, 25);
-            fea = ~isinf(f1) & ~isinf(f2);
-            f1_mins(r) = min(f1(fea));
-            f2_mins(r) = min(f2(fea));
+            fea = isfinite(f1) & isfinite(f2);
+            if any(fea)
+                f1_mins(r) = min(f1(fea));
+                f2_mins(r) = min(f2(fea));
+            else
+                % Preserve a numeric infeasible sentinel instead of an
+                % empty assignment when an entire run fails.
+                f1_mins(r) = Inf;
+                f2_mins(r) = Inf;
+            end
         end
         results(d).(cname).f1_min = f1_mins;
         results(d).(cname).f2_min = f2_mins;
