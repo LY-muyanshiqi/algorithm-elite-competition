@@ -1,35 +1,47 @@
 <template>
   <div class="experiment-page">
     <div class="page-head">
-      <h2>🧪 历史 NSLDE 消融实验分析</h2>
+      <h2>🧪 {{ dataSource === "robust" ? "场景鲁棒算法实验分析" : "历史 NSLDE 消融实验分析" }}</h2>
       <span class="data-badge" :class="dataSource">
-        {{ dataSource === "pending" ? "等待历史实验" : "MATLAB 历史真实结果" }}
+        {{
+          dataSource === "pending"
+            ? "等待真实实验"
+            : dataSource === "robust"
+              ? "RLDE-F 鲁棒实验真实结果"
+              : "MATLAB 历史真实结果"
+        }}
       </span>
     </div>
     <p class="subtitle">
-      MATLAB 历史运行记录 · 混沌初始化 / DE差分 / Lévy飞行 / 旧版 Q-Learning
-      各模块独立贡献验证；当前场景鲁棒 RLDE-F 实验请进入“算法对比”页
+      <template v-if="dataSource === 'robust'">
+        当前展示最近一次后端场景鲁棒实验的真实结果 · NSLDE / 场景鲁棒 NSLDE /
+        RLDE-F / RLDE-F 热启动
+      </template>
+      <template v-else>
+        MATLAB 历史运行记录 · 混沌初始化 / DE差分 / Lévy飞行 / 旧版 Q-Learning
+        各模块独立贡献验证；当前场景鲁棒 RLDE-F 实验结果会优先显示在本页
+      </template>
     </p>
 
     <!-- KPI 卡 -->
     <section class="kpi-row">
       <div class="kpi-card">
-        <div class="kpi-label">NSLDE vs NSGA-II</div>
+        <div class="kpi-label">{{ dataSource === "robust" ? "鲁棒基线 vs RLDE-F" : "NSLDE vs NSGA-II" }}</div>
         <div class="kpi-val" style="color: #2ecc71">{{ displayPercent(kpis.hvImprove, "+") }}</div>
         <div class="kpi-unit">HV 提升</div>
       </div>
       <div class="kpi-card">
-        <div class="kpi-label">可行率</div>
+        <div class="kpi-label">{{ dataSource === "robust" ? "Pareto 解数" : "可行率" }}</div>
         <div class="kpi-val">{{ kpis.feasibility }}</div>
-        <div class="kpi-unit">A4 完整 NSLDE</div>
+        <div class="kpi-unit">{{ dataSource === "robust" ? "最近一次真实实验" : "A4 完整 NSLDE" }}</div>
       </div>
       <div class="kpi-card">
-        <div class="kpi-label">f1 均值降低</div>
+        <div class="kpi-label">{{ dataSource === "robust" ? "f1 最优值变化" : "f1 均值降低" }}</div>
         <div class="kpi-val" style="color: #3498db">{{ displayPercent(kpis.f1Drop, "-") }}</div>
         <div class="kpi-unit">火电调峰深度</div>
       </div>
       <div class="kpi-card">
-        <div class="kpi-label">f2 均值降低</div>
+        <div class="kpi-label">{{ dataSource === "robust" ? "f2 最优值变化" : "f2 均值降低" }}</div>
         <div class="kpi-val" style="color: #f39c12">{{ displayPercent(kpis.f2Drop, "-") }}</div>
         <div class="kpi-unit">系统碳排放</div>
       </div>
@@ -37,17 +49,17 @@
 
     <!-- 指标总览表格 -->
     <section v-if="ablationData.length" class="section">
-      <h3>消融实验指标对比</h3>
+      <h3>{{ dataSource === "robust" ? "场景鲁棒算法指标对比" : "消融实验指标对比" }}</h3>
       <div class="table-wrapper">
         <table>
           <thead>
             <tr>
               <th>配置</th>
-              <th>初始化</th>
-              <th>交叉/变异</th>
-              <th>可行率</th>
-              <th>f1均值(MW)</th>
-              <th>f2均值(kg)</th>
+              <th>{{ dataSource === "robust" ? "实验模式" : "初始化" }}</th>
+              <th>{{ dataSource === "robust" ? "目标函数" : "交叉/变异" }}</th>
+              <th>{{ dataSource === "robust" ? "解数" : "可行率" }}</th>
+              <th>{{ dataSource === "robust" ? "f1最优值" : "f1均值(MW)" }}</th>
+              <th>{{ dataSource === "robust" ? "f2最优值" : "f2均值(kg)" }}</th>
               <th>HV</th>
               <th>IGD</th>
               <th>Spacing</th>
@@ -64,7 +76,7 @@
               </td>
               <td>{{ row.init }}</td>
               <td>{{ row.operators }}</td>
-              <td>{{ row.feasibility_rate }}</td>
+              <td>{{ dataSource === "robust" ? row.solutions : row.feasibility_rate }}</td>
               <td>{{ row.f1_mean }}</td>
               <td>{{ row.f2_mean }}</td>
               <td>{{ row.hv }}</td>
@@ -76,12 +88,12 @@
       </div>
     </section>
     <section v-else class="section empty-state">
-      尚未生成真实消融实验结果。请先运行 MATLAB `run_ablation.m`，再执行
-      `experiment_runner.py --mode ablation --mat-path <结果文件>`。
+      尚未生成真实实验结果。请先在“算法对比”页运行一次场景鲁棒 RLDE-F 实验，或准备 MATLAB
+      `run_ablation.m` 生成的历史结果。
     </section>
 
     <!-- 统计显著性 -->
-    <section class="section">
+    <section v-if="dataSource !== 'robust'" class="section">
       <h3>统计显著性检验 (Mann–Whitney U + Kruskal–Wallis)</h3>
       <div v-if="statsData.length" class="table-wrapper">
         <table>
@@ -115,12 +127,16 @@
       <div class="chart-box">
         <h3>Pareto 前沿对比</h3>
         <div v-if="hasParetoData" ref="paretoChart" class="chart"></div>
-        <div v-else class="chart chart-empty">当前消融文件只包含汇总指标，暂无 Pareto 点集。</div>
+        <div v-else class="chart chart-empty">
+          {{ dataSource === "robust" ? "最近一次鲁棒实验未返回有限 Pareto 点。" : "当前消融文件只包含汇总指标，暂无 Pareto 点集。" }}
+        </div>
       </div>
       <div class="chart-box">
-        <h3>收敛曲线 (HV vs 代数)</h3>
+        <h3>共同鲁棒目标收敛曲线 (HV vs 代数)</h3>
         <div v-if="hasConvergenceData" ref="convergeChart" class="chart"></div>
-        <div v-else class="chart chart-empty">当前实验文件未提供逐代收敛历史。</div>
+        <div v-else class="chart chart-empty">
+          {{ dataSource === "robust" ? "最近一次鲁棒实验未返回逐代收敛历史。" : "当前实验文件未提供逐代收敛历史。" }}
+        </div>
       </div>
     </section>
 
@@ -132,21 +148,29 @@
     <p class="note">
       {{
         dataSource === "pending"
-          ? "当前没有可用于展示的历史消融结果，页面不会填充模拟数值。"
-          : "当前展示为 MATLAB run_ablation.m 生成的历史真实结果；新 RLDE-F 结果不从这里读取。"
+          ? "当前没有可用于展示的真实实验结果，页面不会填充模拟数值。"
+          : dataSource === "robust"
+            ? "当前展示为后端最近一次场景鲁棒 NSLDE + RLDE-F 实验结果，Pareto 与收敛数据来自同一次运行。"
+            : "当前展示为 MATLAB run_ablation.m 生成的历史真实结果。"
       }}
-      真实数据生成方式：MATLAB 运行 run_ablation(1, 'shaanxi', 5) 后，通过
-      experiment_runner.py 写入 experiment_results/ablation_results.json。
+      <template v-if="dataSource === 'robust'">
+        数据来源：后端 `/api/optimization/robust/latest` 最近一次已完成任务。
+      </template>
+      <template v-else>
+        真实数据生成方式：MATLAB 运行 run_ablation(1, 'shaanxi', 5) 后，通过
+        experiment_runner.py 写入 experiment_results/ablation_results.json。
+      </template>
     </p>
   </div>
 </template>
 
 <script setup>
-import { ref, nextTick, onMounted } from "vue";
+import { ref, nextTick, onBeforeUnmount, onMounted } from "vue";
 import * as echarts from "echarts";
 import {
   fetchAblationResults,
   fetchExperimentStatistics,
+  fetchLatestRobustOptimization,
 } from "../api";
 
 const dataSource = ref("pending");
@@ -161,7 +185,13 @@ const statsData = ref([]);
 const kpis = ref({ hvImprove: "-", feasibility: "-", f1Drop: "-", f2Drop: "-" });
 const displayPercent = (value, prefix = "") => {
   const number = Number(value);
-  return Number.isFinite(number) ? `${prefix}${number.toFixed(1)}%` : "-";
+  if (!Number.isFinite(number)) return "-";
+  const sign = prefix === "+"
+    ? (number >= 0 ? "+" : "-")
+    : prefix === "-"
+      ? (number >= 0 ? "-" : "+")
+      : (number < 0 ? "-" : "");
+  return `${sign}${Math.abs(number).toFixed(1)}%`;
 };
 
 // ============ 数据归一化（兼容后端字段） ============
@@ -208,6 +238,96 @@ function normalizeAblation(list) {
         Number.isFinite(Number(point[0])) && Number.isFinite(Number(point[1]))),
     };
   }).filter(Boolean);
+}
+
+function finiteNumber(value) {
+  const number = Number(value);
+  return Number.isFinite(number) ? number : null;
+}
+
+function normalizePoints(value) {
+  if (!Array.isArray(value)) return [];
+  // The API returns [[x, y], ...]. Accept flat [x, y, ...] and object
+  // points as well so the chart remains compatible with older task records.
+  const points = value.length && !Array.isArray(value[0]) && typeof value[0] !== "object"
+    ? value.reduce((acc, item, index) => {
+        if (index % 2 === 0) acc.push([item, value[index + 1]]);
+        return acc;
+      }, [])
+    : value;
+  return points.map((point) => {
+    if (Array.isArray(point)) return [finiteNumber(point[0]), finiteNumber(point[1])];
+    if (point && typeof point === "object") {
+      return [
+        finiteNumber(point.x ?? point.generation ?? point.iteration ?? point.nfe),
+        finiteNumber(point.y ?? point.hv ?? point.value),
+      ];
+    }
+    return [null, null];
+  }).filter((point) => point.every((item) => item !== null));
+}
+
+function normalizeConvergence(value) {
+  if (!Array.isArray(value)) return [];
+  // Some early task snapshots stored only HV values.  Their generation index
+  // is implicit, so reconstruct it instead of pairing adjacent HV values.
+  if (value.length && !Array.isArray(value[0]) &&
+      (typeof value[0] !== "object" || value[0] === null)) {
+    return value.map((item, index) => [index, finiteNumber(item)])
+      .filter((point) => point[1] !== null);
+  }
+  return normalizePoints(value);
+}
+
+/** Normalize the completed NSLDE + scenario/CVaR + RLDE-F task response. */
+function normalizeRobustTask(payload) {
+  const hasDirectVariants = payload?.variants && typeof payload.variants === "object";
+  const hasNestedVariants = payload?.result?.variants &&
+    typeof payload.result.variants === "object";
+  const result = payload?.result && typeof payload.result === "object"
+    ? payload.result
+    : (hasDirectVariants ? payload : null);
+  const completed = payload?.status
+    ? payload.status === "completed"
+    : Boolean(hasDirectVariants || hasNestedVariants);
+  if (!result || !completed) return [];
+  const variants = Array.isArray(result.variants)
+    ? result.variants
+    : (result.variants && typeof result.variants === "object" ? Object.values(result.variants) : []);
+  return variants.map((item) => {
+    const points = normalizePoints(item?.pareto ?? item?.front);
+    const convergence = normalizeConvergence(item?.convergence ?? item?.history);
+    const f1 = finiteNumber(item?.f1_best ?? item?.best_objectives?.[0]) ??
+      (points.length ? Math.min(...points.map((point) => point[0])) : null);
+    const f2 = finiteNumber(item?.f2_best ?? item?.best_objectives?.[1]) ??
+      (points.length ? Math.min(...points.map((point) => point[1])) : null);
+    const metric = (value, digits = 3) => {
+      const number = finiteNumber(value);
+      return number === null ? "-" : number.toFixed(digits);
+    };
+    const rl = item?.rl && typeof item.rl === "object" ? item.rl : null;
+    return {
+      key: item?.key || "",
+      name: item?.label || item?.key || "robust variant",
+      init: item?.key === "baseline" ? "原始 NSLDE" : "场景鲁棒",
+      operators: item?.objective_definition || result.objective_definition || "E[f] + β·CVaRα(f)",
+      feasibility_rate: "-",
+      solutions: finiteNumber(item?.solutions) ?? points.length,
+      f1_mean: metric(f1),
+      f2_mean: metric(f2, 0),
+      hv: metric(item?.hv),
+      igd: metric(item?.igd),
+      spacing: metric(item?.spacing),
+      status: item?.status || "complete",
+      pareto: points,
+      convergence,
+      rl,
+      expected_objectives: item?.expected_objectives,
+      cvar_objectives: item?.cvar_objectives,
+      dispatch_quality: item?.dispatch_quality,
+      robust: true,
+    };
+  }).filter((row) => row.pareto.length || row.convergence.length || row.hv !== "-");
 }
 
 function formatP(value) {
@@ -260,8 +380,8 @@ function renderCharts() {
       tooltip: { trigger: "item", formatter: (point) => `f1=${point.value[0]} · f2=${point.value[1]}` },
       legend: { data: rows.filter((row) => row.pareto.length).map((row) => row.name), textStyle: { color: "#ccc" } },
       grid: { left: 60, right: 30, top: 40, bottom: 55 },
-      xAxis: { name: "f1", axisLine: { lineStyle: { color: "#444" } } },
-      yAxis: { name: "f2", axisLine: { lineStyle: { color: "#444" } } },
+      xAxis: { type: "value", name: "f1", axisLine: { lineStyle: { color: "#444" } } },
+      yAxis: { type: "value", name: "f2", axisLine: { lineStyle: { color: "#444" } } },
       backgroundColor: "#1a1a2e",
       series: rows.filter((row) => row.pareto.length).map((row, index) => ({
         name: row.name, type: "scatter", data: row.pareto,
@@ -275,8 +395,8 @@ function renderCharts() {
       tooltip: { trigger: "axis" },
       legend: { data: rows.filter((row) => row.convergence.length).map((row) => row.name), textStyle: { color: "#ccc" }, top: 0 },
       grid: { left: 50, right: 30, top: 40, bottom: 45 },
-      xAxis: { name: "代数", axisLine: { lineStyle: { color: "#444" } } },
-      yAxis: { name: "HV", axisLine: { lineStyle: { color: "#444" } } },
+      xAxis: { type: "value", name: "代数", axisLine: { lineStyle: { color: "#444" } } },
+      yAxis: { type: "value", name: "HV", axisLine: { lineStyle: { color: "#444" } } },
       backgroundColor: "#1a1a2e",
       series: rows.filter((row) => row.convergence.length).map((row) => ({
         name: row.name, type: "line", data: row.convergence, showSymbol: false,
@@ -322,22 +442,40 @@ function sigClass(val) {
 
 // ============ 加载：优先后端真实数据 ============
 async function loadData() {
+  // Clear the previous response before a refresh so stale charts/KPIs cannot
+  // be mistaken for the current experiment.
+  ablationData.value = [];
+  statsData.value = [];
+  hasParetoData.value = false;
+  hasConvergenceData.value = false;
+  dataSource.value = "pending";
+  kpis.value = { hvImprove: "-", feasibility: "-", f1Drop: "-", f2Drop: "-" };
   try {
-    const [ab, st] = await Promise.allSettled([
+    const [ab, st, robust] = await Promise.allSettled([
       fetchAblationResults(),
       fetchExperimentStatistics(),
+      fetchLatestRobustOptimization(),
     ]);
     const abRes = ab.status === "fulfilled" ? ab.value : null;
     const stRes = st.status === "fulfilled" ? st.value : null;
-    const normalized = normalizeAblation(abRes?.data);
+    const robustRes = robust.status === "fulfilled" ? robust.value : null;
+    const robustRows = normalizeRobustTask(robustRes);
+    // Prefer the latest completed RLDE-F task. Fall back to the historical
+    // MATLAB record only when no completed robust task is available.
+    const normalized = robustRows.length ? robustRows : normalizeAblation(abRes?.data);
     if (normalized.length) {
       ablationData.value = normalized;
-      dataSource.value = "live";
+      dataSource.value = robustRows.length ? "robust" : "live";
       hasParetoData.value = normalized.some((row) => row.pareto.length);
       hasConvergenceData.value = normalized.some((row) => row.convergence.length);
       // KPI 只从真实有限指标计算，缺失时保持 "-"。
-      const a0 = normalized.find((r) => String(r.name).includes("A0"));
-      const a4 = normalized.find((r) => String(r.name).includes("A4"));
+      const a0 = robustRows.length
+        ? normalized.find((r) => r.key === "baseline" || String(r.name).includes("baseline"))
+        : normalized.find((r) => String(r.name).includes("A0"));
+      const a4 = robustRows.length
+        ? (normalized.find((r) => r.key === "rlde_warm" || String(r.name).includes("rlde_warm")) ||
+          normalized.find((r) => r.key === "rlde" || String(r.name).includes("RLDE-F")))
+        : normalized.find((r) => String(r.name).includes("A4"));
       if (a0 && a4) {
         const f1a = parseFloat(a0.f1_mean);
         const f14 = parseFloat(a4.f1_mean);
@@ -352,7 +490,9 @@ async function loadData() {
           const hv4 = parseFloat(a4.hv);
           kpis.value.hvImprove = (((hv4 - hv0) / hv0) * 100).toFixed(1);
         }
-        kpis.value.feasibility = a4.feasibility_rate;
+        kpis.value.feasibility = robustRows.length
+          ? String(a4.solutions ?? "-")
+          : a4.feasibility_rate;
       }
     }
     statsData.value = normalizeStatistics(stRes?.data);
@@ -363,12 +503,21 @@ async function loadData() {
   renderCharts();
 }
 
+function resizeCharts() {
+  [paretoChart, convergeChart, metricChart].forEach((r) => {
+    if (r.value) echarts.getInstanceByDom(r.value)?.resize();
+  });
+}
+
 onMounted(() => {
   loadData();
-  window.addEventListener("resize", () => {
-    [paretoChart, convergeChart, metricChart].forEach((r) => {
-      if (r.value) echarts.getInstanceByDom(r.value)?.resize();
-    });
+  window.addEventListener("resize", resizeCharts);
+});
+
+onBeforeUnmount(() => {
+  window.removeEventListener("resize", resizeCharts);
+  [paretoChart, convergeChart, metricChart].forEach((r) => {
+    if (r.value) echarts.getInstanceByDom(r.value)?.dispose();
   });
 });
 </script>
@@ -405,6 +554,11 @@ onMounted(() => {
   color: #2ecc71;
   border-color: rgba(46, 204, 113, 0.5);
   background: rgba(46, 204, 113, 0.08);
+}
+.data-badge.robust {
+  color: #43e7c5;
+  border-color: rgba(67, 231, 197, 0.55);
+  background: rgba(67, 231, 197, 0.08);
 }
 .subtitle {
   color: #888;

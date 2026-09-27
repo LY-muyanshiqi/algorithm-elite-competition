@@ -2,6 +2,7 @@
 
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timezone
+import json
 from pathlib import Path
 from threading import Lock
 import sys
@@ -15,6 +16,8 @@ from scipy.spatial.distance import cdist
 ROOT = Path(__file__).resolve().parents[1]
 CALC_DIR = ROOT / "全年抽蓄减碳效益优化计算"
 PYTHON_ENV = CALC_DIR / "python_env"
+RESULTS_DIR = CALC_DIR / "experiment_results"
+LATEST_RESULT_PATH = RESULTS_DIR / "robust_latest.json"
 for path in (str(CALC_DIR), str(PYTHON_ENV)):
     if path not in sys.path:
         sys.path.insert(0, path)
@@ -159,6 +162,7 @@ class RobustOptimizationService:
         self._executor = ThreadPoolExecutor(max_workers=1, thread_name_prefix="robust-nslde")
         self._tasks = {}
         self._latest = None
+        self._latest_snapshot = self._read_latest_snapshot()
         self._lock = Lock()
 
     def start(self, params):
@@ -180,7 +184,70 @@ class RobustOptimizationService:
             return None if task is None else dict(task)
 
     def latest(self):
-        return self.get(self._latest) if self._latest else None
+        with self._lock:
+            memory_task = (
+                dict(self._tasks[self._latest])
+                if self._latest and self._latest in self._tasks else None
+            )
+            disk_task = (dict(self._latest_snapshot)
+                         if self._latest_snapshot is not None else None)
+            if memory_task is None:
+                return disk_task
+            if disk_task is None:
+                return memory_task
+            # A reload can leave an older completed task in memory while a
+            # newer completed snapshot is already on disk.  Compare the
+            # creation timestamps so stale memory cannot mask the real latest
+            # result.  Keep memory as the tie-breaker when persistence failed.
+            memory_created = str(memory_task.get("created_at") or "")
+            disk_created = str(disk_task.get("created_at") or "")
+            return disk_task if disk_created > memory_created else memory_task
+
+    @staticmethod
+    def _read_latest_snapshot():
+        """Load the last completed real run after a process restart.
+
+        The file is only a cache of a completed task response.  Invalid or
+        partial files are ignored so a failed write can never prevent the API
+        from starting.
+        """
+        try:
+            if not LATEST_RESULT_PATH.exists():
+                return None
+            payload = json.loads(LATEST_RESULT_PATH.read_text(encoding="utf-8"))
+            if (not isinstance(payload, dict) or payload.get("status") != "completed"
+                    or not isinstance(payload.get("result"), dict)):
+                return None
+            return payload
+        except (OSError, UnicodeError, json.JSONDecodeError, TypeError, ValueError):
+            return None
+
+    def _persist_latest(self, task_id):
+        """Atomically persist a completed task without blocking task updates."""
+        with self._lock:
+            task = self._tasks.get(task_id)
+            if task is None:
+                return
+            snapshot = dict(task)
+            self._latest_snapshot = snapshot
+        temporary = LATEST_RESULT_PATH.with_name(
+            f".{LATEST_RESULT_PATH.name}.{task_id}.tmp")
+        try:
+            RESULTS_DIR.mkdir(parents=True, exist_ok=True)
+            temporary.write_text(
+                json.dumps(snapshot, ensure_ascii=False, allow_nan=False),
+                encoding="utf-8",
+            )
+            temporary.replace(LATEST_RESULT_PATH)
+        except (OSError, TypeError, ValueError) as exc:
+            # The in-memory result remains available when a deployment is
+            # read-only; persistence is a resilience feature, not a reason to
+            # mark a successful optimization as failed.
+            print(f"[Robust] 最近结果持久化失败: {exc}")
+            try:
+                temporary.unlink(missing_ok=True)
+            except OSError:
+                pass
 
     def _update(self, task_id, **values):
         with self._lock:
@@ -188,7 +255,7 @@ class RobustOptimizationService:
 
     def _run_variant(self, data, capacity, evaluator, initial, params, seed,
                      task_id, start_progress, end_progress, label,
-                     use_rlde=False, ref_point=None):
+                     use_rlde=False, ref_point=None, history_evaluator=None):
         env = NSLDEEnv(*[item[0] for item in data], Zpump=capacity,
                        pop=params["population"], gen=params["generations"],
                        seed=seed, evaluator=evaluator, initial_solutions=initial,
@@ -201,14 +268,36 @@ class RobustOptimizationService:
                        }, ref_point=ref_point)
         env.reset()
         infos = []
+        history = [float(value) for value in env.hv_history]
+        if history_evaluator is not None:
+            history = [self._history_hv(env.pop_sorted, history_evaluator, ref_point)]
         for generation in range(params["generations"]):
             _, _, _, info = env.step(return_info=True)
             infos.append(info)
+            if history_evaluator is None:
+                history.append(float(env.hv_history[-1]))
+            else:
+                history.append(self._history_hv(
+                    env.pop_sorted, history_evaluator, ref_point))
             progress = start_progress + (end_progress - start_progress) * (
                 generation + 1) / params["generations"]
             self._update(task_id, progress=round(progress),
                          stage=f"{label}：第 {generation + 1}/{params['generations']} 代")
-        return _pareto(env.pop_sorted), env.hv_history, env, infos
+        return _pareto(env.pop_sorted), history, env, infos
+
+    @staticmethod
+    def _history_hv(population, evaluator, ref_point):
+        """Evaluate one population on the common test objective for history."""
+        points = []
+        for row in population:
+            evaluation = evaluator.evaluate(row[:23])
+            objective = np.asarray(evaluation.get('objective'), dtype=float)
+            if evaluation.get('feasible', True) and objective.shape == (2,):
+                if np.all(np.isfinite(objective)):
+                    points.append(objective)
+        if not points:
+            return 0.0
+        return float(compute_hv_2d(np.asarray(points, dtype=float), ref_point))
 
     def _run(self, task_id, params):
         started = time.perf_counter()
@@ -232,7 +321,8 @@ class RobustOptimizationService:
             comparison_seed = params["seed"]
             baseline, baseline_hv, baseline_env, baseline_infos = self._run_variant(
                 data, capacity, expected, None, params, comparison_seed, task_id,
-                5, 25, "原始 NSLDE", ref_point=common_ref)
+                5, 25, "原始 NSLDE", ref_point=common_ref,
+                history_evaluator=robust)
             variants.append(("baseline", "原始 NSLDE", baseline, baseline_hv,
                              baseline_env, baseline_infos, False))
 
@@ -316,8 +406,10 @@ class RobustOptimizationService:
                 "scenario_weights": np.round(scenarios.weights, 6).tolist(),
                 "variants": results, "runtime_seconds": round(time.perf_counter() - started, 3),
             }
-            self._latest = task_id
             self._update(task_id, status="completed", progress=100, stage="计算完成", result=result)
+            with self._lock:
+                self._latest = task_id
+            self._persist_latest(task_id)
         except Exception as exc:
             self._update(task_id, status="failed", stage="计算失败", error=str(exc))
 

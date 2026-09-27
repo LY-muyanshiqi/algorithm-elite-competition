@@ -86,7 +86,7 @@ const routes = [
     name: 'Experiments',
     component: () => import('../views/ExperimentResults.vue'),
     meta: { title: '实验分析', navTitle: '实验分析', icon: '🧪',
-      screenTitle: '历史消融实验分析中心', screenSubtitle: 'MATLAB 消融记录 · 显著性检验 · 收敛性能' },
+      screenTitle: '实验分析中心', screenSubtitle: 'RLDE-F 鲁棒真实结果 · MATLAB 消融记录 · Pareto · 收敛性能' },
   },
 
   { path: '/strategy',
