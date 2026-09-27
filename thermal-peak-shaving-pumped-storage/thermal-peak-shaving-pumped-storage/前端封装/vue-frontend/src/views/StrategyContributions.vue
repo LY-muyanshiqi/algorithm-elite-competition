@@ -1,47 +1,66 @@
 <template>
   <div class="strategy-page">
     <div class="page-head">
-      <h2>🎯 Q-Learning 策略贡献度分析</h2>
-      <span class="data-badge" :class="dataSource === 'demo' ? 'demo' : 'live'">
-        {{ dataSource === "demo" ? "演示数据" : "MATLAB 真实结果" }}
+      <h2>🎯 RLDE-F 策略贡献度分析</h2>
+      <span class="data-badge" :class="dataSource">
+        {{ rldeState ? "RLDE-F 真实结果" : dataSource === "pending" ? "等待真实策略记录" : "MATLAB 真实结果" }}
       </span>
     </div>
     <p class="subtitle">
-      7种算子在进化过程中的使用分布、奖励追踪与自适应选择效果
+      RLDE-F 为每个个体独立调整 F 并更新 Q 表；旧版 7 算子记录仅作兼容展示
     </p>
+
+    <section v-if="rldeState" class="section rlde-panel">
+      <h3>RLDE-F 个体自适应状态（最近一次鲁棒实验）</h3>
+      <div class="rlde-grid">
+        <div><span>F 均值</span><strong>{{ fixed(rldeState.f_mean, 3) }}</strong></div>
+        <div><span>F 范围</span><strong>{{ fixed(rldeState.f_min, 3) }} ~ {{ fixed(rldeState.f_max, 3) }}</strong></div>
+        <div><span>Q 值范围</span><strong>{{ fixed(rldeState.q_min, 3) }} ~ {{ fixed(rldeState.q_max, 3) }}</strong></div>
+        <div><span>Q 更新次数</span><strong>{{ rldeState.updates }}</strong></div>
+        <div><span>当前温度</span><strong>{{ fixed(rldeState.temperature, 3) }}</strong></div>
+        <div><span>DE 算子调用</span><strong>{{ rldeState.de_calls }}</strong></div>
+      </div>
+      <div v-if="rldeState.action_counts.length" class="rlde-actions">
+        <span v-for="(count, index) in rldeState.action_counts" :key="index">
+          {{ actionNames[index] || `动作 ${index + 1}` }}：{{ count }} 次
+        </span>
+      </div>
+      <p class="rlde-note">该状态来自后端 `/api/optimization/robust/latest` 的 RLDE-F 变体，仅表示最近一次运行快照。</p>
+    </section>
 
     <!-- KPI 卡 -->
     <section class="kpi-row">
       <div class="kpi-card">
         <div class="kpi-label">优势算子</div>
-        <div class="kpi-val" style="color: #2ecc71">Lévy</div>
-        <div class="kpi-unit">平均奖励最高</div>
+        <div class="kpi-val" style="color: #2ecc71">{{ bestOperator || "-" }}</div>
+        <div class="kpi-unit">旧版策略记录</div>
       </div>
       <div class="kpi-card">
         <div class="kpi-label">自适应 HV 提升</div>
-        <div class="kpi-val" style="color: #3498db">+{{ kpis.hvGain }}%</div>
+        <div class="kpi-val" style="color: #3498db">{{ displayPercent(kpis.hvGain, "+") }}</div>
         <div class="kpi-unit">vs 固定均匀概率</div>
       </div>
       <div class="kpi-card">
         <div class="kpi-label">IGD 降低</div>
-        <div class="kpi-val" style="color: #f39c12">-{{ kpis.igdDrop }}%</div>
+        <div class="kpi-val" style="color: #f39c12">{{ displayPercent(kpis.igdDrop, "-") }}</div>
         <div class="kpi-unit">前沿收敛更优</div>
       </div>
       <div class="kpi-card">
         <div class="kpi-label">收敛加速</div>
-        <div class="kpi-val">-{{ kpis.genSave }}</div>
+        <div class="kpi-val">{{ displayGeneration(kpis.genSave) }}</div>
         <div class="kpi-unit">节省代数</div>
       </div>
     </section>
 
     <!-- 策略使用占比时序图 -->
-    <section class="section">
+    <section v-if="hasHistoryData" class="section">
       <h3>策略使用占比随代数变化</h3>
       <div ref="stackChart" class="chart"></div>
     </section>
+    <section v-else class="section empty-state">暂无旧版 7 算子策略时序记录；RLDE-F 状态不依赖该历史接口。</section>
 
     <!-- 各策略平均奖励 + 使用次数 -->
-    <section class="section chart-grid">
+    <section v-if="hasUseCountData" class="section chart-grid">
       <div class="chart-box">
         <h3>各策略平均奖励对比</h3>
         <div ref="rewardChart" class="chart"></div>
@@ -53,7 +72,7 @@
     </section>
 
     <!-- 策略统计表 -->
-    <section class="section">
+    <section v-if="strategyStats.length" class="section">
       <h3>策略使用统计</h3>
       <div class="table-wrapper">
         <table>
@@ -88,9 +107,10 @@
         </table>
       </div>
     </section>
+    <section v-else class="section empty-state">暂无可展示的旧版算子使用统计。</section>
 
     <!-- Q-Learning vs 固定概率对比 -->
-    <section class="section">
+    <section v-if="comparisonData.length" class="section">
       <h3>自适应 vs 固定概率效果对比</h3>
       <div class="table-wrapper">
         <table>
@@ -115,12 +135,15 @@
         </table>
       </div>
     </section>
+    <section v-else class="section empty-state">暂无旧版自适应与固定概率的成对对比结果。</section>
 
     <p class="note">
       {{
-        dataSource === "demo"
-          ? "当前展示为内置演示数据。"
-          : "当前展示为 MATLAB 真实结果。"
+        dataSource === "pending"
+          ? "当前没有真实旧版策略记录，页面不会填充模拟数值。"
+          : rldeState
+            ? "当前展示包含最近一次鲁棒 RLDE-F 真实状态；旧版算子表仅在 MATLAB 记录存在时显示。"
+            : "当前展示为 MATLAB 真实结果。"
       }}
       真实数据方式：MATLAB 运行 nslde_enhanced 时设置 options.track_strategy =
       true 与 options.use_qlearning = true， 输出的 history.strategy_history
@@ -130,14 +153,17 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from "vue";
+import { ref, nextTick, onMounted } from "vue";
 import * as echarts from "echarts";
-import { fetchStrategyResults } from "../api";
+import { fetchLatestRobustOptimization, fetchStrategyResults } from "../api";
 
-const dataSource = ref("demo");
+const dataSource = ref("pending");
+const rldeState = ref(null);
 const stackChart = ref(null);
 const rewardChart = ref(null);
 const radarChart = ref(null);
+const hasHistoryData = ref(false);
+const hasUseCountData = ref(false);
 
 const opNames = [
   "DE/rand/1",
@@ -166,134 +192,36 @@ const opColors = [
   "#3498db",
   "#9b59b6",
 ];
+const actionNames = ["减小 F", "保持 F", "增大 F"];
 
-const bestOperator = ref("Lévy");
+const bestOperator = ref("-");
 
-// ============ 演示数据 ============
-const demoStats = [
-  {
-    name: "DE/rand/1",
-    type: "差分变异",
-    use_count: "1820",
-    use_ratio: "20.2%",
-    avg_reward: "0.72",
-    survival_rate: "88%",
-    phase: "全程",
-  },
-  {
-    name: "DE/rand/2",
-    type: "差分变异",
-    use_count: "950",
-    use_ratio: "10.6%",
-    avg_reward: "0.55",
-    survival_rate: "71%",
-    phase: "中期",
-  },
-  {
-    name: "DE/c-to-b/1",
-    type: "差分变异",
-    use_count: "1280",
-    use_ratio: "14.2%",
-    avg_reward: "0.68",
-    survival_rate: "82%",
-    phase: "中期",
-  },
-  {
-    name: "PM",
-    type: "多项式变异",
-    use_count: "620",
-    use_ratio: "6.9%",
-    avg_reward: "0.41",
-    survival_rate: "58%",
-    phase: "早期",
-  },
-  {
-    name: "SBX",
-    type: "模拟交叉",
-    use_count: "1180",
-    use_ratio: "13.1%",
-    avg_reward: "0.60",
-    survival_rate: "76%",
-    phase: "前期",
-  },
-  {
-    name: "Lévy",
-    type: "Lévy飞行",
-    use_count: "2260",
-    use_ratio: "25.1%",
-    avg_reward: "0.85",
-    survival_rate: "93%",
-    phase: "全程",
-  },
-  {
-    name: "Cauchy",
-    type: "柯西扰动",
-    use_count: "890",
-    use_ratio: "9.9%",
-    avg_reward: "0.63",
-    survival_rate: "74%",
-    phase: "后期",
-  },
-];
+const strategyStats = ref([]);
+const comparisonData = ref([]);
+const kpis = ref({ hvGain: "-", igdDrop: "-", genSave: "-" });
+const displayPercent = (value, prefix = "") => {
+  const number = Number(value);
+  return Number.isFinite(number) ? `${prefix}${number.toFixed(1)}%` : "-";
+};
+const fixed = (value, digits = 2) => {
+  const number = Number(value);
+  return Number.isFinite(number) ? number.toFixed(digits) : "-";
+};
+const displayGeneration = (value) => {
+  const number = Number(value);
+  return Number.isFinite(number) ? `-${number}` : "-";
+};
 
-const demoComparison = [
-  { metric: "HV", adaptive: "0.648", fixed: "0.612", improvement: "+5.9%" },
-  { metric: "IGD", adaptive: "0.014", fixed: "0.018", improvement: "-22.2%" },
-  {
-    metric: "Spacing",
-    adaptive: "0.015",
-    fixed: "0.019",
-    improvement: "-21.1%",
-  },
-  { metric: "可行率", adaptive: "96.0%", fixed: "92.5%", improvement: "+3.8%" },
-  {
-    metric: "收敛速度",
-    adaptive: "2200代",
-    fixed: "2750代",
-    improvement: "-20.0%",
-  },
-];
-
-const strategyStats = ref(demoStats);
-const comparisonData = ref(demoComparison);
-
-const kpis = ref({ hvGain: "5.9", igdDrop: "22.2", genSave: "550" });
-
-// ============ 图表数据 ============
-// 策略占比时序：优先使用真实数据（strategy_history），否则用演示生成
+// ============ 图表数据（仅使用旧版真实记录） ============
 function genStrategyHistory(realHistory, realGens) {
-  if (Array.isArray(realHistory) && realHistory.length) {
-    const gens = realGens || realHistory.map((_, i) => i * 100);
-    const seriesData = opNames.map((_, k) =>
-      realHistory.map((row) => +(row[k] || 0).toFixed(4)),
-    );
-    return { gens, seriesData };
-  }
-  const steps = 30;
-  const gens = [];
-  const seriesData = opNames.map(() => []);
-  for (let i = 0; i <= steps; i++) {
-    const t = i / steps;
-    gens.push(i * 100);
-    // 各算子权重随阶段变化
-    const weights = [0.2, 0.11, 0.14, 0.07, 0.13, 0.25, 0.1]; // 终态
-    const early = [0.16, 0.13, 0.15, 0.16, 0.15, 0.12, 0.13]; // 初始均匀
-    const w = weights.map((wg, k) => early[k] + (wg - early[k]) * t);
-    // 归一化
-    const sum = w.reduce((a, b) => a + b, 0);
-    w.forEach((val, k) => {
-      // 加入轻微随机
-      const noise = (Math.random() - 0.5) * 0.01;
-      seriesData[k].push(+Math.max(0.01, val / sum + noise).toFixed(4));
-    });
-  }
-  // 重新归一化每列到1
-  for (let g = 0; g <= steps; g++) {
-    let s = 0;
-    for (let k = 0; k < 7; k++) s += seriesData[k][g];
-    for (let k = 0; k < 7; k++)
-      seriesData[k][g] = +(seriesData[k][g] / s).toFixed(4);
-  }
+  if (!Array.isArray(realHistory) || !realHistory.length) return null;
+  const gens = Array.isArray(realGens) && realGens.length
+    ? realGens
+    : realHistory.map((_, i) => i);
+  const seriesData = opNames.map((_, k) => realHistory.map((row) => {
+    const value = Number(Array.isArray(row) ? row[k] : 0);
+    return Number.isFinite(value) ? Number(value.toFixed(4)) : 0;
+  }));
   return { gens, seriesData };
 }
 
@@ -301,9 +229,11 @@ function renderCharts(realData) {
   // 策略占比堆叠图
   const realHistory = realData?.strategy_history;
   const realGens = realData?.generations;
-  const { gens, seriesData } = genStrategyHistory(realHistory, realGens);
-  const sChart = echarts.init(stackChart.value);
-  sChart.setOption({
+  const history = genStrategyHistory(realHistory, realGens);
+  if (history && stackChart.value) {
+    const { gens, seriesData } = history;
+    const sChart = echarts.getInstanceByDom(stackChart.value) || echarts.init(stackChart.value);
+    sChart.setOption({
     tooltip: { trigger: "axis" },
     legend: { data: opNames, textStyle: { color: "#ccc" }, top: 0 },
     grid: { left: 50, right: 30, top: 40, bottom: 40 },
@@ -333,19 +263,24 @@ function renderCharts(realData) {
       itemStyle: { color: opColors[k] },
       emphasis: { focus: "series" },
     })),
-  });
+    });
+  }
 
   // 各算子使用占比柱状图（真实数据）
-  const useCountArr = realData?.strategy_use_count;
-  const totalUse = useCountArr ? useCountArr.reduce((a, b) => a + b, 0) : 0;
-  const rewards = useCountArr
-    ? useCountArr.map((c) => +(c / totalUse).toFixed(4))
-    : [0.72, 0.55, 0.68, 0.41, 0.6, 0.85, 0.63];
-  const rChart = echarts.init(rewardChart.value);
+  const useCountArr = Array.isArray(realData?.strategy_use_count)
+    ? Array.from({ length: opNames.length }, (_, index) => {
+        const number = Number(realData.strategy_use_count[index]);
+        return Number.isFinite(number) && number >= 0 ? number : 0;
+      })
+    : [];
+  const totalUse = useCountArr.reduce((a, b) => a + b, 0);
+  if (!useCountArr.length || totalUse <= 0 || !rewardChart.value || !radarChart.value) return;
+  const rewards = useCountArr.map((c) => Number((c / totalUse).toFixed(4)));
+  const rChart = echarts.getInstanceByDom(rewardChart.value) || echarts.init(rewardChart.value);
   rChart.setOption({
     tooltip: {
       trigger: "axis",
-      formatter: (p) => `${p[0].name}: ${(p[0].value * 100).toFixed(1)}%`,
+      formatter: (p) => `${p[0].name}: ${fixed(Number(p[0].value) * 100, 1)}%`,
     },
     xAxis: {
       type: "category",
@@ -372,16 +307,16 @@ function renderCharts(realData) {
           show: true,
           position: "top",
           color: "#ccc",
-          formatter: (p) => (p.value * 100).toFixed(1) + "%",
+          formatter: (p) => fixed(Number(p.value) * 100, 1) + "%",
         },
       },
     ],
   });
 
   // 雷达图：自适应 vs 固定（真实数据）
-  const feasAdapt = realData?.comparison?.feasibility_adaptive ?? 1.0;
-  const feasFixed = realData?.comparison?.feasibility_fixed ?? 1.0;
-  const radarChartEl = echarts.init(radarChart.value);
+  const feasAdapt = Number(realData?.comparison?.feasibility_adaptive);
+  const feasFixed = Number(realData?.comparison?.feasibility_fixed);
+  const radarChartEl = echarts.getInstanceByDom(radarChart.value) || echarts.init(radarChart.value);
   radarChartEl.setOption({
     tooltip: {},
     legend: {
@@ -411,22 +346,20 @@ function renderCharts(realData) {
         data: [
           {
             name: "Q-Learning自适应",
-            value: useCountArr
-              ? [
-                  useCountArr[2] / totalUse,
-                  useCountArr[2] / totalUse,
-                  useCountArr[5] / totalUse,
-                  feasAdapt,
-                  useCountArr.filter((c) => c > 0).length / 7,
-                ]
-              : [0.648, 0.5, 0.35, 0.96, 0.6],
+            value: [
+              (useCountArr[2] || 0) / totalUse,
+              (useCountArr[2] || 0) / totalUse,
+              (useCountArr[5] || 0) / totalUse,
+              Number.isFinite(feasAdapt) ? feasAdapt : 0,
+              useCountArr.filter((c) => c > 0).length / 7,
+            ],
             areaStyle: { color: "rgba(46,204,113,0.25)" },
             lineStyle: { color: "#2ecc71" },
             itemStyle: { color: "#2ecc71" },
           },
           {
             name: "固定均匀概率",
-            value: [0.143, 0.143, 0.143, feasFixed, 1.0],
+            value: [0.143, 0.143, 0.143, Number.isFinite(feasFixed) ? feasFixed : 0, 1.0],
             areaStyle: { color: "rgba(231,76,60,0.2)" },
             lineStyle: { color: "#e74c3c" },
             itemStyle: { color: "#e74c3c" },
@@ -441,15 +374,66 @@ function renderCharts(realData) {
 async function loadData() {
   let realData = null;
   try {
-    const res = await fetchStrategyResults();
+    const [strategyResponse, latestResponse] = await Promise.allSettled([
+      fetchStrategyResults(),
+      fetchLatestRobustOptimization(),
+    ]);
+    const res = strategyResponse.status === "fulfilled" ? strategyResponse.value : null;
+    const latest = latestResponse.status === "fulfilled" ? latestResponse.value : null;
+    const latestVariants = Array.isArray(latest?.result?.variants)
+      ? latest.result.variants
+      : (latest?.result?.variants && typeof latest.result.variants === "object"
+        ? Object.values(latest.result.variants)
+        : []);
+    const rldeVariants = latest?.status === "completed"
+      ? latestVariants.filter((variant) => variant?.rl && typeof variant.rl === "object")
+      : [];
+    if (rldeVariants.length) {
+      dataSource.value = "live";
+      const rlValues = rldeVariants.map((variant) => variant.rl);
+      const operatorUse = rldeVariants.reduce((sum, variant) => {
+        const values = Array.isArray(variant.operator_use) ? variant.operator_use : [];
+        values.forEach((value, index) => {
+          const number = Number(value);
+          sum[index] = (sum[index] || 0) + (Number.isFinite(number) ? number : 0);
+        });
+        return sum;
+      }, []);
+      const actionCounts = rldeVariants.reduce((sum, variant) => {
+        const values = Array.isArray(variant.rl?.action_counts) ? variant.rl.action_counts : [];
+        values.forEach((value, index) => {
+          const number = Number(value);
+          sum[index] = (sum[index] || 0) + (Number.isFinite(number) ? number : 0);
+        });
+        return sum;
+      }, []);
+      rldeState.value = {
+        f_mean: rlValues.reduce((sum, value) => sum + (Number.isFinite(Number(value.f_mean)) ? Number(value.f_mean) : 0), 0) / rlValues.length,
+        f_min: Math.min(...rlValues.map((value) => Number.isFinite(Number(value.f_min)) ? Number(value.f_min) : 0)),
+        f_max: Math.max(...rlValues.map((value) => Number.isFinite(Number(value.f_max)) ? Number(value.f_max) : 0)),
+        q_min: Math.min(...rlValues.map((value) => Number.isFinite(Number(value.q_min)) ? Number(value.q_min) : 0)),
+        q_max: Math.max(...rlValues.map((value) => Number.isFinite(Number(value.q_max)) ? Number(value.q_max) : 0)),
+        updates: rlValues.reduce((sum, value) => sum + (Number.isFinite(Number(value.updates)) ? Number(value.updates) : 0), 0),
+        temperature: rlValues.reduce((sum, value) => sum + (Number.isFinite(Number(value.temperature)) ? Number(value.temperature) : 0), 0) / rlValues.length,
+        de_calls: operatorUse.slice(0, 3).reduce((sum, value) => sum + value, 0),
+        action_counts: actionCounts.map((value) => Math.max(0, Math.round(value))),
+      };
+    }
     if (res?.status === "ok" && res.data) {
       realData = res.data;
-      dataSource.value = "live";
+      hasHistoryData.value = Array.isArray(realData.strategy_history) && realData.strategy_history.length > 0;
+      hasUseCountData.value = Array.isArray(realData.strategy_use_count) && realData.strategy_use_count.length > 0;
+      if (hasHistoryData.value || hasUseCountData.value) dataSource.value = "live";
 
       // 填充策略统计表（真实使用次数）
-      const useCount = realData.strategy_use_count;
-      const total = (useCount || []).reduce((a, b) => a + b, 0);
-      if (Array.isArray(useCount) && useCount.length === 7) {
+      const useCount = Array.isArray(realData.strategy_use_count)
+        ? realData.strategy_use_count.map((value) => {
+            const number = Number(value);
+            return Number.isFinite(number) && number >= 0 ? number : 0;
+          })
+        : [];
+      const total = useCount.reduce((a, b) => a + b, 0);
+      if (Array.isArray(useCount) && useCount.length === 7 && total > 0) {
         const types = [
           "差分变异",
           "差分变异",
@@ -479,8 +463,9 @@ async function loadData() {
       }
     }
   } catch (e) {
-    console.warn("[StrategyContributions] 使用演示数据", e);
+    console.warn("[StrategyContributions] 真实策略记录加载失败", e);
   }
+  await nextTick();
   renderCharts(realData);
 }
 
@@ -517,7 +502,7 @@ onMounted(() => {
   font-size: 11px;
   border: 1px solid;
 }
-.data-badge.demo {
+.data-badge.pending {
   color: #f39c12;
   border-color: rgba(243, 156, 18, 0.5);
   background: rgba(243, 156, 18, 0.08);
@@ -560,6 +545,54 @@ onMounted(() => {
 }
 .section {
   margin-bottom: 32px;
+}
+.rlde-panel {
+  padding: 16px;
+  border: 1px solid rgba(52, 152, 219, 0.35);
+  background: rgba(18, 42, 68, 0.45);
+}
+.rlde-grid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(120px, 1fr));
+  gap: 12px;
+}
+.rlde-grid div {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(0, 0, 0, 0.14);
+}
+.rlde-grid span,
+.rlde-note {
+  color: #8b9bb0;
+  font-size: 11px;
+}
+.rlde-grid strong {
+  color: #43e7c5;
+  font-size: 18px;
+}
+.rlde-note {
+  margin: 12px 0 0;
+}
+.rlde-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+.rlde-actions span {
+  padding: 6px 9px;
+  border: 1px solid rgba(67, 231, 197, 0.25);
+  color: #9cd8cf;
+  font-size: 11px;
+}
+.empty-state {
+  padding: 36px 18px;
+  border: 1px dashed rgba(255, 255, 255, 0.16);
+  color: #888;
+  text-align: center;
 }
 .section h3,
 .chart-box h3 {
@@ -629,6 +662,9 @@ tr.best {
   }
   .chart-grid {
     grid-template-columns: 1fr;
+  }
+  .rlde-grid {
+    grid-template-columns: repeat(2, minmax(120px, 1fr));
   }
 }
 </style>

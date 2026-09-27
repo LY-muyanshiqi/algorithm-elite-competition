@@ -1,21 +1,21 @@
 <template>
   <div class="experiment-page">
     <div class="page-head">
-      <h2>🧪 NSLDE 消融实验分析</h2>
-      <span class="data-badge" :class="dataSource === 'demo' ? 'demo' : 'live'">
-        {{ dataSource === "demo" ? "演示数据" : "MATLAB 真实结果" }}
+      <h2>🧪 历史 NSLDE 消融实验分析</h2>
+      <span class="data-badge" :class="dataSource">
+        {{ dataSource === "pending" ? "等待历史实验" : "MATLAB 历史真实结果" }}
       </span>
     </div>
     <p class="subtitle">
-      7组配置对比 · 混沌初始化 / DE差分 / Lévy飞行 / Q-Learning
-      各模块独立贡献验证
+      MATLAB 历史运行记录 · 混沌初始化 / DE差分 / Lévy飞行 / 旧版 Q-Learning
+      各模块独立贡献验证；当前场景鲁棒 RLDE-F 实验请进入“算法对比”页
     </p>
 
     <!-- KPI 卡 -->
     <section class="kpi-row">
       <div class="kpi-card">
         <div class="kpi-label">NSLDE vs NSGA-II</div>
-        <div class="kpi-val" style="color: #2ecc71">+{{ kpis.hvImprove }}%</div>
+        <div class="kpi-val" style="color: #2ecc71">{{ displayPercent(kpis.hvImprove, "+") }}</div>
         <div class="kpi-unit">HV 提升</div>
       </div>
       <div class="kpi-card">
@@ -25,18 +25,18 @@
       </div>
       <div class="kpi-card">
         <div class="kpi-label">f1 均值降低</div>
-        <div class="kpi-val" style="color: #3498db">-{{ kpis.f1Drop }}%</div>
+        <div class="kpi-val" style="color: #3498db">{{ displayPercent(kpis.f1Drop, "-") }}</div>
         <div class="kpi-unit">火电调峰深度</div>
       </div>
       <div class="kpi-card">
         <div class="kpi-label">f2 均值降低</div>
-        <div class="kpi-val" style="color: #f39c12">-{{ kpis.f2Drop }}%</div>
+        <div class="kpi-val" style="color: #f39c12">{{ displayPercent(kpis.f2Drop, "-") }}</div>
         <div class="kpi-unit">系统碳排放</div>
       </div>
     </section>
 
     <!-- 指标总览表格 -->
-    <section class="section">
+    <section v-if="ablationData.length" class="section">
       <h3>消融实验指标对比</h3>
       <div class="table-wrapper">
         <table>
@@ -75,11 +75,15 @@
         </table>
       </div>
     </section>
+    <section v-else class="section empty-state">
+      尚未生成真实消融实验结果。请先运行 MATLAB `run_ablation.m`，再执行
+      `experiment_runner.py --mode ablation --mat-path <结果文件>`。
+    </section>
 
     <!-- 统计显著性 -->
     <section class="section">
-      <h3>统计显著性检验 (Wilcoxon + Friedman)</h3>
-      <div class="table-wrapper">
+      <h3>统计显著性检验 (Mann–Whitney U + Kruskal–Wallis)</h3>
+      <div v-if="statsData.length" class="table-wrapper">
         <table>
           <thead>
             <tr>
@@ -101,30 +105,35 @@
           </tbody>
         </table>
       </div>
+      <div v-else class="empty-state compact-empty">
+        样本量不足或统计结果尚未生成，暂不显示显著性结论。
+      </div>
     </section>
 
     <!-- 图表区 -->
     <section class="section chart-grid">
       <div class="chart-box">
         <h3>Pareto 前沿对比</h3>
-        <div ref="paretoChart" class="chart"></div>
+        <div v-if="hasParetoData" ref="paretoChart" class="chart"></div>
+        <div v-else class="chart chart-empty">当前消融文件只包含汇总指标，暂无 Pareto 点集。</div>
       </div>
       <div class="chart-box">
         <h3>收敛曲线 (HV vs 代数)</h3>
-        <div ref="convergeChart" class="chart"></div>
+        <div v-if="hasConvergenceData" ref="convergeChart" class="chart"></div>
+        <div v-else class="chart chart-empty">当前实验文件未提供逐代收敛历史。</div>
       </div>
     </section>
 
-    <section class="section">
+    <section v-if="ablationData.length" class="section">
       <h3>各配置性能指标对比</h3>
       <div ref="metricChart" class="chart" style="height: 360px"></div>
     </section>
 
     <p class="note">
       {{
-        dataSource === "demo"
-          ? "当前展示为内置演示数据。"
-          : "当前展示为 MATLAB run_ablation.m 生成的真实实验结果。"
+        dataSource === "pending"
+          ? "当前没有可用于展示的历史消融结果，页面不会填充模拟数值。"
+          : "当前展示为 MATLAB run_ablation.m 生成的历史真实结果；新 RLDE-F 结果不从这里读取。"
       }}
       真实数据生成方式：MATLAB 运行 run_ablation(1, 'shaanxi', 5) 后，通过
       experiment_runner.py 写入 experiment_results/ablation_results.json。
@@ -133,167 +142,50 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from "vue";
+import { ref, nextTick, onMounted } from "vue";
 import * as echarts from "echarts";
 import {
   fetchAblationResults,
-  fetchBenchmarkResults,
   fetchExperimentStatistics,
 } from "../api";
 
-const dataSource = ref("demo");
+const dataSource = ref("pending");
 const paretoChart = ref(null);
 const convergeChart = ref(null);
 const metricChart = ref(null);
+const hasParetoData = ref(false);
+const hasConvergenceData = ref(false);
+const ablationData = ref([]);
+const statsData = ref([]);
 
-// ============ 演示数据（后端无结果时回退） ============
-const demoAblation = [
-  {
-    name: "A0_NSGAII_baseline",
-    init: "random",
-    operators: "SBX+PM",
-    feasibility_rate: "82.0%",
-    f1_mean: "1405.2",
-    f2_mean: "46500",
-    hv: "0.412",
-    igd: "0.038",
-    spacing: "0.031",
-  },
-  {
-    name: "A1_chaos_only",
-    init: "logistic",
-    operators: "SBX+PM",
-    feasibility_rate: "86.4%",
-    f1_mean: "1372.8",
-    f2_mean: "45910",
-    hv: "0.471",
-    igd: "0.032",
-    spacing: "0.027",
-  },
-  {
-    name: "A2_de_only",
-    init: "random",
-    operators: "DE/rand/1+PM",
-    feasibility_rate: "88.1%",
-    f1_mean: "1335.4",
-    f2_mean: "45320",
-    hv: "0.528",
-    igd: "0.027",
-    spacing: "0.024",
-  },
-  {
-    name: "A3_levy_only",
-    init: "random",
-    operators: "SBX+Levy",
-    feasibility_rate: "90.2%",
-    f1_mean: "1310.7",
-    f2_mean: "44980",
-    hv: "0.556",
-    igd: "0.024",
-    spacing: "0.021",
-  },
-  {
-    name: "A4_NSLDE",
-    init: "logistic",
-    operators: "DE/rand/1+Levy",
-    feasibility_rate: "93.5%",
-    f1_mean: "1268.5",
-    f2_mean: "44410",
-    hv: "0.612",
-    igd: "0.018",
-    spacing: "0.017",
-  },
-  {
-    name: "A5_QLearning",
-    init: "logistic",
-    operators: "Q-Learn自适应",
-    feasibility_rate: "95.2%",
-    f1_mean: "1249.6",
-    f2_mean: "44210",
-    hv: "0.635",
-    igd: "0.015",
-    spacing: "0.016",
-  },
-  {
-    name: "A6_NSLDE_full",
-    init: "logistic",
-    operators: "全7算子",
-    feasibility_rate: "96.0%",
-    f1_mean: "1238.2",
-    f2_mean: "44090",
-    hv: "0.648",
-    igd: "0.014",
-    spacing: "0.015",
-  },
-];
-
-const demoStats = [
-  {
-    comparison: "A1 vs A0 (混沌初始化)",
-    p_f1: "0.042",
-    p_f2: "0.038",
-    p_feas: "0.061",
-    cohens_d: "0.51",
-  },
-  {
-    comparison: "A2 vs A0 (DE差分)",
-    p_f1: "0.009",
-    p_f2: "0.011",
-    p_feas: "0.047",
-    cohens_d: "0.78",
-  },
-  {
-    comparison: "A3 vs A0 (Lévy飞行)",
-    p_f1: "0.018",
-    p_f2: "0.015",
-    p_feas: "0.082",
-    cohens_d: "0.66",
-  },
-  {
-    comparison: "A4 vs A0 (完整NSLDE)",
-    p_f1: "<0.001",
-    p_f2: "<0.001",
-    p_feas: "0.003",
-    cohens_d: "1.32",
-  },
-  {
-    comparison: "A5 vs A4 (Q-Learning)",
-    p_f1: "0.023",
-    p_f2: "0.017",
-    p_feas: "0.045",
-    cohens_d: "0.45",
-  },
-  {
-    comparison: "A6 vs A4 (全算子)",
-    p_f1: "0.140",
-    p_f2: "0.110",
-    p_feas: "0.200",
-    cohens_d: "0.21",
-  },
-];
-
-const ablationData = ref(demoAblation);
-const statsData = ref(demoStats);
-
-const kpis = ref({
-  hvImprove: "48.5",
-  feasibility: "93.5%",
-  f1Drop: "9.7",
-  f2Drop: "4.5",
-});
+const kpis = ref({ hvImprove: "-", feasibility: "-", f1Drop: "-", f2Drop: "-" });
+const displayPercent = (value, prefix = "") => {
+  const number = Number(value);
+  return Number.isFinite(number) ? `${prefix}${number.toFixed(1)}%` : "-";
+};
 
 // ============ 数据归一化（兼容后端字段） ============
 function normalizeAblation(list) {
-  if (!Array.isArray(list) || !list.length) return null;
-  return list.map((item) => {
-    const cfg = item.config || {};
+  const records = Array.isArray(list) ? list : (Array.isArray(list?.results) ? list.results : []);
+  if (!records.length) return [];
+  return records.map((item) => {
+    const cfg = item.config && typeof item.config === "object" ? item.config : {};
     const m = item.metrics || {};
-    const num = (v) =>
-      v === undefined || v === null || v === "-" ? "-" : Number(v).toFixed(3);
-    const pct = (v) =>
-      v === undefined || v === null || v === "-"
-        ? "-"
-        : (Number(v) * 100).toFixed(1) + "%";
+    const num = (v, digits = 3) => {
+      const number = Number(v);
+      return Number.isFinite(number) ? number.toFixed(digits) : "-";
+    };
+    const pct = (v) => {
+      const number = Number(v);
+      return Number.isFinite(number) ? (number * 100).toFixed(1) + "%" : "-";
+    };
+    const f1 = m.f1_mean ?? m.f1;
+    const f2 = m.f2_mean ?? m.f2;
+    const hasMetrics = [m.feasibility_rate, f1, f2, m.hv, m.igd, m.spacing]
+      .some((value) => Number.isFinite(Number(value)));
+    if (!hasMetrics) return null;
+    const rawPareto = Array.isArray(item.pareto) ? item.pareto : [];
+    const rawConvergence = Array.isArray(item.convergence) ? item.convergence : [];
     return {
       name: cfg.name || item.name || "config",
       init:
@@ -301,162 +193,120 @@ function normalizeAblation(list) {
         (String(cfg.name || "").includes("chaos") ? "logistic" : "random"),
       operators:
         cfg.operators ||
+        cfg.description ||
         (String(cfg.name || "").includes("levy") ? "SBX+Levy" : "SBX+PM"),
       feasibility_rate: pct(m.feasibility_rate ?? m.feasibility),
-      f1_mean: num(m.f1_mean ?? m.f1),
-      f2_mean:
-        (m.f2_mean ?? m.f2) !== undefined && (m.f2_mean ?? m.f2) !== "-"
-          ? Number(m.f2_mean ?? m.f2).toFixed(0)
-          : "-",
+      f1_mean: num(f1),
+      f2_mean: num(f2, 0),
       hv: num(m.hv),
       igd: num(m.igd),
-      spacing: num(m.spacing),
+      spacing: num(m.spacing ?? m.spacing_mean),
+      status: item.status || "complete",
+      pareto: rawPareto.filter((point) => Array.isArray(point) && point.length >= 2 &&
+        Number.isFinite(Number(point[0])) && Number.isFinite(Number(point[1]))),
+      convergence: rawConvergence.filter((point) => Array.isArray(point) && point.length >= 2 &&
+        Number.isFinite(Number(point[0])) && Number.isFinite(Number(point[1]))),
     };
-  });
+  }).filter(Boolean);
 }
 
-// ============ 图表数据生成 ============
-function genPareto(center, spread, n = 36) {
-  const pts = [];
-  for (let i = 0; i < n; i++) {
-    const t = i / (n - 1);
-    const f1 = center.f1 + (t - 0.5) * spread.f1 + (Math.random() - 0.5) * 6;
-    const f2 = center.f2 + (t - 0.5) * spread.f2 + (Math.random() - 0.5) * 90;
-    pts.push([+f1.toFixed(1), +f2.toFixed(0)]);
+function formatP(value) {
+  const number = Number(value);
+  if (!Number.isFinite(number)) return "-";
+  return number < 0.001 ? "<0.001" : number.toFixed(3);
+}
+
+function normalizeStatistics(payload) {
+  const direct = payload?.frontend || payload?.wilcoxon;
+  if (Array.isArray(direct)) {
+    return direct.map((row) => ({
+      comparison: row.comparison || row.name || "-",
+      p_f1: formatP(row.p_f1 ?? row.p_f1_mean),
+      p_f2: formatP(row.p_f2 ?? row.p_f2_mean),
+      p_feas: formatP(row.p_feas ?? row.p_feasibility_rate),
+      cohens_d: Number.isFinite(Number(row.cohens_d)) ? Number(row.cohens_d).toFixed(2) : "-",
+    }));
   }
-  return pts;
-}
-
-function genConvergence(final, tau, steps = 30) {
-  const data = [];
-  for (let i = 0; i <= steps; i++) {
-    const g = i * 100;
-    data.push([g, +(final * (1 - Math.exp(-g / tau))).toFixed(3)]);
+  const statistics = payload?.statistics;
+  if (!statistics || typeof statistics !== "object") return [];
+  const grouped = new Map();
+  for (const [metric, block] of Object.entries(statistics)) {
+    const pairs = Array.isArray(block?.pairwise_vs_baseline) ? block.pairwise_vs_baseline : [];
+    for (const pair of pairs) {
+      const comparison = pair.comparison || pair.name || "-";
+      const row = grouped.get(comparison) || {
+        comparison, p_f1: "-", p_f2: "-", p_feas: "-", cohens_d: "-",
+      };
+      const p = pair.p_value_holm ?? pair.p_value;
+      if (metric === "f1_mean") row.p_f1 = formatP(p);
+      if (metric === "f2_mean") row.p_f2 = formatP(p);
+      if (metric === "feasibility_rate") row.p_feas = formatP(p);
+      if (metric === "f1_mean" && Number.isFinite(Number(pair.effect_size))) {
+        row.cohens_d = Number(pair.effect_size).toFixed(2);
+      }
+      grouped.set(comparison, row);
+    }
   }
-  return data;
+  return [...grouped.values()];
 }
 
+// ============ 图表：只使用真实实验记录 ============
 function renderCharts() {
-  // Pareto 前沿
-  const pChart = echarts.init(paretoChart.value);
-  pChart.setOption({
-    tooltip: {
-      trigger: "item",
-      formatter: (p) => `f1=${p.value[0]} MW · f2=${p.value[1]} kg`,
-    },
-    legend: {
-      data: ["A0 (NSGA-II)", "A4 (NSLDE)", "A5 (Q-Learning)"],
-      textStyle: { color: "#ccc" },
-    },
-    grid: { left: 60, right: 30, top: 40, bottom: 50 },
-    xAxis: {
-      name: "f1 (火电调峰, MW)",
-      nameTextStyle: { color: "#999" },
-      axisLine: { lineStyle: { color: "#444" } },
-    },
-    yAxis: {
-      name: "f2 (碳排放, kg)",
-      nameTextStyle: { color: "#999" },
-      axisLine: { lineStyle: { color: "#444" } },
-    },
-    backgroundColor: "#1a1a2e",
-    series: [
-      {
-        name: "A0 (NSGA-II)",
-        type: "scatter",
-        data: genPareto({ f1: 1380, f2: 45900 }, { f1: 90, f2: 1800 }),
-        itemStyle: { color: "#e74c3c", opacity: 0.75 },
-      },
-      {
-        name: "A4 (NSLDE)",
-        type: "scatter",
-        data: genPareto({ f1: 1285, f2: 44550 }, { f1: 100, f2: 1900 }),
-        itemStyle: { color: "#2ecc71", opacity: 0.8 },
-      },
-      {
-        name: "A5 (Q-Learning)",
-        type: "scatter",
-        data: genPareto({ f1: 1255, f2: 44280 }, { f1: 100, f2: 1800 }),
-        itemStyle: { color: "#3498db", opacity: 0.85 },
-      },
-    ],
-  });
-
-  // 收敛曲线
-  const finals = [0.412, 0.471, 0.528, 0.556, 0.612, 0.635, 0.648];
-  const taus = [720, 700, 650, 630, 520, 480, 460];
-  const cChart = echarts.init(convergeChart.value);
-  cChart.setOption({
-    tooltip: { trigger: "axis" },
-    legend: {
-      data: ["A0", "A1", "A2", "A3", "A4", "A5", "A6"],
-      textStyle: { color: "#ccc" },
-      top: 0,
-    },
-    grid: { left: 50, right: 30, top: 40, bottom: 40 },
-    xAxis: {
-      name: "代数",
-      nameTextStyle: { color: "#999" },
-      axisLine: { lineStyle: { color: "#444" } },
-    },
-    yAxis: {
-      name: "HV",
-      nameTextStyle: { color: "#999" },
-      axisLine: { lineStyle: { color: "#444" } },
-    },
-    backgroundColor: "#1a1a2e",
-    series: finals.map((f, i) => ({
-      name: "A" + i,
-      type: "line",
-      data: genConvergence(f, taus[i]),
-      smooth: true,
-      showSymbol: false,
-      lineStyle: { width: i === 4 ? 3 : 1.5 },
-    })),
-  });
-
-  // 指标对比（HV / IGD / Spacing）
-  const mChart = echarts.init(metricChart.value);
+  const rows = ablationData.value || [];
+  if (!rows.length) return;
+  if (hasParetoData.value && paretoChart.value) {
+    const pChart = echarts.getInstanceByDom(paretoChart.value) || echarts.init(paretoChart.value);
+    pChart.setOption({
+      tooltip: { trigger: "item", formatter: (point) => `f1=${point.value[0]} · f2=${point.value[1]}` },
+      legend: { data: rows.filter((row) => row.pareto.length).map((row) => row.name), textStyle: { color: "#ccc" } },
+      grid: { left: 60, right: 30, top: 40, bottom: 55 },
+      xAxis: { name: "f1", axisLine: { lineStyle: { color: "#444" } } },
+      yAxis: { name: "f2", axisLine: { lineStyle: { color: "#444" } } },
+      backgroundColor: "#1a1a2e",
+      series: rows.filter((row) => row.pareto.length).map((row, index) => ({
+        name: row.name, type: "scatter", data: row.pareto,
+        itemStyle: { color: ["#e74c3c", "#2ecc71", "#3498db", "#f39c12"][index % 4] },
+      })),
+    });
+  }
+  if (hasConvergenceData.value && convergeChart.value) {
+    const cChart = echarts.getInstanceByDom(convergeChart.value) || echarts.init(convergeChart.value);
+    cChart.setOption({
+      tooltip: { trigger: "axis" },
+      legend: { data: rows.filter((row) => row.convergence.length).map((row) => row.name), textStyle: { color: "#ccc" }, top: 0 },
+      grid: { left: 50, right: 30, top: 40, bottom: 45 },
+      xAxis: { name: "代数", axisLine: { lineStyle: { color: "#444" } } },
+      yAxis: { name: "HV", axisLine: { lineStyle: { color: "#444" } } },
+      backgroundColor: "#1a1a2e",
+      series: rows.filter((row) => row.convergence.length).map((row) => ({
+        name: row.name, type: "line", data: row.convergence, showSymbol: false,
+      })),
+    });
+  }
+  if (!metricChart.value) return;
+  const metricRows = rows.map((row) => ({
+    name: row.name,
+    hv: row.hv === "-" ? null : Number(row.hv),
+    igd: row.igd === "-" ? null : Number(row.igd),
+    spacing: row.spacing === "-" ? null : Number(row.spacing),
+  }));
+  const mChart = echarts.getInstanceByDom(metricChart.value) || echarts.init(metricChart.value);
   mChart.setOption({
     tooltip: { trigger: "axis" },
-    legend: {
-      data: ["HV", "IGD", "Spacing"],
-      textStyle: { color: "#ccc" },
-      top: 0,
-    },
-    grid: { left: 50, right: 30, top: 40, bottom: 60 },
+    legend: { data: ["HV", "IGD", "Spacing"], textStyle: { color: "#ccc" }, top: 0 },
+    grid: { left: 60, right: 30, top: 40, bottom: 70 },
     xAxis: {
       type: "category",
-      data: ["A0", "A1", "A2", "A3", "A4", "A5", "A6"],
-      axisLabel: { color: "#ccc" },
+      data: metricRows.map((row) => row.name),
+      axisLabel: { color: "#ccc", rotate: 20 },
       axisLine: { lineStyle: { color: "#444" } },
     },
-    yAxis: {
-      type: "value",
-      name: "指标值",
-      nameTextStyle: { color: "#999" },
-      axisLine: { lineStyle: { color: "#444" } },
-    },
+    yAxis: { type: "value", name: "指标值", nameTextStyle: { color: "#999" }, axisLine: { lineStyle: { color: "#444" } } },
     backgroundColor: "#1a1a2e",
     series: [
-      {
-        name: "HV",
-        type: "bar",
-        data: [0.412, 0.471, 0.528, 0.556, 0.612, 0.635, 0.648],
-        itemStyle: { color: "#2ecc71" },
-      },
-      {
-        name: "IGD",
-        type: "line",
-        data: [0.038, 0.032, 0.027, 0.024, 0.018, 0.015, 0.014],
-        itemStyle: { color: "#e74c3c" },
-      },
-      {
-        name: "Spacing",
-        type: "line",
-        data: [0.031, 0.027, 0.024, 0.021, 0.017, 0.016, 0.015],
-        itemStyle: { color: "#f39c12" },
-      },
+      { name: "HV", type: "bar", data: metricRows.map((row) => row.hv), itemStyle: { color: "#2ecc71" } },
+      { name: "IGD", type: "line", data: metricRows.map((row) => row.igd), itemStyle: { color: "#e74c3c" } },
+      { name: "Spacing", type: "line", data: metricRows.map((row) => row.spacing), itemStyle: { color: "#f39c12" } },
     ],
   });
 }
@@ -473,22 +323,21 @@ function sigClass(val) {
 // ============ 加载：优先后端真实数据 ============
 async function loadData() {
   try {
-    const [ab, bench, st] = await Promise.allSettled([
+    const [ab, st] = await Promise.allSettled([
       fetchAblationResults(),
-      fetchBenchmarkResults(),
       fetchExperimentStatistics(),
     ]);
     const abRes = ab.status === "fulfilled" ? ab.value : null;
-    const benchRes = bench.status === "fulfilled" ? bench.value : null;
     const stRes = st.status === "fulfilled" ? st.value : null;
     const normalized = normalizeAblation(abRes?.data);
-    if (normalized) {
+    if (normalized.length) {
       ablationData.value = normalized;
       dataSource.value = "live";
-      // 由真实数据计算 KPI（f1/f2 均值；HV 不在 metrics 中则跳过）
+      hasParetoData.value = normalized.some((row) => row.pareto.length);
+      hasConvergenceData.value = normalized.some((row) => row.convergence.length);
+      // KPI 只从真实有限指标计算，缺失时保持 "-"。
       const a0 = normalized.find((r) => String(r.name).includes("A0"));
       const a4 = normalized.find((r) => String(r.name).includes("A4"));
-      const a5 = normalized.find((r) => String(r.name).includes("A5"));
       if (a0 && a4) {
         const f1a = parseFloat(a0.f1_mean);
         const f14 = parseFloat(a4.f1_mean);
@@ -498,7 +347,6 @@ async function loadData() {
           kpis.value.f1Drop = (((f1a - f14) / f1a) * 100).toFixed(1);
         if (!Number.isNaN(f2a) && !Number.isNaN(f24) && f2a !== 0)
           kpis.value.f2Drop = (((f2a - f24) / f2a) * 100).toFixed(1);
-        // HV 提升：若无真实 HV，用可行性对比替代展示（保持有值）
         if (a0.hv !== "-" && a4.hv !== "-" && parseFloat(a0.hv) !== 0) {
           const hv0 = parseFloat(a0.hv);
           const hv4 = parseFloat(a4.hv);
@@ -507,34 +355,11 @@ async function loadData() {
         kpis.value.feasibility = a4.feasibility_rate;
       }
     }
-    // 读取真实统计数据（前端格式）
-    const statsDataArr = stRes?.data?.frontend || stRes?.data?.wilcoxon || null;
-    if (Array.isArray(statsDataArr) && statsDataArr.length) {
-      statsData.value = statsDataArr.map((r) => {
-        const fmt = (v) =>
-          v === undefined ||
-          v === null ||
-          v === "inf" ||
-          Number.isNaN(Number(v))
-            ? "-"
-            : Number(v) < 0.001
-              ? "<0.001"
-              : Number(v).toFixed(3);
-        return {
-          comparison: r.comparison || r.name || "-",
-          p_f1: fmt(r.p_f1 ?? r.p_f1_mean),
-          p_f2: fmt(r.p_f2 ?? r.p_f2_mean),
-          p_feas: fmt(r.p_feas ?? r.p_feasibility_rate),
-          cohens_d:
-            r.cohens_d === undefined || r.cohens_d === null
-              ? "-"
-              : Number(r.cohens_d).toFixed(2),
-        };
-      });
-    }
+    statsData.value = normalizeStatistics(stRes?.data);
   } catch (e) {
-    console.warn("[ExperimentResults] 使用演示数据", e);
+    console.warn("[ExperimentResults] 真实实验结果加载失败", e);
   }
+  await nextTick();
   renderCharts();
 }
 
@@ -571,7 +396,7 @@ onMounted(() => {
   font-size: 11px;
   border: 1px solid;
 }
-.data-badge.demo {
+.data-badge.pending {
   color: #f39c12;
   border-color: rgba(243, 156, 18, 0.5);
   background: rgba(243, 156, 18, 0.08);
@@ -673,6 +498,24 @@ tr:hover {
 .chart {
   width: 100%;
   height: 400px;
+}
+.chart-empty,
+.empty-state {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 120px;
+  padding: 18px;
+  border: 1px dashed rgba(255, 255, 255, 0.16);
+  color: #888;
+  text-align: center;
+}
+.chart-empty {
+  height: 400px;
+  box-sizing: border-box;
+}
+.compact-empty {
+  min-height: 70px;
 }
 .note {
   margin-top: 32px;

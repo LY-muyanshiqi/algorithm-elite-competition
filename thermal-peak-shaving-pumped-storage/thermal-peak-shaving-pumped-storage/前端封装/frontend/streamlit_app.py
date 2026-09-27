@@ -23,6 +23,10 @@ import styles
 import charts
 import config
 import report
+try:
+    from robust_dashboard import show_robust_algorithm_comparison
+except ImportError:  # pragma: no cover - package-style imports in tests
+    from .robust_dashboard import show_robust_algorithm_comparison
 warnings.filterwarnings('ignore')
 
 # 尝试导入增强模块（新增功能）
@@ -389,50 +393,9 @@ def show_analysis(data):
             st.metric("迭代代数", gen)
 
     elif selected_analysis == '算法对比':
-        st.subheader("NSLDE vs NSGA-II vs MOEA/D 算法对比")
-        st.markdown("""
-        <div style='background: rgba(0, 212, 255, 0.1); border: 1px solid rgba(0, 212, 255, 0.3); border-radius: 8px; padding: 12px; margin: 10px 0; font-size: 0.9rem; color: #b0c4d8;'>
-        <strong>图表说明：</strong>在相同数据（365天×24小时）和相同约束条件下，对比三种多目标进化算法的性能。
-        <strong>NSLDE</strong> 通过 Levy 飞行扰动和混沌初始化获得更优的 Pareto 前沿覆盖和收敛速度；
-        <strong>NSGA-II</strong> 是经典基线算法；<strong>MOEA/D</strong> 基于分解策略。
-        HV 越大越好，IGD 和 Spacing 越小越好。
-        </div>
-        """, unsafe_allow_html=True)
-
-        with st.spinner("🔬 正在生成算法对比数据..."):
-            comp = ana.algorithm_comparison_data(data)
-
-        charts_set = ana.create_algorithm_comparison_charts(comp)
-
-        tab_p, tab_m, tab_c = st.tabs([
-            "Pareto 前沿对比",
-            "性能指标对比 (HV / IGD / Spacing)",
-            "收敛曲线对比"
-        ])
-
-        with tab_p:
-            charts.safe_plotly_chart(charts_set['pareto'], use_container_width=True)
-            st.caption("NSLDE · NSGA-II · MOEA/D — 越靠近左下角越优")
-
-        with tab_m:
-            charts.safe_plotly_chart(charts_set['metrics'], use_container_width=True)
-            st.subheader("指标解释")
-            col_m1, col_m2, col_m3 = st.columns(3)
-            with col_m1:
-                st.markdown("**HV (Hypervolume)** — 解集覆盖的目标空间体积。越大越好。")
-            with col_m2:
-                st.markdown("**IGD (Inverted Generational Distance)** — 到参考集（NSLDE）的平均距离。越小越好。")
-            with col_m3:
-                st.markdown("**Spacing** — 解分布的均匀度。越小表示 Pareto 前沿越均匀。")
-
-            if comp.get('is_real'):
-                timing = comp.get('timing')
-                if timing is not None:
-                    st.subheader("⏱️ 运行时间 (avg per day)")
-                    st.markdown(f"NSLDE: {timing[0]:.1f}s | NSGA-II: {timing[1]:.1f}s | MOEA/D: {timing[2]:.1f}s")
-
-        with tab_c:
-            charts.safe_plotly_chart(charts_set['convergence'], use_container_width=True)
+        show_robust_algorithm_comparison(data, key_prefix="advanced_robust")
+        with st.expander("历史 MATLAB 三算法对比（离线兼容）", expanded=False):
+            show_algorithm_comparison(data)
 
     elif selected_analysis == '储能对比':
         st.subheader("🔋 抽水蓄能 vs 电化学储能 (锂电池)")
@@ -657,8 +620,8 @@ def show_data_browser(data):
 
 
 def show_algorithm_comparison(data):
-    """算法对比独立页面 — NSLDE vs NSGA-II vs MOEA/D"""
-    st.markdown("## ⚔️ NSLDE vs NSGA-II vs MOEA/D 算法对比")
+    """历史 MATLAB 三算法对比（保留用于复现实验结果）。"""
+    st.markdown("## ⚔️ 历史 MATLAB 对比：NSLDE vs NSGA-II vs MOEA/D")
     st.markdown("""
     <div style='background: rgba(0, 212, 255, 0.1); border: 1px solid rgba(0, 212, 255, 0.3); border-radius: 8px; padding: 12px; margin: 10px 0; font-size: 0.9rem; color: #b0c4d8;'>
     在相同数据（365天×24小时）和相同约束条件下，对比三种多目标进化算法的性能。
@@ -670,6 +633,11 @@ def show_algorithm_comparison(data):
 
     with st.spinner("🔬 正在加载 MATLAB 对比实验数据..."):
         comp = ana.algorithm_comparison_data(data)
+
+    if comp.get('status') == 'pending':
+        st.info(comp.get('message', '暂无有效 MATLAB 对比结果。'))
+        st.caption('该历史页面不会生成随机占位结果；新算法请使用“🧪 鲁棒算法对比（RLDE-F）”。')
+        return
 
     if comp.get('is_real'):
         st.success(f"✅ 使用真实 MATLAB 对比实验数据（{len(comp.get('days_used', []))} 个代表日）")
@@ -710,7 +678,7 @@ def show_algorithm_comparison(data):
         with cm1:
             st.info("**HV (Hypervolume)** ↑\n解集覆盖的目标空间体积，越大表示前沿更广更优")
         with cm2:
-            st.info("**IGD (Inverted Generational Distance)** ↓\n到参考集(NSLDE)的平均距离，越小越逼近真实前沿")
+            st.info("**IGD (Inverted Generational Distance)** ↓\n到同一测试实例的联合非支配参考前沿的平均距离，越小越逼近联合前沿")
         with cm3:
             st.info("**Spacing** ↓\n解分布的均匀度，越小表示前沿覆盖更均匀")
 
@@ -1736,8 +1704,15 @@ def main():
         elif page == "🔬 A/B参数对比":
             show_ab_comparison(data)
 
+        elif page == "🧪 鲁棒算法对比（RLDE-F）":
+            show_robust_algorithm_comparison(data)
+
         elif page == "⚔️ 算法对比":
-            show_algorithm_comparison(data)
+            # The existing entry now leads with the current robust algorithm;
+            # the historical MATLAB comparison remains available below.
+            show_robust_algorithm_comparison(data, key_prefix="legacy_route_robust")
+            with st.expander("历史 MATLAB 三算法对比（离线兼容）", expanded=False):
+                show_algorithm_comparison(data)
 
         elif page == "📜 历史对比":
             show_history_comparison(data)

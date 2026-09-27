@@ -61,7 +61,7 @@ const routes = [
     component: () => import('../views/AlgorithmComparison.vue'),
     meta: { title: '算法对比', navTitle: '算法对比', icon: '⚔️', order: 6, fullScreen: true,
       screenTitle: '多目标优化算法对比中心',
-      screenSubtitle: 'NSLDE · NSGA-II · MOEA/D / Pareto前沿与收敛性能' },
+      screenSubtitle: '场景鲁棒 NSLDE · RLDE-F / Pareto、CVaR 与调度质量' },
   },
 
   { path: '/history',
@@ -86,14 +86,14 @@ const routes = [
     name: 'Experiments',
     component: () => import('../views/ExperimentResults.vue'),
     meta: { title: '实验分析', navTitle: '实验分析', icon: '🧪',
-      screenTitle: 'NSLDE 消融实验分析中心', screenSubtitle: '消融实验 · 显著性检验 · 收敛性能' },
+      screenTitle: '历史消融实验分析中心', screenSubtitle: 'MATLAB 消融记录 · 显著性检验 · 收敛性能' },
   },
 
   { path: '/strategy',
     name: 'Strategy',
     component: () => import('../views/StrategyContributions.vue'),
     meta: { title: '策略贡献', navTitle: '策略贡献', icon: '🎯',
-      screenTitle: 'Q-Learning 策略贡献分析中心', screenSubtitle: '自适应算子选择 · 奖励追踪' },
+      screenTitle: 'RLDE-F 策略贡献分析中心', screenSubtitle: '个体 F 自适应 · Q 更新 · 旧版算子记录兼容' },
   },
 ]
 

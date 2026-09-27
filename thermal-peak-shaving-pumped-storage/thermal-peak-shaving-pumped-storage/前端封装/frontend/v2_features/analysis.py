@@ -12,6 +12,7 @@ import numpy as np
 import pandas as pd
 import plotly.graph_objects as go
 import plotly.express as px
+from plotly.subplots import make_subplots
 from typing import Dict, Any, Optional, List, Tuple
 
 
@@ -60,7 +61,9 @@ def sensitivity_analysis(data: Dict[str, Any], parameter: str = 'efficiency') ->
         return results
     
     results['base_value'] = base_value
-    results['test_values'] = test_values
+    # Keep the public result JSON-serializable and avoid appending to the
+    # numpy range twice while collecting recalculated values below.
+    results['test_values'] = []
     results['param_name'] = param_name
     results['unit'] = unit
     
@@ -79,23 +82,21 @@ def sensitivity_analysis(data: Dict[str, Any], parameter: str = 'efficiency') ->
     N = hydro + wind + solar
     Nt = fh - (N + npump)
     Nt2 = fh - N
-    base_carbon = (Nt.sum() - Nt2.sum()) / 1e6 * carbon_factor
+    base_carbon = (Nt.sum() - Nt2.sum()) / 1e6 * 0.5
 
     import data_loader as dl
+    parameter_key = {
+        'efficiency': 'efficiency',
+        'capacity': 'Zpump',
+        'carbon_factor': 'carbon_factor',
+        'price': 'price',
+    }[parameter]
 
     for val in test_values:
-        if key == 'Zpump':
-            params = {'Zpump': val}
-        elif key == 'efficiency':
-            params = {'efficiency': val}
-        elif key == 'carbon_factor':
-            params = {'carbon_factor': val}
-        else:
-            params = {key: val}
+        params = {parameter_key: float(val)}
 
         recalc = dl.recalculate_with_parameters(data, params)
         cr = recalc['carbon_result']
-        ps = recalc['ps_stats']
 
         results['test_values'].append(val)
         results['objective1_changes'].append(float(np.mean(recalc['Nt'])))
@@ -525,9 +526,22 @@ def create_algorithm_comparison_charts(comp: Dict[str, Any]) -> Dict[str, go.Fig
     Returns:
         dict: {'pareto': fig, 'metrics': fig, 'convergence': fig}
     """
-    z_nslde = comp['z_nslde']
-    z_nsga2 = comp['z_nsga2']
-    z_moead = comp['z_moead']
+    def _front(value: Any) -> np.ndarray:
+        try:
+            array = np.asarray(value, dtype=float)
+        except (TypeError, ValueError):
+            return np.empty((0, 2), dtype=float)
+        if array.ndim == 1:
+            usable = (array.size // 2) * 2
+            array = array[:usable].reshape(-1, 2) if usable else np.empty((0, 2))
+        if array.ndim != 2 or array.shape[1] < 2:
+            return np.empty((0, 2), dtype=float)
+        array = array[:, :2]
+        return array[np.isfinite(array).all(axis=1)]
+
+    z_nslde = _front(comp.get('z_nslde'))
+    z_nsga2 = _front(comp.get('z_nsga2'))
+    z_moead = _front(comp.get('z_moead'))
 
     # --- 图1：三算法 Pareto 前沿叠加 ---
     fig_pareto = go.Figure()
@@ -607,20 +621,28 @@ def create_algorithm_comparison_charts(comp: Dict[str, Any]) -> Dict[str, go.Fig
             template='plotly_dark',
         )
 
-    # --- 图3：模拟收敛曲线（真实数据无 convergence 历史） ---
+    # --- 图3：真实收敛曲线（没有历史时保持空态，不生成模拟数据） ---
     fig_conv = go.Figure()
-    gen_values = list(range(0, 3100, 100))
-    for name, color, factor in [('NSLDE', '#00d4ff', 0.7), ('NSGA-II', '#ff9800', 1.0), ('MOEA/D', '#e040fb', 1.3)]:
-        base = np.exp(-np.linspace(0, 3, len(gen_values))) * factor
-        noise = np.random.normal(0, 0.02, len(gen_values))
-        y_vals = base + noise
-        fig_conv.add_trace(go.Scatter(
-            x=gen_values, y=y_vals, name=name,
-            mode='lines', line=dict(width=2, color=color),
-        ))
+    convergence = comp.get('convergence')
+    if isinstance(convergence, dict):
+        for name, values in convergence.items():
+            points = []
+            for pair in values if isinstance(values, (list, tuple)) else []:
+                if isinstance(pair, (list, tuple)) and len(pair) >= 2:
+                    try:
+                        x, y = float(pair[0]), float(pair[1])
+                    except (TypeError, ValueError):
+                        continue
+                    if np.isfinite(x) and np.isfinite(y):
+                        points.append((x, y))
+            if points:
+                fig_conv.add_trace(go.Scatter(
+                    x=[point[0] for point in points],
+                    y=[point[1] for point in points], name=str(name), mode='lines',
+                ))
 
     fig_conv.update_layout(
-        title='Convergence Curve Comparison (simulated)',
+        title='Convergence Curve Comparison (real history only)',
         xaxis_title='Generation',
         yaxis_title='Objective f1 (normalized)',
         height=450,
@@ -639,64 +661,76 @@ def create_algorithm_comparison_charts(comp: Dict[str, Any]) -> Dict[str, go.Fig
 def algorithm_comparison_data(data: Dict[str, Any]) -> Dict[str, Any]:
     """
     NSLDE vs NSGA-II vs MOEA/D 三算法对比数据
-    优先读取 MATLAB 真实结果，文件不存在时降级为模拟数据
+    仅读取 MATLAB 真实结果；文件不存在时返回 pending，避免把随机占位值
+    展示为实验结论。
 
     Returns:
-        dict: z_nslde / z_nsga2 / z_moead / hv / igd / spacing / timing / days_used / is_real
+        dict: z_nslde / z_nsga2 / z_moead / hv / igd / spacing / timing /
+        days_used / is_real / status
     """
     import data_loader as dl
-    real = dl.load_comparison_data()
+    try:
+        real = dl.load_comparison_data()
+    except (OSError, IOError, KeyError, TypeError, ValueError):
+        # A partially written MATLAB file should produce the same explicit
+        # pending state as a missing file, rather than breaking the whole app.
+        real = None
+
+    def _display_front(value: Any) -> np.ndarray:
+        try:
+            array = np.asarray(value, dtype=float)
+        except (TypeError, ValueError):
+            return np.empty((0, 2), dtype=float)
+        if array.ndim == 2:
+            if array.shape[1] < 2:
+                return np.empty((0, 2), dtype=float)
+            output = array[:, :2]
+        elif array.ndim >= 3:
+            # MATLAB stores representative-day fronts as day x solution x 2.
+            output = np.nanmean(array, axis=0)[:, :2]
+        else:
+            return np.empty((0, 2), dtype=float)
+        output = output[np.isfinite(output).all(axis=1)]
+        return output
 
     if real is not None:
-        n_days = real['z_nslde'].shape[0]
-        if n_days == 1:
-            z_nslde_out = real['z_nslde'][0]
-            z_nsga2_out = real['z_nsga2'][0]
-            z_moead_out = real['z_moead'][0]
-        else:
-            z_nslde_out = real['z_nslde'].mean(axis=0)
-            z_nsga2_out = real['z_nsga2'].mean(axis=0)
-            z_moead_out = real['z_moead'].mean(axis=0)
+        try:
+            z_nslde_out = _display_front(real['z_nslde'])
+            z_nsga2_out = _display_front(real['z_nsga2'])
+            z_moead_out = _display_front(real['z_moead'])
+            if not all(len(front) for front in (z_nslde_out, z_nsga2_out, z_moead_out)):
+                raise ValueError('MATLAB front is empty')
 
-        return {
-            'z_nslde': z_nslde_out,
-            'z_nsga2': z_nsga2_out,
-            'z_moead': z_moead_out,
-            'hv': real['hv'].mean(axis=0),
-            'igd': real['igd'].mean(axis=0),
-            'spacing': real['spacing'].mean(axis=0),
-            'timing': real['timing'].mean(axis=0),
-            'days_used': real['days_used'],
-            'is_real': True,
-        }
+            def _metric(name: str) -> np.ndarray:
+                values = np.asarray(real[name], dtype=float)
+                if values.ndim > 1:
+                    values = np.nanmean(values, axis=0)
+                values = values.reshape(-1)[:3]
+                if not np.isfinite(values).all():
+                    raise ValueError(f'MATLAB metric {name} contains non-finite values')
+                return values
 
-    # === 降级: 模拟数据 ===
-    z_nslde = data['z_gain']
-    n_points = len(z_nslde)
-    np.random.seed(42)
-
-    nsga2_offset_f1 = np.random.normal(0.08, 0.04, n_points)
-    nsga2_offset_f2 = np.random.normal(0.06, 0.03, n_points)
-    z_nsga2_out = np.column_stack([
-        z_nslde[:, 0] * (1 + np.abs(nsga2_offset_f1)),
-        z_nslde[:, 1] * (1 + np.abs(nsga2_offset_f2))
-    ])
-    z_nsga2_out = z_nsga2_out[np.lexsort((z_nsga2_out[:, 1], z_nsga2_out[:, 0]))]
-
-    moead_offset_f1 = np.random.normal(0.04, 0.03, n_points)
-    moead_offset_f2 = np.random.normal(0.03, 0.02, n_points)
-    z_moead_out = np.column_stack([
-        z_nslde[:, 0] * (1 + np.abs(moead_offset_f1)),
-        z_nslde[:, 1] * (1 + np.abs(moead_offset_f2))
-    ])
-    z_moead_out = z_moead_out[np.lexsort((z_moead_out[:, 1], z_moead_out[:, 0]))]
+            hv, igd, spacing = (_metric('hv'), _metric('igd'), _metric('spacing'))
+            timing = _metric('timing')
+            if min(map(len, (hv, igd, spacing))) < 3:
+                raise ValueError('MATLAB metric vector is incomplete')
+            return {
+                'z_nslde': z_nslde_out, 'z_nsga2': z_nsga2_out,
+                'z_moead': z_moead_out, 'hv': hv[:3], 'igd': igd[:3],
+                'spacing': spacing[:3], 'timing': timing[:3] if len(timing) >= 3 else None,
+                'days_used': (np.asarray(real.get('days_used')).reshape(-1).tolist()
+                              if real.get('days_used') is not None else []),
+                'is_real': True, 'status': 'ok',
+            }
+        except (KeyError, TypeError, ValueError, IndexError):
+            pass
 
     return {
-        'z_nslde': z_nslde,
-        'z_nsga2': z_nsga2_out,
-        'z_moead': z_moead_out,
-        'hv': None, 'igd': None, 'spacing': None, 'timing': None,
-        'days_used': None, 'is_real': False,
+        'z_nslde': np.empty((0, 2)), 'z_nsga2': np.empty((0, 2)),
+        'z_moead': np.empty((0, 2)), 'hv': None, 'igd': None,
+        'spacing': None, 'timing': None, 'days_used': None,
+        'is_real': False, 'status': 'pending',
+        'message': '未找到有效的 MATLAB 对比结果，请先运行 compare_algorithms.m 生成 comparison_results.mat。',
     }
 
 
@@ -949,23 +983,40 @@ def energy_storage_comparison(data: Dict[str, Any], psh_params: Dict = None) -> 
 
 
 def convergence_analysis(data, pop=100, gen=3000):
-    import plotly.graph_objects as go
-    import numpy as np
+    """Render a convergence history only when one is present in ``data``.
 
-    np.random.seed(42)
-    gen_values = np.arange(0, gen + 1, max(1, gen // 30))
-    base = np.exp(-np.linspace(0, 3, len(gen_values)))
-    noise = np.random.normal(0, 0.015, len(gen_values))
-    y_vals = base + noise
-
+    The old implementation fabricated a noisy exponential curve whenever
+    MATLAB history was absent.  That is not an experiment result, so the
+    frontend now keeps an explicit empty state until a real history is
+    supplied by the backend/runner.
+    """
     fig = go.Figure()
-    fig.add_trace(go.Scatter(
-        x=gen_values, y=y_vals,
-        mode='lines', name='NSLDE 收敛',
-        line=dict(width=2, color='#00d4ff'),
-    ))
+    history = data.get('convergence_history') if isinstance(data, dict) else None
+    if isinstance(history, dict):
+        for name, values in history.items():
+            points = []
+            for pair in values if isinstance(values, (list, tuple)) else []:
+                if isinstance(pair, (list, tuple)) and len(pair) >= 2:
+                    try:
+                        x, y = float(pair[0]), float(pair[1])
+                    except (TypeError, ValueError):
+                        continue
+                    if np.isfinite(x) and np.isfinite(y):
+                        points.append((x, y))
+            if points:
+                fig.add_trace(go.Scatter(
+                    x=[point[0] for point in points],
+                    y=[point[1] for point in points],
+                    mode='lines', name=str(name), line=dict(width=2),
+                ))
+    if not fig.data:
+        fig.add_annotation(
+            text='暂无真实代际收敛历史，请先运行后端鲁棒实验',
+            x=0.5, y=0.5, xref='paper', yref='paper', showarrow=False,
+            font=dict(color='#9ab6c7'),
+        )
     fig.update_layout(
-        title=f'NSLDE 收敛曲线（种群={pop}, 迭代={gen}）',
+        title=f'真实收敛曲线（种群={pop}, 迭代={gen}）',
         xaxis_title='Generation', yaxis_title='Objective f1 (normalized)',
         template='plotly_dark', paper_bgcolor='rgba(0,0,0,0)',
         plot_bgcolor='rgba(0,0,0,0)', font=dict(color='#e0e6ed'),
